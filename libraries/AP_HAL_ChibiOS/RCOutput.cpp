@@ -171,7 +171,10 @@ void RCOutput::init()
     _initialised = true;
 }
 
+<<<<<<< HEAD
 #if HAL_SERIALLED_ENABLED
+=======
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
 // start the led thread
 bool RCOutput::start_led_thread(void)
 {
@@ -193,6 +196,34 @@ bool RCOutput::start_led_thread(void)
 #endif
 }
 
+<<<<<<< HEAD
+=======
+/*
+  thread for handling LED RCOutpu
+ */
+void RCOutput::led_thread()
+{
+    {
+        WITH_SEMAPHORE(led_thread_sem);
+        led_thread_ctx = chThdGetSelfX();
+    }
+
+    // don't start outputting until fully configured
+    while (!hal.scheduler->is_system_initialized()) {
+        hal.scheduler->delay_microseconds(1000);
+    }
+
+    while (true) {
+        chEvtWaitOne(EVT_LED_SEND);
+        // if DMA sharing is in effect there can be quite a delay between the request to begin the cycle and
+        // actually sending out data - thus we need to work out how much time we have left to collect the locks
+
+        // process any pending LED output requests
+        led_timer_tick(LED_OUTPUT_PERIOD_US + AP_HAL::micros64());
+    }
+}
+
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
 /*
   thread for handling LED RCOutpu
  */
@@ -336,6 +367,7 @@ void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us, bool led_thread)
     }
     for (int8_t i = NUM_GROUPS - 1; i >= 0; i--) {
         pwm_group &group = pwm_group_list[i];
+<<<<<<< HEAD
 
         if (led_thread != is_led_protocol(group.current_mode)) {
             continue;
@@ -347,6 +379,36 @@ void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us, bool led_thread)
             const sysinterval_t wait_ticks = calc_ticks_remaining(group, time_out_us,
                                                                   led_thread ? LED_OUTPUT_PERIOD_US : _dshot_period_us);
             const eventmask_t mask = chEvtWaitOneTimeout(group.dshot_event_mask, wait_ticks);
+=======
+
+        if ((led_thread && !is_led_protocol(group.current_mode)) || is_led_protocol(group.current_mode)) {
+            continue;
+        }
+
+        if (group.dma_handle != nullptr && group.dma_handle->is_locked()) {
+            // calculate how long we have left
+            uint64_t now = AP_HAL::micros64();
+            // if we have time left wait for the event
+            eventmask_t mask = 0;
+            const uint64_t pulse_elapsed_us = now - group.last_dmar_send_us;
+            uint32_t wait_us = 0;
+            if (now < time_out_us) {
+                wait_us = time_out_us - now;
+            }
+            if (pulse_elapsed_us < group.dshot_pulse_send_time_us) {
+                // better to let the burst write in progress complete rather than cancelling mid way through
+                wait_us = MAX(wait_us, group.dshot_pulse_send_time_us - pulse_elapsed_us);
+            }
+
+            // waiting for a very short period of time can cause a
+            // timer wrap with ChibiOS timers. Use CH_CFG_ST_TIMEDELTA
+            // as minimum. Don't allow for a very long delay (over _dshot_period_us)
+            // to prevent bugs in handling timer wrap
+            const uint32_t max_delay_us = led_thread ? LED_OUTPUT_PERIOD_US : _dshot_period_us;
+            const uint32_t min_delay_us = 10; // matches our CH_CFG_ST_TIMEDELTA
+            wait_us = constrain_uint32(wait_us, min_delay_us, max_delay_us);
+            mask = chEvtWaitOneTimeout(group.dshot_event_mask, chTimeUS2I(wait_us));
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
 
             // no time left cancel and restart
             if (!mask) {
@@ -803,7 +865,11 @@ void RCOutput::push_local(void)
                     uint32_t width = (group.pwm_cfg.frequency/1000000U) * period_us;
                     pwmEnableChannel(group.pwm_drv, j, width);
                 }
+<<<<<<< HEAD
 #if HAL_DSHOT_ENABLED
+=======
+#ifndef DISABLE_DSHOT
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
                 else if (is_dshot_protocol(group.current_mode) || is_led_protocol(group.current_mode)) {
                     // set period_us to time for pulse output, to enable very fast rates
                     period_us = group.dshot_pulse_time_us;
@@ -898,7 +964,11 @@ bool RCOutput::mode_requires_dma(enum output_mode mode) const
     return false;
 #else
     return is_dshot_protocol(mode) || is_led_protocol(mode);
+<<<<<<< HEAD
 #endif //#if !HAL_DSHOT_ENABLED
+=======
+#endif //#ifdef DISABLE_DSHOT
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
 }
 
 void RCOutput::print_group_setup_error(pwm_group &group, const char* error_string)
@@ -1436,12 +1506,20 @@ void RCOutput::timer_tick(uint64_t time_out_us)
  */
 void RCOutput::led_timer_tick(uint64_t time_out_us)
 {
+<<<<<<< HEAD
     if (in_soft_serial()) {
+=======
+    if (serial_group) {
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
         return;
     }
 
     // if we have enough time left send out LED data
+<<<<<<< HEAD
     if (serial_led_pending) {
+=======
+    if (serial_led_pending && (time_out_us > (AP_HAL::micros64() + (LED_OUTPUT_PERIOD_US >> 1)))) {
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
         serial_led_pending = false;
         for (auto &group : pwm_group_list) {
             serial_led_pending |= !serial_led_send(group);
@@ -2597,7 +2675,11 @@ bool RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t 
         }
 
     } else if (!is_led_protocol(grp->current_mode)) {
+<<<<<<< HEAD
         return false;
+=======
+        return;
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
     }
 
     if (led == -1) {
@@ -2652,6 +2734,10 @@ bool RCOutput::serial_led_send(const uint16_t chan)
         return false;
     }
 
+    if (led_thread_ctx == nullptr) {
+        return;
+    }
+
     uint8_t i;
     pwm_group *grp = find_chan(chan, i);
     if (!grp) {
@@ -2661,10 +2747,18 @@ bool RCOutput::serial_led_send(const uint16_t chan)
     WITH_SEMAPHORE(grp->serial_led_mutex);
 
     if (grp->serial_nleds == 0 || !is_led_protocol(grp->current_mode)) {
+<<<<<<< HEAD
         return false;
     }
 
     if (grp->prepared_send) {
+=======
+        return;
+    }
+
+    if (grp->prepared_send) {
+        chEvtSignal(led_thread_ctx, EVT_LED_SEND);
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
         grp->serial_led_pending = true;
         serial_led_pending = true;
         chEvtSignal(led_thread_ctx, EVT_LED_SEND);

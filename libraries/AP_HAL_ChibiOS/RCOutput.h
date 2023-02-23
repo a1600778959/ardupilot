@@ -111,10 +111,13 @@ public:
      */
     void led_timer_tick(uint64_t last_run_us);
 
+<<<<<<< HEAD
 #if defined(IOMCU_FW) && HAL_DSHOT_ENABLED
     void timer_tick() override;
     static void dshot_send_trampoline(void *p);
 #endif
+=======
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
     /*
       setup for serial output to a set of ESCs, using the given
       baudrate. Assumes 1 start bit, 1 stop bit, LSB first and 8
@@ -463,6 +466,17 @@ private:
 
 #if HAL_SERIAL_ESC_COMM_ENABLED
     /*
+      timer thread for use by led events
+     */
+    thread_t *led_thread_ctx;
+
+    /*
+      mutex to control LED thread creation
+     */
+    HAL_Semaphore led_thread_sem;
+    bool led_thread_created;
+
+    /*
       structure for IRQ handler for soft-serial input
      */
     static struct irq_state {
@@ -693,7 +707,10 @@ private:
     static void dshot_update_tick(virtual_timer_t*, void* p);
     static void dshot_send_next_group(void* p);
     // release locks on the groups that are pending in reverse order
+<<<<<<< HEAD
     sysinterval_t calc_ticks_remaining(pwm_group &group, uint64_t time_out_us, uint32_t output_period_us);
+=======
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
     void dshot_collect_dma_locks(uint64_t last_run_us, bool led_thread = false);
     static void dma_up_irq_callback(void *p, uint32_t flags);
     static void dma_unlock(virtual_timer_t*, void *p);

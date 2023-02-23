@@ -26,6 +26,10 @@
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      181
 #define APM_RCOUT_PRIORITY      181
+<<<<<<< HEAD
+=======
+#define APM_RCIN_PRIORITY       177
+>>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
 #define APM_LED_PRIORITY         60
 #define APM_UART_PRIORITY        60
 #define APM_NET_PRIORITY         60
