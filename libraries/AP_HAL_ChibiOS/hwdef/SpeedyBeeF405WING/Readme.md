@@ -90,10 +90,13 @@ The correct battery setting parameters are set by default and are:
 
 The SpeedyBeeF405Wing does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
+<<<<<<< HEAD
 ## VTX power control
 
 GPIO 81 controls the VTX BEC output to pins marked "9V". Setting this GPIO high removes voltage supply to pins.
 
+=======
+>>>>>>> b4c48d366a (AP_HAL_ChibiOS: Add SpeedyBeeF405WING)
 ## Loading Firmware
 Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled “SpeedyBeeF405Wing”.
 
