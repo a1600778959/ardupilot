@@ -7,7 +7,11 @@ The Blitz F7 AIO is a flight controller produced by [iFlight](https://shop.iflig
 ## Features
 
  - MCU: BGA-STM32F745, 216MHz
+<<<<<<< HEAD
  - Gyro: BMI270 or ICM42688
+=======
+ - Gyro: DPS310
+>>>>>>> cf92859abd (AP_HAL_ChibiOS: add new board BlitzF745AIO)
  - 16Mb Onboard Flash
  - BEC output: 5V 2.5A
  - Barometer: DPS310 or None
