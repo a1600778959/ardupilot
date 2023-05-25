@@ -111,11 +111,19 @@ private:
     char id_type[3];
     size_t id_len;
     char id_str[21];
+<<<<<<< HEAD
     bool bootloader_flashed;
+=======
+
+>>>>>>> b05df95c3d (AP_OpenDroneID: add support for persistent storage of UAS ID)
     enum Options : int16_t {
         EnforceArming     = (1U << 0U),
         AllowNonGPSPosition = (1U << 1U),
         LockUASIDOnFirstBasicIDRx = (1U << 2U),
+<<<<<<< HEAD
+=======
+        UseChipIDAsBasicID  = (1U << 3U),
+>>>>>>> b05df95c3d (AP_OpenDroneID: add support for persistent storage of UAS ID)
     };
 
     // check if an option is set
