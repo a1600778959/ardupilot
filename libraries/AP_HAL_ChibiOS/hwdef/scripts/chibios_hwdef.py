@@ -1646,6 +1646,7 @@ INCLUDE common.ld
         '''write IMU config defines'''
         devlist = []
         wrapper = ''
+<<<<<<< HEAD
         seen = set()
         for dev in self.imu_list:
             if self.seen_str(dev) in seen:
@@ -1678,6 +1679,247 @@ INCLUDE common.ld
                 f.write(
                     '#define HAL_INS_PROBE%u %s ADD_BACKEND_BOARD_MATCH(%s, AP_InertialSensor_%s::probe(*this,%s))\n'
                     % (n, wrapper, dev[-1], driver, ','.join(dev[1:-1])))
+=======
+        a = driver.split(':')
+        driver = a[0]
+        if len(a) > 1 and a[1].startswith('probe'):
+            probe = a[1]
+        for i in range(1, len(dev)):
+            if dev[i].startswith("SPI:"):
+                dev[i] = parse_spi_device(dev[i])
+            elif dev[i].startswith("I2C:"):
+                (wrapper, dev[i]) = parse_i2c_device(dev[i])
+        n = len(devlist)+1
+        devlist.append('HAL_MAG_PROBE%u' % n)
+        f.write(
+            '#define HAL_MAG_PROBE%u %s ADD_BACKEND(DRIVER_%s, AP_Compass_%s::%s(%s))\n'
+            % (n, wrapper, driver, driver, probe, ','.join(dev[1:])))
+    if len(devlist) > 0:
+        f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
+
+
+def write_BARO_config(f):
+    '''write barometer config defines'''
+    global baro_list
+    devlist = []
+    seen = set()
+    for dev in baro_list:
+        if seen_str(dev) in seen:
+            error("Duplicate BARO: %s" % seen_str(dev))
+        seen.add(seen_str(dev))
+        driver = dev[0]
+        probe = 'probe'
+        wrapper = ''
+        a = driver.split(':')
+        driver = a[0]
+        if len(a) > 1 and a[1].startswith('probe'):
+            probe = a[1]
+        for i in range(1, len(dev)):
+            if dev[i].startswith("SPI:"):
+                dev[i] = parse_spi_device(dev[i])
+            elif dev[i].startswith("I2C:"):
+                (wrapper, dev[i]) = parse_i2c_device(dev[i])
+                if dev[i].startswith('hal.i2c_mgr'):
+                    dev[i] = 'std::move(%s)' % dev[i]
+        n = len(devlist)+1
+        devlist.append('HAL_BARO_PROBE%u' % n)
+        args = ['*this'] + dev[1:]
+        f.write(
+            '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(%s))\n'
+            % (n, wrapper, driver, probe, ','.join(args)))
+    if len(devlist) > 0:
+        f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
+
+def write_AIRSPEED_config(f):
+    '''write airspeed config defines'''
+    global airspeed_list
+    devlist = []
+    seen = set()
+    idx = 0
+    for dev in airspeed_list:
+        if seen_str(dev) in seen:
+            error("Duplicate AIRSPEED: %s" % seen_str(dev))
+        seen.add(seen_str(dev))
+        driver = dev[0]
+        wrapper = ''
+        a = driver.split(':')
+        driver = a[0]
+        for i in range(1, len(dev)):
+            if dev[i].startswith("SPI:"):
+                dev[i] = parse_spi_device(dev[i])
+            elif dev[i].startswith("I2C:"):
+                (wrapper, dev[i]) = parse_i2c_device(dev[i])
+                if dev[i].startswith('hal.i2c_mgr'):
+                    dev[i] = 'std::move(%s)' % dev[i]
+        n = len(devlist)+1
+        devlist.append('HAL_AIRSPEED_PROBE%u' % n)
+        args = ['*this', str(idx)] + dev[1:]
+        f.write(
+            '#define HAL_AIRSPEED_PROBE%u %s ADD_BACKEND(AP_Airspeed_%s::probe(%s))\n'
+            % (n, wrapper, driver, ','.join(args)))
+        idx += 1
+    if len(devlist) > 0:
+        f.write('#define HAL_AIRSPEED_PROBE_LIST %s\n\n' % ';'.join(devlist))
+        
+def write_board_validate_macro(f):
+    '''write board validation macro'''
+    global config
+    validate_string = ''
+    validate_dict = {}
+    if 'BOARD_VALIDATE' in config:
+        for check in config['BOARD_VALIDATE']:
+            check_name = check
+            check_string = check
+            while True:
+                def substitute_alias(m):
+                    return '(' + get_config(m.group(1), spaces=True) + ')'
+                output = re.sub(r'\$(\w+|\{([^}]*)\})', substitute_alias, check_string)
+                if (output == check_string):
+                    break
+                check_string = output
+            validate_dict[check_name] = check_string
+        # Finally create check conditional
+        for check_name in validate_dict:
+            validate_string += "!" + validate_dict[check_name] + "?" + "\"" + check_name + "\"" + ":"
+        validate_string += "nullptr"
+        f.write('#define HAL_VALIDATE_BOARD (%s)\n\n' % validate_string) 
+
+def get_gpio_bylabel(label):
+    '''get GPIO(n) setting on a pin label, or -1'''
+    p = bylabel.get(label)
+    if p is None:
+        return -1
+    return p.extra_value('GPIO', type=int, default=-1)
+
+
+def get_extra_bylabel(label, name, default=None):
+    '''get extra setting for a label by name'''
+    p = bylabel.get(label)
+    if p is None:
+        return default
+    return p.extra_value(name, type=str, default=default)
+
+def get_UART_ORDER():
+    '''get UART_ORDER from SERIAL_ORDER option'''
+    if get_config('UART_ORDER', required=False, aslist=True) is not None:
+        error('Please convert UART_ORDER to SERIAL_ORDER')
+    serial_order = get_config('SERIAL_ORDER', required=False, aslist=True)
+    if serial_order is None:
+        return None
+    if args.bootloader:
+        # in bootloader SERIAL_ORDER is treated the same as UART_ORDER
+        return serial_order
+    map = [ 0, 3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12 ]
+    while len(serial_order) < 4:
+        serial_order += ['EMPTY']
+    uart_order = []
+    global uart_serial_num
+    for i in range(len(serial_order)):
+        uart_order.append(serial_order[map[i]])
+        uart_serial_num[serial_order[i]] = i
+    return uart_order
+
+def write_UART_config(f):
+    '''write UART config defines'''
+    global dual_USB_enabled
+    uart_list = get_UART_ORDER()
+    if uart_list is None:
+        return
+    f.write('\n// UART configuration\n')
+
+    # write out driver declarations for HAL_ChibOS_Class.cpp
+    devnames = "ABCDEFGHIJ"
+    sdev = 0
+    idx = 0
+    for dev in uart_list:
+        if dev == 'EMPTY':
+            f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
+                    (devnames[idx], devnames[idx]))
+            sdev += 1
+        else:
+            f.write(
+                '#define HAL_UART%s_DRIVER ChibiOS::UARTDriver uart%sDriver(%u)\n'
+                % (devnames[idx], devnames[idx], sdev))
+            sdev += 1
+        idx += 1
+    for idx in range(len(uart_list), len(devnames)):
+        f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
+                (devnames[idx], devnames[idx]))
+
+    if 'IOMCU_UART' in config:
+        if not 'io_firmware.bin' in romfs:
+            error("Need io_firmware.bin in ROMFS for IOMCU")
+
+        f.write('#define HAL_WITH_IO_MCU 1\n')
+        idx = len(uart_list)
+        f.write('#define HAL_UART_IOMCU_IDX %u\n' % idx)
+        f.write(
+            '#define HAL_UART_IO_DRIVER ChibiOS::UARTDriver uart_io(HAL_UART_IOMCU_IDX)\n'
+        )
+        uart_list.append(config['IOMCU_UART'][0])
+        f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n') # make the assumption that IO gurantees servo monitoring
+        # all IOMCU capable boards have SBUS out
+        f.write('#define AP_FEATURE_SBUS_OUT 1\n')
+    else:
+        f.write('#define HAL_WITH_IO_MCU 0\n')
+    f.write('\n')
+
+    need_uart_driver = False
+    OTG2_index = None
+    devlist = []
+    have_rts_cts = False
+    crash_uart = None
+
+    # write config for CrashCatcher UART
+    if not uart_list[0].startswith('OTG') and not uart_list[0].startswith('EMPTY'):
+        crash_uart = uart_list[0]
+    elif not uart_list[2].startswith('OTG') and not uart_list[2].startswith('EMPTY'):
+        crash_uart = uart_list[2]
+
+    if crash_uart is not None and get_config('FLASH_SIZE_KB', type=int) >= 2048:
+        f.write('#define HAL_CRASH_SERIAL_PORT %s\n' % crash_uart)
+        f.write('#define IRQ_DISABLE_HAL_CRASH_SERIAL_PORT() nvicDisableVector(STM32_%s_NUMBER)\n' % crash_uart)
+        f.write('#define RCC_RESET_HAL_CRASH_SERIAL_PORT() rccReset%s(); rccEnable%s(true)\n' % (crash_uart, crash_uart))
+        f.write('#define HAL_CRASH_SERIAL_PORT_CLOCK STM32_%sCLK\n' % crash_uart)
+    for dev in uart_list:
+        if dev.startswith('UART'):
+            n = int(dev[4:])
+        elif dev.startswith('USART'):
+            n = int(dev[5:])
+        elif dev.startswith('OTG'):
+            n = int(dev[3:])
+        elif dev.startswith('EMPTY'):
+            devlist.append('{}')
+            continue
+        else:
+            error("Invalid element %s in UART_ORDER" % dev)
+        devlist.append('HAL_%s_CONFIG' % dev)
+        tx_line = make_line(dev + '_TX')
+        rx_line = make_line(dev + '_RX')
+        rts_line = make_line(dev + '_RTS')
+        cts_line = make_line(dev + '_CTS')
+        if rts_line != "0":
+            have_rts_cts = True
+            f.write('#define HAL_HAVE_RTSCTS_SERIAL%u\n' % uart_serial_num[dev])
+
+        if dev.startswith('OTG2'):
+            f.write(
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}\n'
+                % dev)
+            OTG2_index = uart_list.index(dev)
+            dual_USB_enabled = True
+        elif dev.startswith('OTG'):
+            f.write(
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}\n'
+                % dev)
+        else:
+            need_uart_driver = True
+            f.write(
+                "#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, %u, false, "
+                % (dev, n, n))
+            if mcu_series.startswith("STM32F1"):
+                f.write("%s, %s, %s, %s, " % (tx_line, rx_line, rts_line, cts_line))
+>>>>>>> e2535a3851 (HAL_ChibiOS: fixed USB pass-thru for 2nd USB endpoint)
             else:
                 f.write(
                     '#define HAL_INS_PROBE%u %s ADD_BACKEND(AP_InertialSensor_%s::probe(*this,%s))\n'
