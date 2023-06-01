@@ -81,7 +81,11 @@ SECTIONS
         __vectors_base__ = .;
         KEEP(*(.vectors))
         __vectors_end__ = .;
+<<<<<<< HEAD
     } > dataram AT > default_flash
+=======
+    } > flashram AT > default_flash
+>>>>>>> 98a6153bec (AP_HAL_ChibiOS: Change linker script so vector table can be copied to RAM for external flash targets)
 
     constructors : ALIGN(4) SUBALIGN(4)
     {
@@ -125,8 +129,11 @@ SECTIONS
         /**libg_nano.a:*memset*(.text*)
         *libg_nano.a:*memcpy*(.text*)*/
         *libm.a:*(.text*)
+<<<<<<< HEAD
         *libc_nano.a:*memcpy*(.text*)
         *libgcc.a:*(.text*)
+=======
+>>>>>>> 98a6153bec (AP_HAL_ChibiOS: Change linker script so vector table can be copied to RAM for external flash targets)
         /* For some reason boards won't boot if libc is in RAM, but will with debug on */
         /**libc_nano.a:*(.text* .rodata*)
         *libstdc++_nano.a:(.text* .rodata*)*/
@@ -156,7 +163,10 @@ SECTIONS
         lib/lib*.a:*Filter2p.*(.text* .rodata*)
         lib/lib*.a:SPIDevice.*(.text* .rodata*)
         lib/lib*.a:I2CDevice.*(.text* .rodata*)
+<<<<<<< HEAD
         lib/lib*.a:UARTDriver.*(.text* .rodata*)
+=======
+>>>>>>> 98a6153bec (AP_HAL_ChibiOS: Change linker script so vector table can be copied to RAM for external flash targets)
         lib/lib*.a:Util.*(.text* .rodata*)
         lib/lib*.a:Device.*(.text* .rodata*)
         lib/lib*.a:Scheduler.*(.text* .rodata*)
@@ -167,20 +177,27 @@ SECTIONS
         lib/lib*.a:matrix_alg.*(.text* .rodata*)
         lib/lib*.a:AP_NavEKF3*.*(.text* .rodata*)
         lib/lib*.a:AP_NavEKF_*.*(.text* .rodata*)
+<<<<<<< HEAD
         lib/lib*.a:AP_AHRS*.*(.text* .rodata*)
         lib/lib*.a:EKF*.*(.text* .rodata*)
         lib/lib*.a:AP_Scheduler.*(.text* .rodata*)
         lib/lib*.a:AP_InertialSensor*(.text* .rodata*)
+=======
+        lib/lib*.a:EKF*.*(.text* .rodata*)
+>>>>>>> 98a6153bec (AP_HAL_ChibiOS: Change linker script so vector table can be copied to RAM for external flash targets)
         lib/lib*.a:AP_Compass_Backend.*(.text* .rodata*)
         lib/lib*.a:AP_RCProtocol_Backend.*(.text* .rodata*)
         lib/lib*.a:AP_RCProtocol.*(.text* .rodata*)
         lib/lib*.a:AP_RCProtocol_CRSF.*(.text* .rodata*)
         lib/lib*.a:AP_RCTelemetry.*(.text* .rodata*)
         lib/lib*.a:AP_CRSF_Telem.*(.text* .rodata*)
+<<<<<<< HEAD
         lib/lib*.a:AP_MotorsMatrix.*(.text* .rodata*)
         lib/lib*.a:RC_Channel.*(.text* .rodata*)
         lib/lib*.a:RCInput.*(.text* .rodata*)
         lib/lib*.a:RCOutput.*(.text* .rodata*)
+=======
+>>>>>>> 98a6153bec (AP_HAL_ChibiOS: Change linker script so vector table can be copied to RAM for external flash targets)
         lib/lib*.a:vector2.*(.text* .rodata*)
         lib/lib*.a:quaternion.*(.text* .rodata*)
         lib/lib*.a:polygon.*(.text* .rodata*)
@@ -188,8 +205,11 @@ SECTIONS
         /* uncomment these to test CPUInfo in FLASH_RAM */
         /*Tools/CPUInfo/CPUInfo.*(.text* .rodata*)
         Tools/CPUInfo/EKF_Maths.*(.text* .rodata*)*/
+<<<<<<< HEAD
         lib/lib*.a:AC_AttitudeControl*.*(.text* .rodata*)
         lib/lib*.a:AC_PID*.*(.text* .rodata*)
+=======
+>>>>>>> 98a6153bec (AP_HAL_ChibiOS: Change linker script so vector table can be copied to RAM for external flash targets)
         *(.ramfunc*)
         . = ALIGN(4);
     } > flashram AT > default_flash
@@ -228,6 +248,7 @@ SECTIONS
         lib/lib*.a:vector3.*(.rodata*)
         lib/lib*.a:matrix3.*(.rodata*)
         *libm.a:*(.rodata*)
+<<<<<<< HEAD
         /* scheduler task table */
         AntennaTracker/Tracker.*(.rodata*)
         AP_Vehicle/AP_Vehicle.*(.rodata*)
@@ -236,6 +257,8 @@ SECTIONS
         ArduSub/ArduSub.*(.rodata*)
         Blimp/Blimp.*(.rodata*)
         Rover/Rover.*(.rodata*)
+=======
+>>>>>>> 98a6153bec (AP_HAL_ChibiOS: Change linker script so vector table can be copied to RAM for external flash targets)
         *(.ramdata*)
         . = ALIGN(4);
     } > dataram AT > default_flash
@@ -273,15 +296,23 @@ SECTIONS
     .ARM.extab :
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
+<<<<<<< HEAD
     /* needs to be close to libgcc in memory */
     } > instram AT > default_flash
+=======
+    } > default_flash
+>>>>>>> 98a6153bec (AP_HAL_ChibiOS: Change linker script so vector table can be copied to RAM for external flash targets)
 
     .ARM.exidx : {
         __exidx_start = .;
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
         __exidx_end = .;
+<<<<<<< HEAD
      /* needs to be close to libgcc in memory */
      } > instram AT > default_flash
+=======
+     } > default_flash
+>>>>>>> 98a6153bec (AP_HAL_ChibiOS: Change linker script so vector table can be copied to RAM for external flash targets)
 
     .eh_frame_hdr :
     {

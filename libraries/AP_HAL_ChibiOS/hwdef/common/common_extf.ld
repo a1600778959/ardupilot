@@ -81,7 +81,11 @@ SECTIONS
         __vectors_base__ = .;
         KEEP(*(.vectors))
         __vectors_end__ = .;
+<<<<<<< HEAD
     } > dataram AT > default_flash
+=======
+    } > flashram AT > default_flash
+>>>>>>> 98a6153bec (AP_HAL_ChibiOS: Change linker script so vector table can be copied to RAM for external flash targets)
 
     constructors : ALIGN(4) SUBALIGN(4)
     {
