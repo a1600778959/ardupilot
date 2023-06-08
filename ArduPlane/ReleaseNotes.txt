@@ -831,10 +831,14 @@ fixes since beta1.
 The full list of changes is:
 
 <<<<<<< HEAD
+<<<<<<< HEAD
  - added SpeedyBeeF405WING, JSB100 and FoxeerH743
 =======
  - added SpeedyBeeF405WING
 >>>>>>> 245851b9b5 (Plane: release notes for 4.4.0-beta2)
+=======
+ - added SpeedyBeeF405WING, JSB100 and FoxeerH743
+>>>>>>> 6d71a4a5c6 (Plane: adjust 4.4.0beta2 release notes)
  - added LOG_DISARMED=3 support and LOG_DARM_RATEMAX
  - fixed error handling for being out of memory in EKF initialisation
  - fixed a bug in RC input handling on the IOMCU
@@ -852,6 +856,7 @@ The full list of changes is:
  - fixed parameter documentation for BRD_SAFETYOPTION
  - don't reject airspeed using EKF innovation if dead-reckoning
  - fixed USB pass-thru on 2nd USB endpoint
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 Release 4.3.7 31st May 2023
@@ -902,6 +907,8 @@ Please test and report any issues!
 
 =======
  - added missing labels on OSD params screens
+=======
+>>>>>>> 6d71a4a5c6 (Plane: adjust 4.4.0beta2 release notes)
 
 
 >>>>>>> 245851b9b5 (Plane: release notes for 4.4.0-beta2)
