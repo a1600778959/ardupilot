@@ -1396,6 +1396,7 @@ MEMORY
 INCLUDE common.ld
 ''' % (flash_base, flash_length, ram0_start, ram0_len))
 <<<<<<< HEAD
+<<<<<<< HEAD
         elif int_flash_primary:
             self.env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 1
             f.write('''/* generated ldscript.ld */
@@ -1431,12 +1432,20 @@ INCLUDE common_mixf.ld
     else:
         self.env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 1
         self.build_flags.append('COPY_VECTORS_TO_RAM=yes')
+=======
+    else:
+        if ext_flash_size > 32:
+            error("We only support 24bit addressing over external flash")
+        env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 1
+        build_flags.append('COPY_VECTORS_TO_RAM=yes')
+>>>>>>> 3614b23669 (AP_HAL_ChibiOS: Allow custom linker script, change extflash linker script)
         f.write('''/* generated ldscript.ld */
 MEMORY
 {
     default_flash (rx) : org = 0x%08x, len = %uK
     instram : org = 0x%08x, len = %uK
     ram0  : org = 0x%08x, len = %u
+<<<<<<< HEAD
     flashram  : org = 0x%08x, len = %u
     dataram  : org = 0x%08x, len = %u
 }
@@ -1461,6 +1470,33 @@ INCLUDE common.ld
                 linker = 'common_extf.ld'
         shutil.copy(os.path.join(dirpath, "../common", linker),
                     os.path.join(outdir, "common.ld"))
+=======
+    flashram : org = 0x%08x, len = %u
+    dataram : org = 0x%08x, len = %u
+}
+
+INCLUDE common.ld
+''' % (ext_flash_base, ext_flash_length,
+       instruction_ram_base, instruction_ram_length,
+       ram0_start, ram0_len,
+       ram1_start, ram1_len,
+       ram2_start, ram2_len))
+
+def copy_common_linkerscript(outdir):
+    dirpath = os.path.dirname(os.path.realpath(__file__))
+
+    if args.bootloader:
+        linker = 'common.ld'
+    else:
+        linker = get_mcu_config('LINKER_CONFIG')
+    if linker is None:
+        if not get_config('EXT_FLASH_SIZE_MB', default=0, type=int):
+            linker = 'common.ld'
+        else:
+            linker = 'common_extf.ld'
+    shutil.copy(os.path.join(dirpath, "../common", linker),
+                os.path.join(outdir, "common.ld"))
+>>>>>>> 3614b23669 (AP_HAL_ChibiOS: Allow custom linker script, change extflash linker script)
 
     def get_USB_IDs(self):
         '''return tuple of USB VID/PID'''
