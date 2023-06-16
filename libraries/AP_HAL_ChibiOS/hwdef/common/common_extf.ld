@@ -52,7 +52,11 @@ __ram0_start__          = ORIGIN(ram0);
 __ram0_size__           = LENGTH(ram0);
 __ram0_end__            = __ram0_start__ + __ram0_size__;
 
+<<<<<<< HEAD
 /* AXI for RAM functions */
+=======
+/* AXI */
+>>>>>>> fc8ea7797d (AP_HAL_ChibiOS: RAM initialization and linker files changes for external flash targets)
 __ram1_start__          = ORIGIN(flashram);
 __ram1_size__           = LENGTH(flashram);
 __ram1_end__            = __ram1_start__ + __ram1_size__;
@@ -62,7 +66,11 @@ __ram2_start__          = ORIGIN(dataram);
 __ram2_size__           = LENGTH(dataram);
 __ram2_end__            = __ram2_start__ + __ram2_size__;
 
+<<<<<<< HEAD
 /* ITCM for RAM functions */
+=======
+/* ITCM */
+>>>>>>> fc8ea7797d (AP_HAL_ChibiOS: RAM initialization and linker files changes for external flash targets)
 __ram3_start__          = ORIGIN(instram);
 __ram3_size__           = LENGTH(instram);
 __ram3_end__            = __ram3_start__ + __ram3_size__;
@@ -202,7 +210,10 @@ SECTIONS
         __ram1_noinit__ = .;
         . = ALIGN(4);
         __ram1_free__ = .;
+<<<<<<< HEAD
         . = ALIGN(4);
+=======
+>>>>>>> fc8ea7797d (AP_HAL_ChibiOS: RAM initialization and linker files changes for external flash targets)
     } > flashram
 
     /* DATA_RAM area is DTCM primarily used for RAM-based data, e.g. vtables */
@@ -241,7 +252,10 @@ SECTIONS
         __ram2_noinit__ = .;
         . = ALIGN(4);
         __ram2_free__ = .;
+<<<<<<< HEAD
         . = ALIGN(4);
+=======
+>>>>>>> fc8ea7797d (AP_HAL_ChibiOS: RAM initialization and linker files changes for external flash targets)
     } > dataram
 
     .text : ALIGN(4) SUBALIGN(4)

@@ -688,6 +688,7 @@ class ChibiOSHWDef(object):
             return None
         return lib.mcu[name]
 
+<<<<<<< HEAD
     def get_ram_reserve_start(self):
         '''get amount of memory to reserve for bootloader comms and the address if non-zero'''
         ram_reserve_start = self.get_config('RAM_RESERVE_START', default=0, type=int)
@@ -696,6 +697,15 @@ class ChibiOSHWDef(object):
         ram_map_bootloader = self.get_ram_map(use_bootloader=True)
         ram0_start_address = ram_map_bootloader[0][0]
         return ram_reserve_start, ram0_start_address
+=======
+    if env_vars['EXT_FLASH_SIZE_MB'] and not args.bootloader:
+        f.write('#define CRT0_AREAS_NUMBER 4\n')
+        f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
+        f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
+        f.write('#define PORT_IRQ_ATTRIBUTES __FASTRAMFUNC__\n')
+    else:
+        f.write('#define CRT0_AREAS_NUMBER 1\n')
+>>>>>>> fc8ea7797d (AP_HAL_ChibiOS: RAM initialization and linker files changes for external flash targets)
 
     def make_line(self, label):
         '''return a line for a label'''
