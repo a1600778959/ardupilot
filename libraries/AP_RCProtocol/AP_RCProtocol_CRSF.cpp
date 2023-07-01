@@ -658,6 +658,19 @@ void AP_RCProtocol_CRSF::process_link_stats_tx_frame(const void* data)
     }
 }
 
+<<<<<<< HEAD
+=======
+// process a byte provided by a uart
+void AP_RCProtocol_CRSF::process_byte(uint8_t byte, uint32_t baudrate)
+{
+    // reject RC data if we have been configured for standalone mode
+    if ((baudrate != CRSF_BAUDRATE && baudrate != CRSF_BAUDRATE_1MBIT && baudrate != CRSF_BAUDRATE_2MBIT) || _uart) {
+        return;
+    }
+    _process_byte(AP_HAL::micros(), byte);
+}
+
+>>>>>>> 959d7ef80d (AP_RCProtocol: rescan at CRSFv3 baud rates to avoid RX loss on soft reboot)
 // start the uart if we have one
 void AP_RCProtocol_CRSF::start_uart()
 {

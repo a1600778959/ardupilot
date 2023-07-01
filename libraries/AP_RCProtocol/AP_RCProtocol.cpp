@@ -306,7 +306,10 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
     { 416666,  0,   1, false },
     // CRSFv3 can negotiate higher rates which are sticky on soft reboot
     { 2000000, 0,   1, false },
+<<<<<<< HEAD
 #endif
+=======
+>>>>>>> 959d7ef80d (AP_RCProtocol: rescan at CRSFv3 baud rates to avoid RX loss on soft reboot)
 };
 
 static_assert(ARRAY_SIZE(serial_configs) > 1, "must have at least one serial config");
