@@ -180,18 +180,24 @@ public:
      */
     bool in_vtol_land_descent(void) const;
 
+<<<<<<< HEAD
     // Should we allow stick mixing from the pilot
     bool allow_stick_mixing() const;
 
+=======
+>>>>>>> 8395e38974 (Plane: fixed TECS state reset in VTOL auto)
     /*
       should we disable the TECS controller?
       only called when in an auto-throttle mode
      */
     bool should_disable_TECS() const;
 
+<<<<<<< HEAD
     // Get pilot throttle input with deadzone, this will return 50% throttle in failsafe!
     float get_throttle_input() const;
 
+=======
+>>>>>>> 8395e38974 (Plane: fixed TECS state reset in VTOL auto)
 private:
     AP_AHRS &ahrs;
 
