@@ -96,8 +96,12 @@ define HAL_SERIAL3_PROTOCOL SerialProtocol_None
 # UART4 (DJI RX/SBUS)
 PA0 UART4_TX UART4 NODMA
 PA1 UART4_RX UART4
+<<<<<<< HEAD
 define HAL_SERIAL4_PROTOCOL SerialProtocol_RCIN
 >>>>>>> f6408f9d9b (AP_HAL_ChibiOS: FoxeerH743 GA release)
+=======
+define HAL_SERIAL4_PROTOCOL SerialProtocol_None
+>>>>>>> 926154c679 (AP_HAL_ChibiOS: correct incorrect defaults for serial ports on FoxeerH743v1)
 
 # USART6 (GPS)
 PC6 USART6_TX USART6
