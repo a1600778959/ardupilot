@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 #define THISFIRMWARE "ArduRover V4.5.7"
 
 // the following line is parsed by the autotest scripts
@@ -31,6 +32,12 @@
 // the following line is parsed by the autotest scripts
 #define FIRMWARE_VERSION 4,4,0,FIRMWARE_VERSION_TYPE_BETA+4
 >>>>>>> 7d6895a0f4 (Rover: version to 4.4.0-beta4)
+=======
+#define THISFIRMWARE "ArduRover V4.4.0-beta5"
+
+// the following line is parsed by the autotest scripts
+#define FIRMWARE_VERSION 4,4,0,FIRMWARE_VERSION_TYPE_BETA+5
+>>>>>>> 4802091ae0 (Rover: version to 4.4.0-beta5)
 
 #define FW_MAJOR 4
 #define FW_MINOR 5
