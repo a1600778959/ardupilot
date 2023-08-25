@@ -699,13 +699,17 @@ class ChibiOSHWDef(object):
         return ram_reserve_start, ram0_start_address
 =======
     if env_vars['EXT_FLASH_SIZE_MB'] and not args.bootloader:
-        f.write('#define CRT0_AREAS_NUMBER 4\n')
+        f.write('#define CRT1_AREAS_NUMBER 4\n')
         f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
         f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
         f.write('#define PORT_IRQ_ATTRIBUTES __FASTRAMFUNC__\n')
     else:
+<<<<<<< HEAD
         f.write('#define CRT0_AREAS_NUMBER 1\n')
 >>>>>>> fc8ea7797d (AP_HAL_ChibiOS: RAM initialization and linker files changes for external flash targets)
+=======
+        f.write('#define CRT1_AREAS_NUMBER 1\n')
+>>>>>>> bef905d357 (AP_HAL_ChibiOS: use old CRT1_AREAS_NUMBER)
 
     def make_line(self, label):
         '''return a line for a label'''
