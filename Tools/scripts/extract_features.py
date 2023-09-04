@@ -249,7 +249,12 @@ class ExtractFeatures(object):
 
             ('AP_DRONECAN_HIMARK_SERVO_ENABLED', 'AP_UAVCAN::SRV_send_himark'),
             ('AP_DRONECAN_HOBBYWING_ESC_ENABLED', 'AP_UAVCAN::hobbywing_ESC_update'),
+<<<<<<< HEAD
 >>>>>>> 0a3a55ce9a (Tools: added himark servos and hobbywing ESCs to build options)
+=======
+
+            ('AP_SDCARD_STORAGE_ENABLED', 'StorageAccess::attach_file'),
+>>>>>>> 922c08f60c (Tools: allow selection of sdcard storage)
         ]
 
     def progress(self, msg):
