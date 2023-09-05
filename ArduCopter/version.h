@@ -11,6 +11,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 #define THISFIRMWARE "ArduCopter V4.5.7"
 
 // the following line is parsed by the autotest scripts
@@ -45,14 +46,22 @@
 #define FW_PATCH 7
 =======
 #define THISFIRMWARE "ArduCopter V4.4.0"
+=======
+#define THISFIRMWARE "ArduCopter V4.4.1-beta1"
+>>>>>>> fb8864e24f (Copter: version to 4.4.1-beta1)
 
 // the following line is parsed by the autotest scripts
-#define FIRMWARE_VERSION 4,4,0,FIRMWARE_VERSION_TYPE_OFFICIAL
+#define FIRMWARE_VERSION 4,4,1,FIRMWARE_VERSION_TYPE_BETA+1
 
 #define FW_MAJOR 4
 #define FW_MINOR 4
+<<<<<<< HEAD
 #define FW_PATCH 0
 >>>>>>> d79487d5c8 (Copter: version to 4.4.0)
 #define FW_TYPE FIRMWARE_VERSION_TYPE_OFFICIAL
+=======
+#define FW_PATCH 1
+#define FW_TYPE FIRMWARE_VERSION_TYPE_BETA
+>>>>>>> fb8864e24f (Copter: version to 4.4.1-beta1)
 
 #include <AP_Common/AP_FWVersionDefine.h>
