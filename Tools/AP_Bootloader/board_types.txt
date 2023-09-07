@@ -283,7 +283,11 @@ AP_HW_MatekG474                      1170
 AP_HW_2RAWH743                       1173
 =======
 AP_HW_BLITZF7                        1117
+<<<<<<< HEAD
 >>>>>>> a352a0e570 (AP_Bootloader: add iFlight BlitzF7)
+=======
+AP_HW_YJUAV_A6SE                     1127
+>>>>>>> 8e6af8520b (Tools: add YJUAV_A6SE board id & bootloader file)
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
