@@ -98,9 +98,13 @@ GPS_RATE_MS,140
 GPS_SBAS_MODE,0
 GPS_TYPE,2
 <<<<<<< HEAD
+<<<<<<< HEAD
 GPS_MIN_ELEV,15
 =======
 >>>>>>> 9d586b077a (AP_HAL_ChibiOS: luminousbee5 hwdefs and default.parm update)
+=======
+GPS_MIN_ELEV,15
+>>>>>>> c1df42300e (AP_HAL_ChibiOS: Update luminousbee5 defaults.parm)
 INS_ACC_BODYFIX,1
 INS_ACCEL_FILTER,10
 INS_ENABLE_MASK,1
@@ -238,7 +242,11 @@ WPNAV_JERK,6
 WPNAV_SPEED,1000
 WPNAV_SPEED_DN,300
 <<<<<<< HEAD
+<<<<<<< HEAD
 WPNAV_SPEED_UP,300
 =======
 WPNAV_SPEED_UP,300
 >>>>>>> 9d586b077a (AP_HAL_ChibiOS: luminousbee5 hwdefs and default.parm update)
+=======
+WPNAV_SPEED_UP,300
+>>>>>>> c1df42300e (AP_HAL_ChibiOS: Update luminousbee5 defaults.parm)
