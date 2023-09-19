@@ -381,9 +381,15 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
 
     if (process) {
         Location loc = { };
+<<<<<<< HEAD:libraries/AP_GPS/AP_GPS_DroneCAN.cpp
         loc.lat = msg.latitude_deg_1e8 / 10;
         loc.lng = msg.longitude_deg_1e8 / 10;
         const int32_t alt_amsl_cm = msg.height_msl_mm / 10;
+=======
+        loc.lat = cb.msg->latitude_deg_1e8 / 10;
+        loc.lng = cb.msg->longitude_deg_1e8 / 10;
+        const int32_t alt_amsl_cm = cb.msg->height_msl_mm / 10;
+>>>>>>> 63047042a6 (AP_GPS: implement the GPS_DRV_OPTION for ellisoid height in mode drivers):libraries/AP_GPS/AP_GPS_UAVCAN.cpp
         interim_state.have_undulation = true;
         interim_state.undulation = (msg.height_msl_mm - msg.height_ellipsoid_mm) * 0.001;
         interim_state.location = loc;
