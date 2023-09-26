@@ -14,6 +14,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 #define THISFIRMWARE "ArduPlane V4.5.7"
 
 // the following line is parsed by the autotest scripts
@@ -46,9 +47,12 @@
 =======
 #define THISFIRMWARE "ArduPlane V4.4.1-beta2"
 >>>>>>> 1bafd9d18c (Plane: version to 4.4.1-beta2)
+=======
+#define THISFIRMWARE "ArduPlane V4.4.1"
+>>>>>>> 075f8685cc (Plane: prepare for 4.4.1 release)
 
 // the following line is parsed by the autotest scripts
-#define FIRMWARE_VERSION 4,4,1,FIRMWARE_VERSION_TYPE_BETA+1
+#define FIRMWARE_VERSION 4,4,1,FIRMWARE_VERSION_TYPE_OFFICIAL
 
 #define FW_MAJOR 4
 #define FW_MINOR 4
@@ -78,7 +82,11 @@
 >>>>>>> dc41723823 (Plane: prepare for 4.4.0)
 =======
 #define FW_PATCH 1
+<<<<<<< HEAD
 #define FW_TYPE FIRMWARE_VERSION_TYPE_BETA
 >>>>>>> d6973b2e4a (Plane: prepare for 4.4.1-beta1)
+=======
+#define FW_TYPE FIRMWARE_VERSION_TYPE_OFFICIAL
+>>>>>>> 075f8685cc (Plane: prepare for 4.4.1 release)
 
 #include <AP_Common/AP_FWVersionDefine.h>
