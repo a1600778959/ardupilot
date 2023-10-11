@@ -62,10 +62,16 @@ define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_GPS
 define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
 define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
 
+HAL_SERIAL2_PROTOCOL SerialProtocol_None
+
 # USART3 (ELRS)
 PB10 USART3_TX USART3
 PB11 USART3_RX USART3
+<<<<<<< HEAD
 define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_RCIN
+=======
+HAL_SERIAL3_PROTOCOL SerialProtocol_RCIN
+>>>>>>> 8116812ae8 (hwdef: adjust serial protocol defaults on various boards for 4.4 naming scheme)
 
 # UART4 (DJI)
 PA0 UART4_TX UART4 NODMA
