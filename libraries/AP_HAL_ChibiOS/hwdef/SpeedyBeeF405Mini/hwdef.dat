@@ -153,5 +153,11 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 3
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
 
+<<<<<<< HEAD
 include ../include/minimize_fpv_osd.inc
 AUTOBUILD_TARGETS Copter
+=======
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc
+define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
+>>>>>>> 1a8ae96b0d (hwdef: ensure SpeedyBeeF405Mini builds on plane)
