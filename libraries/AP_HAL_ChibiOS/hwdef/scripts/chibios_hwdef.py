@@ -1611,6 +1611,7 @@ def copy_common_linkerscript(outdir):
         self.write_SPI_table(f)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     def write_WSPI_table(self, f):
         '''write SPI device table'''
         f.write('\n// WSPI device table\n')
@@ -1646,26 +1647,35 @@ def copy_common_linkerscript(outdir):
         f.write("\n")
 =======
 def write_SPI_config(self, f):
+=======
+def write_SPI_config(f):
+>>>>>>> a1661f8918 (AP_HAL_ChibiOS: fix mode setting for ICM45686 on CubeOrangePlus)
     '''write SPI config defines'''
-    for t in list(self.bytype.keys()) + list(self.alttype.keys()):
+    global spi_list
+    for t in list(bytype.keys()) + list(alttype.keys()):
         if t.startswith('SPI'):
-            self.spi_list.append(t)
-    self.spi_list = sorted(self.spi_list)
-    if len(self.spi_list) == 0:
+            spi_list.append(t)
+    spi_list = sorted(spi_list)
+    if len(spi_list) == 0:
         f.write('#define HAL_USE_SPI FALSE\n')
         return
     devlist = []
-    for dev in self.spi_list:
+    for dev in spi_list:
         n = int(dev[3:])
         devlist.append('HAL_SPI%u_CONFIG' % n)
-        sck_pin = self.bylabel['SPI%s_SCK' % n]
+        sck_pin = bylabel['SPI%s_SCK' % n]
         sck_line = 'PAL_LINE(GPIO%s,%uU)' % (sck_pin.port, sck_pin.pin)
         f.write(
             '#define HAL_SPI%u_CONFIG { &SPID%u, %u, STM32_SPI_SPI%u_DMA_STREAMS, %s }\n'
             % (n, n, n, n, sck_line))
     f.write('#define HAL_SPI_BUS_LIST %s\n\n' % ','.join(devlist))
+<<<<<<< HEAD
     self.write_SPI_table(f)
 >>>>>>> 985192d3e7 (AP_HAL_ChibiOS: add support for saving and restoring SCK pin state)
+=======
+    write_SPI_table(f)
+
+>>>>>>> a1661f8918 (AP_HAL_ChibiOS: fix mode setting for ICM45686 on CubeOrangePlus)
 
     def write_WSPI_config(self, f):
         '''write SPI config defines'''
