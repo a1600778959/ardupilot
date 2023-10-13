@@ -58,9 +58,13 @@ private:
     bool spi_started;
 
     // mode line for SCK pin
+<<<<<<< HEAD
 #if HAL_SPI_SCK_SAVE_RESTORE
     iomode_t sck_mode;
 #endif
+=======
+    iomode_t sck_mode;
+>>>>>>> 985192d3e7 (AP_HAL_ChibiOS: add support for saving and restoring SCK pin state)
 };
 
 struct SPIDesc {
