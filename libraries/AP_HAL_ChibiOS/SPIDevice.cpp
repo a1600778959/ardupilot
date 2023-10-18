@@ -89,12 +89,18 @@ SPIBus::SPIBus(uint8_t _bus) :
 
     // remember the SCK line for stop_peripheral()/start_peripheral()
 <<<<<<< HEAD
+<<<<<<< HEAD
 #if HAL_SPI_SCK_SAVE_RESTORE
     sck_mode = palReadLineMode(spi_devices[bus].sck_line);
 #endif
 =======
     sck_mode = palReadLineMode(spi_devices[bus].sck_line);
 >>>>>>> 985192d3e7 (AP_HAL_ChibiOS: add support for saving and restoring SCK pin state)
+=======
+#if HAL_SPI_SCK_SAVE_RESTORE
+    sck_mode = palReadLineMode(spi_devices[bus].sck_line);
+#endif
+>>>>>>> c8e8978f24 (AP_HAL_ChibiOS: add option to set HAL_SPI_SCK_SAVE_RESTORE)
 }
 
 /*
@@ -356,9 +362,13 @@ void SPIBus::stop_peripheral(void)
     }
     const auto &sbus = spi_devices[bus];
 <<<<<<< HEAD
+<<<<<<< HEAD
 #if HAL_SPI_SCK_SAVE_RESTORE
 =======
 >>>>>>> 985192d3e7 (AP_HAL_ChibiOS: add support for saving and restoring SCK pin state)
+=======
+#if HAL_SPI_SCK_SAVE_RESTORE
+>>>>>>> c8e8978f24 (AP_HAL_ChibiOS: add option to set HAL_SPI_SCK_SAVE_RESTORE)
     if (spi_mode == SPIDEV_MODE0 || spi_mode == SPIDEV_MODE1) {
         // Clock polarity is 0, so we need to set the clock line low before spi reset
         palClearLine(sbus.sck_line);
@@ -368,9 +378,13 @@ void SPIBus::stop_peripheral(void)
     }
     palSetLineMode(sbus.sck_line, PAL_MODE_OUTPUT_PUSHPULL);
 <<<<<<< HEAD
+<<<<<<< HEAD
 #endif
 =======
 >>>>>>> 985192d3e7 (AP_HAL_ChibiOS: add support for saving and restoring SCK pin state)
+=======
+#endif
+>>>>>>> c8e8978f24 (AP_HAL_ChibiOS: add option to set HAL_SPI_SCK_SAVE_RESTORE)
     spiStop(sbus.driver);
     spi_started = false;
 }
@@ -387,6 +401,7 @@ void SPIBus::start_peripheral(void)
     /* start driver and setup transfer parameters */
     spiStart(spi_devices[bus].driver, &spicfg);
 <<<<<<< HEAD
+<<<<<<< HEAD
 #if HAL_SPI_SCK_SAVE_RESTORE
     // restore sck pin mode from stop_peripheral()
     palSetLineMode(spi_devices[bus].sck_line, sck_mode);
@@ -397,6 +412,12 @@ void SPIBus::start_peripheral(void)
     palSetLineMode(spi_devices[bus].sck_line, sck_mode);
 
 >>>>>>> 985192d3e7 (AP_HAL_ChibiOS: add support for saving and restoring SCK pin state)
+=======
+#if HAL_SPI_SCK_SAVE_RESTORE
+    // restore sck pin mode from stop_peripheral()
+    palSetLineMode(spi_devices[bus].sck_line, sck_mode);
+#endif
+>>>>>>> c8e8978f24 (AP_HAL_ChibiOS: add option to set HAL_SPI_SCK_SAVE_RESTORE)
     spi_started = true;
 }
 
