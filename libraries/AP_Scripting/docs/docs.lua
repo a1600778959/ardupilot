@@ -1860,6 +1860,7 @@ local ESCTelemetryData_ud = {}
 ---@return ESCTelemetryData_ud
 function ESCTelemetryData() end
 
+<<<<<<< HEAD
 -- set motor temperature
 ---@param value integer
 function ESCTelemetryData_ud:motor_temp_cdeg(value) end
@@ -1877,6 +1878,25 @@ function ESCTelemetryData_ud:current(value) end
 function ESCTelemetryData_ud:voltage(value) end
 
 -- set temperature
+=======
+-- set field
+---@param value integer
+function ESCTelemetryData_ud:motor_temp_cdeg(value) end
+
+-- set field
+---@param value number
+function ESCTelemetryData_ud:consumption_mah(value) end
+
+-- set field
+---@param value number
+function ESCTelemetryData_ud:current(value) end
+
+-- set field
+---@param value number
+function ESCTelemetryData_ud:voltage(value) end
+
+-- set field
+>>>>>>> 0eafdf2069 (AP_Scripting: added bindings for telemetry data for ESCs)
 ---@param value integer
 function ESCTelemetryData_ud:temperature_cdeg(value) end
 
@@ -1885,9 +1905,15 @@ function ESCTelemetryData_ud:temperature_cdeg(value) end
 esc_telem = {}
 
 -- update telemetry data for an ESC instance
+<<<<<<< HEAD
 ---@param instance integer -- 0 is first motor
 ---@param telemdata ESCTelemetryData_ud
 ---@param data_mask integer -- bit mask of what fields are filled in
+=======
+---@param instance integer
+---@param telemdata ESCTelemetryData_ud
+---@param data_mask integer
+>>>>>>> 0eafdf2069 (AP_Scripting: added bindings for telemetry data for ESCs)
 function esc_telem:update_telem_data(instance, telemdata, data_mask) end
 
 -- desc
