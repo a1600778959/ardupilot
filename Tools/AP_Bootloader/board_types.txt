@@ -239,6 +239,7 @@ AP_HW_mRoCZOEM_revG                  1124
 AP_HW_BETAFPV_F405                   1125
 AP_HW_QioTekAdeptH743                1126
 AP_HW_YJUAV_A6SE                     1127
+<<<<<<< HEAD
 AP_HW_QioTekAdept_6C                 1128
 
 AP_HW_PixFlamingoL4R5_V2             1129
@@ -288,6 +289,9 @@ AP_HW_BLITZF7                        1117
 =======
 AP_HW_YJUAV_A6SE                     1127
 >>>>>>> 8e6af8520b (Tools: add YJUAV_A6SE board id & bootloader file)
+=======
+AP_HW_YJUAV_A6SE_H743                1141
+>>>>>>> cb82d7cb38 (hwdef: add YJUAV_A6SE_H743 board support (4.4 backport))
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206

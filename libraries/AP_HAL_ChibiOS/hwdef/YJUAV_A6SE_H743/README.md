@@ -263,5 +263,9 @@ The compiled firmware is located in folder **"build/YJUAV_A6SE_H743/bin/arducopt
 
 ## Loading Firmware
 
+<<<<<<< HEAD
 The A6SE_H743 flight controller comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of *.apj firmware files with any ArduPilot compatible ground station.
 
+=======
+The A6SE_H743 flight controller comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of *.apj firmware files with any ArduPilot compatible ground station.
+>>>>>>> cb82d7cb38 (hwdef: add YJUAV_A6SE_H743 board support (4.4 backport))

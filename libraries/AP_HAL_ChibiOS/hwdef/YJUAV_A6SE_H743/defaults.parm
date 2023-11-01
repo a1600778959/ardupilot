@@ -2,4 +2,7 @@
 BRD_HEAT_TARG 45
 
 CAN_P1_DRIVER 1
+<<<<<<< HEAD
 
+=======
+>>>>>>> cb82d7cb38 (hwdef: add YJUAV_A6SE_H743 board support (4.4 backport))
