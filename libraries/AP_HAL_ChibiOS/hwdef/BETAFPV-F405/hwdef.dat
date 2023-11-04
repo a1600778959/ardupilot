@@ -62,7 +62,10 @@ define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_GPS
 define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
 define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
 
-HAL_SERIAL2_PROTOCOL SerialProtocol_None
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_GPS
+
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
 
 # USART3 (ELRS)
 PB10 USART3_TX USART3
