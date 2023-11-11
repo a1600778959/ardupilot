@@ -1806,8 +1806,13 @@ bool RCOutput::serial_led_send(pwm_group &group)
         return true;
     }
 
+<<<<<<< HEAD
 #if HAL_DSHOT_ENABLED
     if (soft_serial_waiting() || !is_dshot_send_allowed(group.dshot_state)
+=======
+#ifndef DISABLE_DSHOT
+    if (irq.waiter || (group.dshot_state != DshotState::IDLE && group.dshot_state != DshotState::RECV_COMPLETE)
+>>>>>>> 0f495be64a (AP_HAL_ChibiOS: correct neopixel bitwidth)
         || AP_HAL::micros64() - group.last_dmar_send_us < (group.dshot_pulse_time_us + 50)) {
         // doing serial output or DMAR input, don't send DShot pulses
         return false;
