@@ -17,6 +17,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 #define THISFIRMWARE "ArduCopter V4.5.7"
 
 // the following line is parsed by the autotest scripts
@@ -69,9 +70,12 @@
 =======
 #define THISFIRMWARE "ArduCopter V4.4.3-beta1"
 >>>>>>> 3519b8a3a5 (Copter: version to 4.4.3-beta1)
+=======
+#define THISFIRMWARE "ArduCopter V4.4.3"
+>>>>>>> d93a87e9ee (Copter: version to 4.4.3)
 
 // the following line is parsed by the autotest scripts
-#define FIRMWARE_VERSION 4,4,3,FIRMWARE_VERSION_TYPE_BETA
+#define FIRMWARE_VERSION 4,4,3,FIRMWARE_VERSION_TYPE_OFFICIAL
 
 #define FW_MAJOR 4
 #define FW_MINOR 4
