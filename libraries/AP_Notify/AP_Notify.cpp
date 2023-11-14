@@ -73,18 +73,26 @@ AP_Notify *AP_Notify::_singleton;
 #endif
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 10b0e3e419 (AP_Notify: add IS31FL3195 to default LED types)
 #if AP_NOTIFY_IS31FL3195_ENABLED
 #define ALL_IS31FL3195_I2C (Notify_LED_IS31FL3195_I2C_Internal | Notify_LED_IS31FL3195_I2C_External)
 #else
 #define ALL_IS31FL3195_I2C 0
 #endif
 
+<<<<<<< HEAD
 // all I2C_LEDS
 #define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C | ALL_LP5562_I2C | ALL_IS31FL3195_I2C)
 =======
 // all I2C_LEDS
 #define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C | ALL_LP5562_I2C)
 >>>>>>> fa9cb45fcb (AP_Notify: add driver for LP5562 LED)
+=======
+// all I2C_LEDS
+#define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C | ALL_LP5562_I2C | ALL_IS31FL3195_I2C)
+>>>>>>> 10b0e3e419 (AP_Notify: add IS31FL3195 to default LED types)
 
 #if AP_NOTIFY_DRONECAN_LED_ENABLED
 #define DRONECAN_LEDS Notify_LED_DroneCAN
