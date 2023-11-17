@@ -2757,8 +2757,11 @@ bool RCOutput::serial_led_send(const uint16_t chan)
     }
 
     if (grp->prepared_send) {
+<<<<<<< HEAD
         chEvtSignal(led_thread_ctx, EVT_LED_SEND);
 >>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
+=======
+>>>>>>> 3b5395eb2d (AP_HAL_ChibiOS: fix race condition in sending serial LED data)
         grp->serial_led_pending = true;
         serial_led_pending = true;
         chEvtSignal(led_thread_ctx, EVT_LED_SEND);
