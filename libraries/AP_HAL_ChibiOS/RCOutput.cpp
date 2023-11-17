@@ -2681,10 +2681,14 @@ bool RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t 
 
     } else if (!is_led_protocol(grp->current_mode)) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         return false;
 =======
         return;
 >>>>>>> 175f4dfd4f (AP_HAL_ChibiOS: move LED processing to a separate thread)
+=======
+        return false;
+>>>>>>> 8dbce394f2 (AP_HAL_ChibiOS: return success status from serial_led_send and set_serial_led_rgb_data)
     }
 
     if (led == -1) {
@@ -2733,14 +2737,17 @@ bool RCOutput::serial_led_send(const uint16_t chan)
 {
     if (!_initialised) {
         return false;
+<<<<<<< HEAD
     }
 
     if (led_thread_ctx == nullptr) {
         return false;
+=======
+>>>>>>> 8dbce394f2 (AP_HAL_ChibiOS: return success status from serial_led_send and set_serial_led_rgb_data)
     }
 
     if (led_thread_ctx == nullptr) {
-        return;
+        return false;
     }
 
     uint8_t i;
@@ -2753,12 +2760,16 @@ bool RCOutput::serial_led_send(const uint16_t chan)
 
     if (grp->serial_nleds == 0 || !is_led_protocol(grp->current_mode)) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         return false;
     }
 
     if (grp->prepared_send) {
 =======
         return;
+=======
+        return false;
+>>>>>>> 8dbce394f2 (AP_HAL_ChibiOS: return success status from serial_led_send and set_serial_led_rgb_data)
     }
 
     if (grp->prepared_send) {

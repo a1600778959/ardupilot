@@ -274,7 +274,11 @@ public:
       trigger send of serial LED data
      */
     bool serial_led_send(const uint16_t chan) override;
+<<<<<<< HEAD
 #endif
+=======
+
+>>>>>>> 8dbce394f2 (AP_HAL_ChibiOS: return success status from serial_led_send and set_serial_led_rgb_data)
     /*
       rcout thread
      */
