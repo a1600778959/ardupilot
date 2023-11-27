@@ -84,6 +84,7 @@ void ModeAuto::update()
         {
             // boats loiter once the waypoint is reached
 <<<<<<< HEAD
+<<<<<<< HEAD
             bool keep_navigating = true;
             if (rover.is_boat() && g2.wp_nav.reached_destination() && !g2.wp_nav.is_fast_waypoint()) {
                 keep_navigating = !start_loiter();
@@ -92,14 +93,23 @@ void ModeAuto::update()
             // update navigation controller
             if (keep_navigating) {
 =======
+=======
+            bool keep_navigating = true;
+>>>>>>> f542d86cd2 (Rover: boats keep navigating at WP if loiter fails)
             if (rover.is_boat() && g2.wp_nav.reached_destination() && !g2.wp_nav.is_fast_waypoint()) {
-                start_loiter();
+                keep_navigating = !start_loiter();
+            }
 
+<<<<<<< HEAD
                 // update distance to destination
                 _distance_to_destination = rover.current_loc.get_distance(g2.wp_nav.get_destination());
             } else {
                 // update navigation controller
 >>>>>>> 3d342604f8 (Rover: auto navigates while stopped)
+=======
+            // update navigation controller
+            if (keep_navigating) {
+>>>>>>> f542d86cd2 (Rover: boats keep navigating at WP if loiter fails)
                 navigate_to_waypoint();
             }
             break;
