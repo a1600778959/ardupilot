@@ -14,6 +14,10 @@ static void failsafe_check_static()
 
 void Rover::init_ardupilot()
 {
+    // 增加初始化函数
+    firefight_rover.uart_init();
+    fire_motor_rover.motor_init();
+
 #if STATS_ENABLED == ENABLED
     // initialise stats module
     g2.stats.init();
@@ -90,8 +94,8 @@ void Rover::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    init_rc_in();            // sets up rc channels deadzone
-    g2.motors.init(get_frame_type());        // init motors including setting servo out channels ranges
+    init_rc_in();                     // sets up rc channels deadzone
+    g2.motors.init(get_frame_type()); // init motors including setting servo out channels ranges
     SRV_Channels::enable_aux_servos();
 
     // init wheel encoders
@@ -105,7 +109,7 @@ void Rover::init_ardupilot()
 #if AP_OPTICALFLOW_ENABLED
     // initialise optical flow sensor
     optflow.init(MASK_LOG_OPTFLOW);
-#endif      // AP_OPTICALFLOW_ENABLED
+#endif // AP_OPTICALFLOW_ENABLED
 
 #if AP_RELAY_ENABLED
     relay.init();
@@ -141,7 +145,8 @@ void Rover::init_ardupilot()
     startup_ground();
 
     Mode *initial_mode = mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
-    if (initial_mode == nullptr) {
+    if (initial_mode == nullptr)
+    {
         initial_mode = &mode_initializing;
     }
     set_mode(*initial_mode, ModeReason::INITIALISED);
@@ -154,11 +159,13 @@ void Rover::init_ardupilot()
     rover.g2.sailboat.init();
 
     // boat should loiter after completing a mission to avoid drifting off
-    if (is_boat()) {
+    if (is_boat())
+    {
         rover.g2.mis_done_behave.set_default(ModeAuto::Mis_Done_Behave::MIS_DONE_BEHAVE_LOITER);
     }
 
     // flag that initialisation has completed
+    fire_led.Fire_LED_Init(); // 初始化完成播放声音
     initialised = true;
 }
 
@@ -181,8 +188,7 @@ void Rover::startup_ground(void)
     // initialise AP_Logger library
 #if HAL_LOGGING_ENABLED
     logger.setVehicle_Startup_Writer(
-        FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
-        );
+        FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void));
 #endif
 
 #if AP_SCRIPTING_ENABLED
@@ -197,20 +203,25 @@ void Rover::update_ahrs_flyforward()
     bool flyforward = false;
 
     // boats never use movement to estimate heading
-    if (!is_boat()) {
+    if (!is_boat())
+    {
         // throttle threshold is 15% or 1/2 cruise throttle
         bool throttle_over_thresh = g2.motors.get_throttle() > MIN(g.throttle_cruise * 0.50f, 15.0f);
         // desired speed threshold of 1m/s
         bool desired_speed_over_thresh = g2.attitude_control.speed_control_active() && (g2.attitude_control.get_desired_speed() > 0.5f);
-        if (throttle_over_thresh || (is_positive(g2.motors.get_throttle()) && desired_speed_over_thresh)) {
+        if (throttle_over_thresh || (is_positive(g2.motors.get_throttle()) && desired_speed_over_thresh))
+        {
             uint32_t now = AP_HAL::millis();
             // if throttle over threshold start timer
-            if (flyforward_start_ms == 0) {
+            if (flyforward_start_ms == 0)
+            {
                 flyforward_start_ms = now;
             }
             // if throttle over threshold for 2 seconds set flyforward to true
             flyforward = (now - flyforward_start_ms > 2000);
-        } else {
+        }
+        else
+        {
             // reset timer
             flyforward_start_ms = 0;
         }
@@ -245,7 +256,8 @@ bool Rover::gcs_mode_enabled(const Mode::Number mode_num) const
 
 bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 {
-    if (control_mode == &new_mode) {
+    if (control_mode == &new_mode)
+    {
         // don't switch modes if we are already in the correct mode.
         return true;
     }
@@ -257,7 +269,8 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
     }
 
     Mode &old_mode = *control_mode;
-    if (!new_mode.enter()) {
+    if (!new_mode.enter())
+    {
         // Log error that we failed to enter desired flight mode
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE,
                            LogErrorCode(new_mode.mode_number()));
@@ -293,6 +306,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 bool Rover::set_mode(const uint8_t new_mode, ModeReason reason)
 {
     static_assert(sizeof(Mode::Number) == sizeof(new_mode), "The new mode can't be mapped to the vehicles mode number");
+<<<<<<< HEAD
     return rover.set_mode(static_cast<Mode::Number>(new_mode), reason);
 }
 
@@ -301,6 +315,12 @@ bool Rover::set_mode(Mode::Number new_mode, ModeReason reason)
     Mode *mode = rover.mode_from_mode_num(new_mode);
     if (mode == nullptr) {
         notify_no_such_mode((uint8_t)new_mode);
+=======
+    Mode *mode = rover.mode_from_mode_num((enum Mode::Number)new_mode);
+    if (mode == nullptr)
+    {
+        notify_no_such_mode(new_mode);
+>>>>>>> 60eae1ec85 (初检查移植完毕，未在实机测试，能够进行编译)
         return false;
     }
     return rover.set_mode(*mode, reason);

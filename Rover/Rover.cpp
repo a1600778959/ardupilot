@@ -37,7 +37,7 @@
 
 #include "AP_Gripper/AP_Gripper.h"
 
-const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros, _priority) SCHED_TASK_CLASS(Rover, &rover, func, _interval_ticks, _max_time_micros, _priority)
 
@@ -70,12 +70,15 @@ SCHED_TASK_CLASS arguments:
  */
 const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     //         Function name,          Hz,     us,
-    SCHED_TASK(read_radio,             50,    200,   3),
-    SCHED_TASK(ahrs_update,           400,    400,   6),
-    SCHED_TASK(read_rangefinders,      50,    200,   9),
+    SCHED_TASK(read_radio, 50, 200, 3),
+    SCHED_TASK(ahrs_update, 400, 400, 6),
+    SCHED_TASK(read_rangefinders, 50, 200, 9),
+    SCHED_TASK(FireFight_open, 500, 200, 11), // 消防炮功能函数，200HZ速度
+    SCHED_TASK(Fire_CLED, 50, 200, 13),       // LED功能函数，50HZ速度
 #if AP_OPTICALFLOW_ENABLED
-    SCHED_TASK_CLASS(AP_OpticalFlow,      &rover.optflow,          update,         200, 160,  11),
+    SCHED_TASK_CLASS(AP_OpticalFlow, &rover.optflow, update, 200, 160, 11),
 #endif
+<<<<<<< HEAD
     SCHED_TASK(update_current_mode,   400,    200,  12),
     SCHED_TASK(set_servos,            400,    200,  15),
     SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300,  18),
@@ -83,9 +86,17 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if AP_BEACON_ENABLED
     SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200,  24),
 #endif
+=======
+    SCHED_TASK(update_current_mode, 400, 200, 12),
+    SCHED_TASK(set_servos, 400, 200, 15),
+    SCHED_TASK_CLASS(AP_GPS, &rover.gps, update, 50, 300, 18),
+    SCHED_TASK_CLASS(AP_Baro, &rover.barometer, update, 10, 200, 21),
+    SCHED_TASK_CLASS(AP_Beacon, &rover.g2.beacon, update, 50, 200, 24),
+>>>>>>> 60eae1ec85 (初检查移植完毕，未在实机测试，能够进行编译)
 #if HAL_PROXIMITY_ENABLED
-    SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200,  27),
+    SCHED_TASK_CLASS(AP_Proximity, &rover.g2.proximity, update, 50, 200, 27),
 #endif
+<<<<<<< HEAD
     SCHED_TASK_CLASS(AP_WindVane,         &rover.g2.windvane,      update,         20,  100,  30),
     SCHED_TASK(update_wheel_encoder,   50,    200,  36),
     SCHED_TASK(update_compass,         10,    200,  39),
@@ -103,27 +114,54 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
 #if AP_GRIPPER_ENABLED
     SCHED_TASK_CLASS(AP_Gripper,          &rover.g2.gripper,       update,         10,   75,  69),
+=======
+    SCHED_TASK_CLASS(AP_WindVane, &rover.g2.windvane, update, 20, 100, 30),
+    SCHED_TASK(update_wheel_encoder, 50, 200, 36),
+    SCHED_TASK(update_compass, 10, 200, 39),
+    SCHED_TASK(update_logging1, 10, 200, 45),
+    SCHED_TASK(update_logging2, 10, 200, 48),
+    SCHED_TASK_CLASS(GCS, (GCS *)&rover._gcs, update_receive, 400, 500, 51),
+    SCHED_TASK_CLASS(GCS, (GCS *)&rover._gcs, update_send, 400, 1000, 54),
+    SCHED_TASK_CLASS(RC_Channels, (RC_Channels *)&rover.g2.rc_channels, read_mode_switch, 7, 200, 57),
+    SCHED_TASK_CLASS(RC_Channels, (RC_Channels *)&rover.g2.rc_channels, read_aux_all, 10, 200, 60),
+    SCHED_TASK_CLASS(AP_BattMonitor, &rover.battery, read, 10, 300, 63),
+    SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events, 50, 200, 66),
+#if AP_GRIPPER_ENABLED
+    SCHED_TASK_CLASS(AP_Gripper, &rover.g2.gripper, update, 10, 75, 69),
+#if PRECISION_LANDING == ENABLED
+    SCHED_TASK(update_precland, 400, 50, 70),
+>>>>>>> 60eae1ec85 (初检查移植完毕，未在实机测试，能够进行编译)
 #endif
 #if AC_PRECLAND_ENABLED
     SCHED_TASK(update_precland,      400,     50,  70),
 #endif
 #if AP_RPM_ENABLED
-    SCHED_TASK_CLASS(AP_RPM,              &rover.rpm_sensor,       update,         10,  100,  72),
+    SCHED_TASK_CLASS(AP_RPM, &rover.rpm_sensor, update, 10, 100, 72),
 #endif
 #if HAL_MOUNT_ENABLED
-    SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200,  75),
+    SCHED_TASK_CLASS(AP_Mount, &rover.camera_mount, update, 50, 200, 75),
 #endif
 #if AP_CAMERA_ENABLED
-    SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update,         50,  200,  78),
+    SCHED_TASK_CLASS(AP_Camera, &rover.camera, update, 50, 200, 78),
 #endif
+<<<<<<< HEAD
     SCHED_TASK(gcs_failsafe_check,     10,    200,  81),
     SCHED_TASK(fence_check,            10,    200,  84),
     SCHED_TASK(ekf_check,              10,    100,  87),
     SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200,  90),
     SCHED_TASK(one_second_loop,         1,   1500,  96),
+=======
+    SCHED_TASK(gcs_failsafe_check, 10, 200, 81),
+    SCHED_TASK(fence_check, 10, 200, 84),
+    SCHED_TASK(ekf_check, 10, 100, 87),
+    SCHED_TASK_CLASS(ModeSmartRTL, &rover.mode_smartrtl, save_position, 3, 200, 90),
+    SCHED_TASK_CLASS(AP_Notify, &rover.notify, update, 50, 300, 93),
+    SCHED_TASK(one_second_loop, 1, 1500, 96),
+>>>>>>> 60eae1ec85 (初检查移植完毕，未在实机测试，能够进行编译)
 #if HAL_SPRAYER_ENABLED
-    SCHED_TASK_CLASS(AC_Sprayer,          &rover.g2.sprayer,       update,          3,  90,  99),
+    SCHED_TASK_CLASS(AC_Sprayer, &rover.g2.sprayer, update, 3, 90, 99),
 #endif
+<<<<<<< HEAD
     SCHED_TASK(compass_save,            0.1,  200, 105),
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Logger,           &rover.logger,           periodic_tasks, 50,  300, 108),
@@ -132,19 +170,53 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200, 114),
 #endif
+=======
+    SCHED_TASK(compass_save, 0.1, 200, 105),
+#if LOGGING_ENABLED == ENABLED
+    SCHED_TASK_CLASS(AP_Logger, &rover.logger, periodic_tasks, 50, 300, 108),
+#endif
+    SCHED_TASK_CLASS(AP_InertialSensor, &rover.ins, periodic, 400, 200, 111),
+    SCHED_TASK_CLASS(AP_Scheduler, &rover.scheduler, update_logging, 0.1, 200, 114),
+>>>>>>> 60eae1ec85 (初检查移植完毕，未在实机测试，能够进行编译)
 #if HAL_BUTTON_ENABLED
-    SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200, 117),
+    SCHED_TASK_CLASS(AP_Button, &rover.button, update, 5, 200, 117),
 #endif
 #if STATS_ENABLED == ENABLED
-    SCHED_TASK(stats_update,            1,    200, 120),
+    SCHED_TASK(stats_update, 1, 200, 120),
 #endif
-    SCHED_TASK(crash_check,            10,    200, 123),
-    SCHED_TASK(cruise_learn_update,    50,    200, 126),
+    SCHED_TASK(crash_check, 10, 200, 123),
+    SCHED_TASK(cruise_learn_update, 50, 200, 126),
 #if ADVANCED_FAILSAFE == ENABLED
-    SCHED_TASK(afs_fs_check,           10,    200, 129),
+    SCHED_TASK(afs_fs_check, 10, 200, 129),
 #endif
 };
 
+void Rover::FireFight_open() // 每2毫秒执行一次
+{
+    // uint8_t static stat = 0;
+
+    if (arming.is_armed()) //&& current_v > 40)
+    {
+        fire_led.launch_motor();
+        firefight_rover.function_fire_fight(2);
+
+        // firefight_rover.read_one(1, 25, 2);   // 发送读取脉冲数值命令
+        firefight_rover.check_send_one(0x01); // 串口接收返回脉冲数值
+    }
+    else
+    {
+        fire_led.stop_motor();
+        firefight_rover.write_two(0x01, 0x0010, 0, 0);
+        firefight_rover.write_two(0x01, 0x0000, 0, 0);
+        fire_motor_rover.motor_input(0, 0);
+    }
+}
+
+void Rover::Fire_CLED()
+{
+    float v = battery.gcs_voltage(0);
+    fire_led.Fire_Power_LED(v, 20);
+}
 
 void Rover::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                                 uint8_t &task_count,
@@ -157,6 +229,7 @@ void Rover::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 constexpr int8_t Rover::_failsafe_priorities[7];
 
+<<<<<<< HEAD
 Rover::Rover(void) :
     AP_Vehicle(),
     param_loader(var_info),
@@ -165,15 +238,23 @@ Rover::Rover(void) :
 #endif
     modes(&g.mode1),
     control_mode(&mode_initializing)
+=======
+Rover::Rover(void) : AP_Vehicle(),
+                     param_loader(var_info),
+                     logger{g.log_bitmask},
+                     modes(&g.mode1),
+                     control_mode(&mode_initializing)
+>>>>>>> 60eae1ec85 (初检查移植完毕，未在实机测试，能够进行编译)
 {
 }
 
 #if AP_SCRIPTING_ENABLED
 // set target location (for use by scripting)
-bool Rover::set_target_location(const Location& target_loc)
+bool Rover::set_target_location(const Location &target_loc)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!control_mode->in_guided_mode()) {
+    if (!control_mode->in_guided_mode())
+    {
         return false;
     }
 
@@ -181,10 +262,11 @@ bool Rover::set_target_location(const Location& target_loc)
 }
 
 // set target velocity (for use by scripting)
-bool Rover::set_target_velocity_NED(const Vector3f& vel_ned)
+bool Rover::set_target_velocity_NED(const Vector3f &vel_ned)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!control_mode->in_guided_mode()) {
+    if (!control_mode->in_guided_mode())
+    {
         return false;
     }
 
@@ -204,7 +286,8 @@ bool Rover::set_target_velocity_NED(const Vector3f& vel_ned)
 bool Rover::set_steering_and_throttle(float steering, float throttle)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!control_mode->in_guided_mode()) {
+    if (!control_mode->in_guided_mode())
+    {
         return false;
     }
 
@@ -214,7 +297,7 @@ bool Rover::set_steering_and_throttle(float steering, float throttle)
 }
 
 // get steering and throttle (-1 to +1) (for use by scripting)
-bool Rover::get_steering_and_throttle(float& steering, float& throttle)
+bool Rover::get_steering_and_throttle(float &steering, float &throttle)
 {
     steering = g2.motors.get_steering() / 4500.0;
     throttle = g2.motors.get_throttle() * 0.01;
@@ -225,7 +308,8 @@ bool Rover::get_steering_and_throttle(float& steering, float& throttle)
 bool Rover::set_desired_turn_rate_and_speed(float turn_rate, float speed)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!control_mode->in_guided_mode()) {
+    if (!control_mode->in_guided_mode())
+    {
         return false;
     }
 
@@ -244,7 +328,8 @@ bool Rover::set_desired_speed(float speed)
 // returns true on success and control_value is set to a value in the range -1 to +1
 bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value)
 {
-    switch (control_output) {
+    switch (control_output)
+    {
     case AP_Vehicle::ControlOutput::Roll:
         control_value = constrain_float(g2.motors.get_roll(), -1.0f, 1.0f);
         return true;
@@ -284,7 +369,8 @@ bool Rover::nav_scripting_enable(uint8_t mode)
 // lua scripts use this to retrieve the contents of the active command
 bool Rover::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
 {
-    if (control_mode != &mode_auto) {
+    if (control_mode != &mode_auto)
+    {
         return false;
     }
 
@@ -294,7 +380,8 @@ bool Rover::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2
 // lua scripts use this to indicate when they have complete the command
 void Rover::nav_script_time_done(uint16_t id)
 {
-    if (control_mode != &mode_auto) {
+    if (control_mode != &mode_auto)
+    {
         return;
     }
 
@@ -313,7 +400,6 @@ void Rover::stats_update(void)
 }
 #endif
 
-
 // update AHRS system
 void Rover::ahrs_update()
 {
@@ -328,31 +414,43 @@ void Rover::ahrs_update()
     have_position = ahrs.get_location(current_loc);
 
     // set home from EKF if necessary and possible
-    if (!ahrs.home_is_set()) {
-        if (!set_home_to_current_location(false)) {
+    if (!ahrs.home_is_set())
+    {
+        if (!set_home_to_current_location(false))
+        {
             // ignore this failure
         }
     }
 
     // if using the EKF get a speed update now (from accelerometers)
     Vector3f velocity;
-    if (ahrs.get_velocity_NED(velocity)) {
+    if (ahrs.get_velocity_NED(velocity))
+    {
         ground_speed = velocity.xy().length();
-    } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    }
+    else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D)
+    {
         ground_speed = ahrs.groundspeed();
     }
 
+<<<<<<< HEAD
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
+=======
+    if (should_log(MASK_LOG_ATTITUDE_FAST))
+    {
+>>>>>>> 60eae1ec85 (初检查移植完毕，未在实机测试，能够进行编译)
         Log_Write_Attitude();
         Log_Write_Sail();
     }
 
-    if (should_log(MASK_LOG_IMU)) {
+    if (should_log(MASK_LOG_IMU))
+    {
         AP::ins().Write_IMU();
     }
 
-    if (should_log(MASK_LOG_VIDEO_STABILISATION)) {
+    if (should_log(MASK_LOG_VIDEO_STABILISATION))
+    {
         ahrs.write_video_stabilisation();
     }
 #endif
@@ -363,13 +461,15 @@ void Rover::ahrs_update()
  */
 void Rover::gcs_failsafe_check(void)
 {
-    if (g.fs_gcs_enabled == FS_GCS_DISABLED) {
+    if (g.fs_gcs_enabled == FS_GCS_DISABLED)
+    {
         // gcs failsafe disabled
         return;
     }
 
     const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
-    if (gcs_last_seen_ms == 0) {
+    if (gcs_last_seen_ms == 0)
+    {
         // we've never seen the GCS, so we never failsafe for not seeing it
         return;
     }
@@ -390,21 +490,25 @@ void Rover::gcs_failsafe_check(void)
  */
 void Rover::update_logging1(void)
 {
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST))
+    {
         Log_Write_Attitude();
         Log_Write_Sail();
     }
 
-    if (should_log(MASK_LOG_THR)) {
+    if (should_log(MASK_LOG_THR))
+    {
         Log_Write_Throttle();
 #if AP_BEACON_ENABLED
         g2.beacon.log();
 #endif
     }
 
-    if (should_log(MASK_LOG_NTUN)) {
+    if (should_log(MASK_LOG_NTUN))
+    {
         Log_Write_Nav_Tuning();
-        if (g2.pos_control.is_active()) {
+        if (g2.pos_control.is_active())
+        {
             g2.pos_control.write_log();
             logger.Write_PID(LOG_PIDN_MSG, g2.pos_control.get_vel_pid().get_pid_info_x());
             logger.Write_PID(LOG_PIDE_MSG, g2.pos_control.get_vel_pid().get_pid_info_y());
@@ -412,7 +516,8 @@ void Rover::update_logging1(void)
     }
 
 #if HAL_PROXIMITY_ENABLED
-    if (should_log(MASK_LOG_RANGEFINDER)) {
+    if (should_log(MASK_LOG_RANGEFINDER))
+    {
         g2.proximity.log();
     }
 #endif
@@ -423,16 +528,19 @@ void Rover::update_logging1(void)
  */
 void Rover::update_logging2(void)
 {
-    if (should_log(MASK_LOG_STEERING)) {
+    if (should_log(MASK_LOG_STEERING))
+    {
         Log_Write_Steering();
     }
 
-    if (should_log(MASK_LOG_RC)) {
+    if (should_log(MASK_LOG_RC))
+    {
         Log_Write_RC();
         g2.wheel_encoder.Log_Write();
     }
 
-    if (should_log(MASK_LOG_IMU)) {
+    if (should_log(MASK_LOG_IMU))
+    {
         AP::ins().Write_Vibration();
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
@@ -444,7 +552,10 @@ void Rover::update_logging2(void)
     }
 #endif
 }
+<<<<<<< HEAD
 #endif  // HAL_LOGGING_ENABLED
+=======
+>>>>>>> 60eae1ec85 (初检查移植完毕，未在实机测试，能够进行编译)
 
 /*
   once a second events
@@ -466,7 +577,8 @@ void Rover::one_second_loop(void)
     mavlink_system.sysid = g.sysid_this_mav;
 
     // attempt to update home position and baro calibration if not armed:
-    if (!hal.util->get_soft_armed()) {
+    if (!hal.util->get_soft_armed())
+    {
         update_home();
     }
 
@@ -483,7 +595,8 @@ void Rover::one_second_loop(void)
 void Rover::update_current_mode(void)
 {
     // check for emergency stop
-    if (SRV_Channels::get_emergency_stop()) {
+    if (SRV_Channels::get_emergency_stop())
+    {
         // relax controllers, motor stopping done at output level
         g2.attitude_control.relax_I();
     }
@@ -495,7 +608,8 @@ void Rover::update_current_mode(void)
 bool Rover::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Rover::send_nav_controller_output()
-    if (!rover.control_mode->is_autopilot_mode()) {
+    if (!rover.control_mode->is_autopilot_mode())
+    {
         return false;
     }
     distance = control_mode->get_distance_to_destination();
@@ -506,7 +620,8 @@ bool Rover::get_wp_distance_m(float &distance) const
 bool Rover::get_wp_bearing_deg(float &bearing) const
 {
     // see GCS_MAVLINK_Rover::send_nav_controller_output()
-    if (!rover.control_mode->is_autopilot_mode()) {
+    if (!rover.control_mode->is_autopilot_mode())
+    {
         return false;
     }
     bearing = control_mode->wp_bearing();
@@ -517,15 +632,15 @@ bool Rover::get_wp_bearing_deg(float &bearing) const
 bool Rover::get_wp_crosstrack_error_m(float &xtrack_error) const
 {
     // see GCS_MAVLINK_Rover::send_nav_controller_output()
-    if (!rover.control_mode->is_autopilot_mode()) {
+    if (!rover.control_mode->is_autopilot_mode())
+    {
         return false;
     }
     xtrack_error = control_mode->crosstrack_error();
     return true;
 }
 
-
 Rover rover;
-AP_Vehicle& vehicle = rover;
+AP_Vehicle &vehicle = rover;
 
 AP_HAL_MAIN_CALLBACKS(&rover);
