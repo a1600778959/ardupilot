@@ -310,6 +310,7 @@ private:
     void Fire_motor(); // 消防车电机驱动
 
     void Fire_CLED(); // 灯驱动
+    void FireFight_parm();
 
     void stats_update();
     void ahrs_update();

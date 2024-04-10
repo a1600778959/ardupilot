@@ -6,7 +6,6 @@
 // #include "rover/Rover.h"
 
 #define FRAME_LENGTH 9  // 帧长
-#define MAX_ACTIONS 200 // 最大动作数量100
 
 // class Action
 // {
@@ -28,7 +27,18 @@ void FireFight::uart_init()
     hal.serial(1)->begin(256000); // 初始化串口程序
     hal.serial(1)->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     hal.serial(1)->set_unbuffered_writes(true);
-    hal.scheduler->delay(100); // 等待初始化串口
+    hal.scheduler->delay(1); // 等待初始化串口
+    read(1,2,2);             // 读取设备堵转电流
+    hal.scheduler->delay(2); // 等待串口回复
+    check_send_one(1);
+    AP_Param::set_object_value(this, var_info, "LR", address_1);
+    AP_Param::set_object_value(this, var_info, "UD", address_2);
+    read(1, 2, 23);           // 读取设备波特率设置
+    hal.scheduler->delay(2); // 等待串口回复
+    check_send_one(1);
+    AP_Param::set_object_value(this, var_info, "BUARD", address_1);
+    // LR = (AP_Int16)address_1;
+    // UD = (AP_Int16)address_2;
     // write_one(0x01, 0x0002, 10);
     // hal.scheduler->delay(100); // 上下电机堵转电流
     // write_one(0x01, 0x0003, 200);
@@ -36,12 +46,13 @@ void FireFight::uart_init()
     // write_one(0x01, 0x0004, 1);
     // hal.scheduler->delay(100); // 堵转时间
     // hal.serial(3)->begin(115200);
-
-    gcs().send_text(MAV_SEVERITY_CRITICAL, // 地面站消息发送
-                    "uart set ok");
+    AP_Param::setup_object_defaults(this, var_info);  //调用初始化
+    gcs()
+        .send_text(MAV_SEVERITY_CRITICAL, // 地面站消息发送
+                   "uart set ok");
 }
 
-void FireFight::read_one(uint8_t address_ID, uint16_t reg_adress, uint16_t reg_num) // 只需要填写寄存器ID和寄存器个数
+void FireFight::read(uint8_t address_ID, uint16_t reg_adress, uint16_t reg_num) // 只需要填写寄存器ID和寄存器个数
 {
     uint8_t data_to_send[10];
     uint8_t cnt = 0;
@@ -151,8 +162,8 @@ uint8_t FireFight::check_send_one(uint8_t addressID)
                     {
                         if (linebuf[0] == 1) // 如果是消防炮消息
                         {
-                            Up_Down_pulse = ((linebuf[3] << 8) | linebuf[4]) / 10;
-                            Left_Right_pulse = ((linebuf[5] << 8) | linebuf[6]) / 10;
+                            address_1 = ((linebuf[3] << 8) | linebuf[4]) / 10;
+                            address_2 = ((linebuf[5] << 8) | linebuf[6]) / 10;
                             // gcs().send_text(MAV_SEVERITY_CRITICAL, "Left_Right_pulse:%d", Left_Right_pulse);
                             /* code */
                         }
@@ -266,37 +277,13 @@ void FireFight::playback_button(uint16_t val)
 
 void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很重要
 {
-    // RC_Channel &_rc = rc();
-    // uint64_t start = AP_HAL::micros64();
-    // static uint16_t time_samp = 0; // 每个执行周期只能发送一条信息
-    // static int8_t up_down = 0, up_down_last = 88;
-    // static int8_t left_right = 0, left_right_last = 88;
-    // static int16_t aim_Left_Right_pulse = 0, aim_Up_Down_pulse = 0;
-    // static uint16_t record_delay = 0, aim_delay = 0, current_delay = 0;
+
     static uint8_t replay_flag = 0; // 当为1时候表示正在执行回放
-    // static uint16_t record_T = 0;   // 每100个周期强制记录一次当前位置
-    // static uint8_t stalled_cnt_flag_LR = 0, stalled_cnt_flag_UD = 0;
-    // static uint16_t Left_Right_pulse_Last = 8888, Up_Down_pulse_Last = 8888;
-    // static int8_t stalled_protect_LR = 0, stalled_protect_UD = 0;
-    // static uint8_t wu_zhu = 0;
-    // static uint8_t record_move = 0;
     uint16_t under_offset = 1550;
     uint16_t low_offset = 1450;
-    // uint16_t temp = 0;
-    // uint8_t add_offset = 30; // 遥控器增加数值
     int16_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
-    // u_int8_t play_dead_offset_motor = 100;
-    // u_int8_t dead_offset_motor = play_dead_offset_motor - 2;
-    // uint8_t temp;
     uint16_t rcin_1 = (hal.rcin->read(1));
     uint16_t rcin_3 = (hal.rcin->read(3));
-
-    // static uint8_t time_cnt_up = 0, time_cnt_left = 0, time_cnt_zhu = 0; //,time_cnt_record = 0;
-
-    // gcs().send_text(MAV_SEVERITY_CRITICAL,"rcin(9):%d",hal.rcin->read(9));
-
-    // exp_offset_Up_Down = -(aim_Up_Down_pulse - Up_Down_pulse); // 计算与目标偏差值
-    // exp_offset_Left_Right = aim_Left_Right_pulse - Left_Right_pulse;
     if (exp_offset_Up_Down > 3276) // 表示走原路了
         exp_offset_Up_Down -= 6553;
     else if (exp_offset_Up_Down < -3276)
@@ -527,19 +514,59 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
     // }
 }
 
-// const AP_Param::GroupInfo FireFight::var_info[] =
-// {
 
-//         // @Param: P
-//         // @DisplayName: PID Proportional Gain
-//         // @Description: P Gain which produces an output value that is proportional to the current error value
-//         // AP_GROUPINFO("STA_CURRENT_LR", 0, Stl_ct_LR, _kp, 0),
 
-//         // // @Param: D
-//         // // @DisplayName: PID Derivative Gain
-//         // // @Description: D Gain which produces an output that is proportional to the rate of change of the error
-//         // AP_GROUPINFO("STA_CURRENT_UD", 1, Stl_ct_UD, _kd, 0),
+void FireFight::parm_change()
+{
+    static int16_t last_UD = 0,last_LR = 0,last_BUARD = 0;
+    if (last_UD == 0)
+        last_UD = UD;
+    if (last_LR == 0)
+        last_LR = LR;
+    if (last_BUARD == 0)
+        last_BUARD = BUARD;
+    if (last_UD != UD)
+    {
+        last_UD = UD;
+        write_one(1, 2, last_UD);  //写入参数
+        write_one(1, 24, 1);  // 保存参数
+    }
+    if (last_LR != LR)
+    {
+        last_LR = LR;
+        write_one(1, 3, last_LR); // 写入参数
+        write_one(1, 24, 1);      // 保存参数
+    }
+    if (last_BUARD != BUARD)
+    {
+        last_BUARD = BUARD;
+        write_one(1, 23, last_BUARD); // 写入参数
+        write_one(1, 24, 1);      // 保存参数
+    }
+}
 
-//         // AP_GROUPEND
-        
-// }
+const AP_Param::GroupInfo FireFight::var_info[] =
+{
+        // @Param: LR
+        // @DisplayName: STA_CURRENT_LR
+        // @Description: 这个是左右电机堵转保护数值.
+        // @Range:0 5000
+        // @User: Standard
+        AP_GROUPINFO("LR", 0, FireFight, LR, 3000),
+
+        // @Param:UD
+        // @DisplayName: STA_CURRENT_UD
+        // @Description: 这个是左右电机堵转保护数值.
+        // @Range:0 5000
+        // @User:Standard
+        // 注意这里是增加的名字
+        AP_GROUPINFO("UD", 1, FireFight, UD, 3000),
+        // @Param:BUARD
+        // @DisplayName: STA_CURRENT_BUARD
+        // @Description: 这个是消防炮波特率数值.
+        // @Range:0 5000
+        // @User:Standard
+        // 注意这里是增加的名字
+        AP_GROUPINFO("BUARD", 2, FireFight, BUARD, 2560),
+        AP_GROUPEND
+};

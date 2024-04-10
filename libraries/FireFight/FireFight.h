@@ -5,6 +5,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include "FireFightCRC.h"
+// #include <AP_Param/AP_Param.h>
 #define BYTE0(dwTemp) (*((char *)(&dwTemp)))
 #define BYTE1(dwTemp) (*((char *)(&dwTemp) + 1))
 #define BYTE2(dwTemp) (*((char *)(&dwTemp) + 2))
@@ -24,11 +25,12 @@ private:
     /* data */
 public:
     void uart_init(void);
-    void read_one(uint8_t address_ID, uint16_t reg_adress, uint16_t reg_num);
+    void read(uint8_t address_ID, uint16_t reg_adress, uint16_t reg_num);
     void write_one(uint8_t address_ID, uint16_t reg_adress, uint16_t reg_num);
     // uint8_t check_send_one(uint16_t val);
     uint8_t check_send_one(uint8_t addressID);
     void function_fire_fight(uint8_t DT_ms);
+    void parm_change();
     void write_two(uint8_t address_ID, uint16_t start_reg_adress, int16_t val_1, int16_t val_2);
     void up_button(uint16_t val);
     void down_button(uint16_t val);
@@ -45,13 +47,14 @@ public:
     void pump_button(uint16_t val);     // 泵按钮
     void Record_button(uint16_t val);   // 录制按钮
     void playback_button(uint16_t val); // 回放按钮
-    int16_t Left_Right_pulse, Up_Down_pulse;
+    int16_t address_1, address_2;
     uint16_t Set_Left_motor, Read_Left_motor;
     uint16_t Set_Right_motor, Read_Right_motor;
-//     static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Param::GroupInfo var_info[];
 // protected:
-//     AP_Int16 Stl_ct_LR; //堵转电流左右
-//     AP_Int16 Stl_ct_UD; //堵转电流上下
+    AP_Int16 LR; //堵转电流左右
+    AP_Int16 UD; //堵转电流上下
+    AP_Int16 BUARD; //与消防炮波特率数值
 };
 
 #endif

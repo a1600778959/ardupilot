@@ -14,9 +14,7 @@ static void failsafe_check_static()
 
 void Rover::init_ardupilot()
 {
-    // 增加初始化函数
-    firefight_rover.uart_init();
-    fire_motor_rover.motor_init();
+
 
 #if STATS_ENABLED == ENABLED
     // initialise stats module
@@ -165,6 +163,9 @@ void Rover::init_ardupilot()
     }
 
     // flag that initialisation has completed
+    // 增加初始化函数
+    firefight_rover.uart_init();
+    fire_motor_rover.motor_init();
     fire_led.Fire_LED_Init(); // 初始化完成播放声音
     initialised = true;
 }
