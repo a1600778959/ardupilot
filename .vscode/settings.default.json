@@ -4,5 +4,6 @@
     "files.associations": {
         "chrono": "cpp",
         "complex": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "/home/dzd/ardupilot/modules/Micro-CDR/test/case"
 }

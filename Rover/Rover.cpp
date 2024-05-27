@@ -221,11 +221,12 @@ void Rover::FireFight_open() // 每2毫秒执行一次
 
         // firefight_rover.read_one(1, 25, 2);   // 发送读取脉冲数值命令
         firefight_rover.check_send_one(0x01); // 串口接收返回脉冲数值
+        stop_button = 0;
     }
     else
     {
         fire_led.stop_motor();
-        if (stop_button == false)
+        if (stop_button == 0)
         {
             firefight_rover.write_two(0x01, 0x0010, 0, 0);   //摇摆电机锁定
             firefight_rover.write_two(0x01, 0x0000, 0, 0);   //柱大雾锁定
