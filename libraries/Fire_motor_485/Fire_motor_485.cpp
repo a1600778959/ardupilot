@@ -354,11 +354,11 @@ void Fire_motor_485::motor_input(int16_t motor_left, int16_t motor_right)
 
             if (stop_button)
             {
-                write_two(Left_motor, 0X2000, 9, 0); // 左边轮子刹车
+                write_two(Left_motor, 0X2000, 6, 0); // 左边轮子刹车
             }
             else
             {
-                write_two(Left_motor, 0X2000, 6, 0); // 左边轮子刹车
+                write_two(Left_motor, 0X2000, 9, 0); // 左边轮子刹车
             }
         }
         // last_V_L = V_L;
@@ -381,11 +381,11 @@ void Fire_motor_485::motor_input(int16_t motor_left, int16_t motor_right)
         {
             if (stop_button)
             {
-                write_two(Right_motor, 0X2000, 9, 0);
+                write_two(Right_motor, 0X2000, 6, 0);
             }
             else
             {
-                write_two(Right_motor, 0X2000, 6, 0);
+                write_two(Right_motor, 0X2000, 9, 0);
             }
         }
         // last_V_R = V_R;
@@ -398,7 +398,10 @@ void Fire_motor_485::motor_input(int16_t motor_left, int16_t motor_right)
     // {
     //     // read_RPM(101);
     // }
-
+    // if (abs(V_R) < 100 && (abs(V_L) < 100))
+    // {
+    //     FL.stop_motor();
+    // }
     golab_cnt++;
 
     if (golab_cnt == 2 /* condition */)

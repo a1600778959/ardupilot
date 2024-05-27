@@ -74,7 +74,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(ahrs_update, 400, 400, 6),
     SCHED_TASK(read_rangefinders, 50, 200, 9),
     SCHED_TASK(FireFight_open, 200, 200, 10), // 消防炮功能函数，200HZ速度
-    SCHED_TASK(Fire_CLED, 50, 100, 11), // LED功能函数，50HZ速度
     // SCHED_TASK(Fire_CLED, 50, 100, 13), // LED功能函数，50HZ速度
 
 #if AP_OPTICALFLOW_ENABLED
@@ -193,6 +192,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(crash_check, 10, 200, 123),
     SCHED_TASK(cruise_learn_update, 50, 200, 126),
     SCHED_TASK(FireFight_parm,0.1,200,127),     //消防炮参数任务
+    SCHED_TASK(Fire_CLED, 50, 100, 128), // LED功能函数，50HZ速度
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check, 10, 200, 129),
 #endif
@@ -206,7 +206,14 @@ void Rover::FireFight_parm()  //2秒一次
 void Rover::FireFight_open() // 每2毫秒执行一次
 {
     // uint8_t static stat = 0;
-
+    uint16_t rcin_8 = hal.rcin->read(8);
+    uint8_t static stop_button = 0;
+    static uint16_t last_rcin_8 = 0;
+    if (abs(rcin_8 - last_rcin_8) > 800) // 判断是否有案件按下
+    {
+        stop_button = ~stop_button; // 相当于按键被按下
+    }
+    last_rcin_8 = rcin_8;
     if (arming.is_armed()) //&& current_v > 40)
     {
         fire_led.launch_motor();
@@ -218,8 +225,16 @@ void Rover::FireFight_open() // 每2毫秒执行一次
     else
     {
         fire_led.stop_motor();
-        firefight_rover.write_two(0x01, 0x0010, 0, 0);
-        firefight_rover.write_two(0x01, 0x0000, 0, 0);
+        if (stop_button == false)
+        {
+            firefight_rover.write_two(0x01, 0x0010, 0, 0);   //摇摆电机锁定
+            firefight_rover.write_two(0x01, 0x0000, 0, 0);   //柱大雾锁定
+        }
+        else
+        {
+            firefight_rover.function_fire_fight(2);
+        }
+            
         fire_motor_rover.motor_input(0, 0);
     }
 }
