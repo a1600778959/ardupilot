@@ -24,7 +24,7 @@
 void FireFight::uart_init()
 {
 
-    hal.serial(1)->begin(256000); // 初始化串口程序
+    // hal.serial(1)->begin(256000); // 初始化串口程序
     hal.serial(1)->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     hal.serial(1)->set_unbuffered_writes(true);
     hal.scheduler->delay(1); // 等待初始化串口
@@ -282,7 +282,7 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
     uint16_t under_offset = 1550;
     uint16_t low_offset = 1450;
     int16_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
-    uint16_t rcin_1 = (hal.rcin->read(1));
+    uint16_t rcin_2 = (hal.rcin->read(2));
     uint16_t rcin_3 = (hal.rcin->read(3));
     if (exp_offset_Up_Down > 3276) // 表示走原路了
         exp_offset_Up_Down -= 6553;
@@ -294,10 +294,10 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
     else if (exp_offset_Left_Right < -3276)
         exp_offset_Left_Right += 6553;
 
-    if (abs(rcin_1 - 1500) > 50)
+    if (abs(rcin_2 - 1500) > 50)
     {
         // aim_Up_Down_pulse += add_offset;
-        exp_offset_Up_Down = (rcin_1 - 1500)*2.22;
+        exp_offset_Up_Down = (rcin_2 - 1500)*2.22;
     }
     else if (replay_flag != 1)
     {

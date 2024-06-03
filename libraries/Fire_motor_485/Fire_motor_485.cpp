@@ -14,16 +14,16 @@ void Fire_motor_485::motor_init()
     // write_one(100,0x2009,6);
     // hal.scheduler->delay(100); // 设置串口速度
     // write_one(101,0x2009,6);
-    hal.scheduler->delay(100); // 设置串口速度
-    hal.serial(2)->begin(57600); // 初始化串口程序
-    hal.scheduler->delay(100);   // 延时等待串口初始化
+    // hal.scheduler->delay(100); // 设置串口速度
+    // hal.serial(2)->begin(57600); // 初始化串口程序
+    // hal.scheduler->delay(100);   // 延时等待串口初始化
     hal.serial(2)->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     hal.serial(2)->set_unbuffered_writes(true);
-    hal.scheduler->delay(100); // 设置串口速度
+    hal.scheduler->delay(5); // 设置串口速度
     write_two(100, 0x2003, 10, 5);
-    hal.scheduler->delay(10); // 设置电机加减速时间
+    hal.scheduler->delay(5); // 设置电机加减速时间
     write_two(101, 0x2003, 10, 5);
-    hal.scheduler->delay(10); // 等待初始化串口
+    hal.scheduler->delay(5); // 等待初始化串口
 }
 
 void Fire_motor_485::read_one(uint8_t address_ID, uint16_t reg_adress, uint16_t reg_num) // 只需要填写寄存器ID和寄存器个数

@@ -208,7 +208,7 @@ void Rover::FireFight_open() // 每2毫秒执行一次
     // uint8_t static stat = 0;
     uint16_t rcin_8 = hal.rcin->read(8);
     uint8_t static stop_button = 0;
-    static uint16_t last_rcin_8 = 0;
+    static uint16_t last_rcin_8 = rcin_8;
     if (abs(rcin_8 - last_rcin_8) > 800) // 判断是否有案件按下
     {
         stop_button = ~stop_button; // 相当于按键被按下
