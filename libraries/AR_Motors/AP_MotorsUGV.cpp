@@ -896,7 +896,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 
     // add in throttle and steering//由于遥控器原因，这里需要设置成反向
     float motor_left = -throttle_scaled + steering_scaled;
-    float motor_right = -throttle_scaled - steering_scaled;
+    float motor_right = -throttle_scaled*0.978f - steering_scaled;
 
     // Apply asymmetry correction
     if (is_negative(motor_right)) {
@@ -911,6 +911,11 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     // output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right, dt);
     // gcs().send_text(MAV_SEVERITY_CRITICAL, "motor_left:%f", 3000.0f * motor_left);
     // gcs().send_text(MAV_SEVERITY_CRITICAL, "motor_right:%f", 3000.0f * motor_right);
+    if ((abs((hal.rcin->read(1))-1500) < 50) && (abs((hal.rcin->read(0))-1500) < 50))// && abs(((hal.rcin->read(1))-1500) < 50))
+    {
+        motor_left = 0;
+        motor_right = 0;
+    }
     F_motor.motor_input(3000.0f * motor_left, 3000.0f * motor_right);  //485电机输入
 }
 
