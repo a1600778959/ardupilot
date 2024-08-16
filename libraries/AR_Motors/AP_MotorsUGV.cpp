@@ -895,8 +895,8 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     }
 
     // add in throttle and steering//由于遥控器原因，这里需要设置成反向
-    float motor_left = -throttle_scaled + steering_scaled;
-    float motor_right = -throttle_scaled*0.978f - steering_scaled;
+    float motor_left = throttle_scaled + steering_scaled;
+    float motor_right = (throttle_scaled - steering_scaled) * 0.978f;
 
     // Apply asymmetry correction
     if (is_negative(motor_right)) {
