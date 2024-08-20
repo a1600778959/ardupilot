@@ -168,7 +168,7 @@ void Rover::Fire_Gimbal_Co()  //云台控制程序20HZ
     }
     // if (i >= 10)
     // {
-    //     Fire_Gim.Data_Receive_Prepare(); // 每500ms读取一次云台角度数值反馈
+    // Fire_Gim.Data_Receive_Prepare(); // 每500ms读取一次云台角度数值反馈
     //     i = 0;
     //     /* code */
     // }
@@ -184,37 +184,37 @@ void Rover::Fire_Gimbal_Co()  //云台控制程序20HZ
 void Rover::FireFight_open() // 每2毫秒执行一次
 {
     // uint8_t static stat = 0;
-    uint16_t rcin_8 = hal.rcin->read(8);
-    uint8_t static stop_button = 0;
-    static uint16_t last_rcin_8 = rcin_8;
-    // firefight_rover.function_fire_fight(5); //没有遥控器，测试用的
-    if (abs(rcin_8 - last_rcin_8) > 800) // 判断是否有案件按下
-    {
-        stop_button = ~stop_button; // 相当于按键被按下
-    }
-    last_rcin_8 = rcin_8;
+    // uint16_t rcin_8 = hal.rcin->read(8);
+    // uint8_t static stop_button = 0;
+    // static uint16_t last_rcin_8 = rcin_8;
+    // // firefight_rover.function_fire_fight(5); //没有遥控器，测试用的
+    // if (abs(rcin_8 - last_rcin_8) > 800) // 判断是否有案件按下
+    // {
+    //     stop_button = ~stop_button; // 相当于按键被按下
+    // }
+    // last_rcin_8 = rcin_8;
     if ( arming.is_armed()) //&& current_v > 40)
     {
         fire_led.launch_motor();
         firefight_rover.function_fire_fight(40);
 
         // firefight_rover.read_one(1, 25, 2);   // 发送读取脉冲数值命令
-        firefight_rover.check_send_one(0x01); // 串口接收返回脉冲数值
-        stop_button = 0;
+        // firefight_rover.check_send_one(0x01); // 串口接收返回脉冲数值
+        // stop_button = 0;
     }
     else
     {
-        fire_led.stop_motor();
-        if (stop_button == 0)
-        {
-            firefight_rover.write_two(0x01, 0x0010, 0, 0);   //柱雾电机锁定
-            firefight_rover.write_two(0x01, 12, 0, 0);       //上下电机锁定
-            firefight_rover.write_two(0x01, 14, 0, 0);       //左右电机锁定
-        }
-        else
-        {
-            firefight_rover.function_fire_fight(2);
-        }
+        // fire_led.stop_motor();
+        // if (0 == 0)
+        // {
+        //     firefight_rover.write_two(0x01, 0x0010, 0, 0);   //柱雾电机锁定
+        //     firefight_rover.write_two(0x01, 12, 0, 0);       //上下电机锁定
+        //     firefight_rover.write_two(0x01, 14, 0, 0);       //左右电机锁定
+        // }
+        // else
+        // {
+        firefight_rover.function_fire_fight(40);
+        // }
             
         // fire_motor_rover.motor_input(0, 0);
     }

@@ -211,6 +211,7 @@ void Fire_Gimbal::Data_Receive_Prepare()
     while (num > 0)
     {
         c = hal.serial(4)->read();
+        // hal.serial(7)->write(&c, 1); // 测试接受到的数据用的
         num--;
         if (stat == 0)
         {

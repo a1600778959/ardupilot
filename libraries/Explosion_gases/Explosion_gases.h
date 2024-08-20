@@ -7,6 +7,7 @@
 #define BYTE3(dwTemp) (*((char *)(&dwTemp) + 3))
 #define Thermal_ID 0x01   //热成像ID
 #define Gases_ID 0x02     //气体传感器ID
+#define Bms_ID 0XDD       //Bms传感器ID
 extern const AP_HAL::HAL &hal;
 
 struct Ex_Gases
@@ -30,7 +31,7 @@ struct Thermal_imaging
 struct Bms_info_str
 {
     uint16_t All_Vol;   // 电池总电压 单位 10mV，高字节在前
-    uint16_t I_cur;     //当前电流数值 单位 10mA
+    int16_t I_cur;     //当前电流数值 单位 10mA
     uint8_t RSOC;       // 电池剩余电量%
     uint16_t temp;      //电池温度
 
@@ -42,7 +43,7 @@ private:
     FireFightCRC CRC;
     
     void Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num);//数据处理函数
-    void Data_Receive_Prepare(uint8_t device_ID);               // 数据接收准备
+    void Data_Receive_Prepare();               // 数据接收准备
     void read(uint8_t address_ID, uint16_t reg_adress, uint16_t reg_num); // 只需要填写寄存器ID和寄存器个数
     void read_Bms(uint16_t comand_ID);                  // 只需要填写寄存器ID和寄存器个数
         /* data */

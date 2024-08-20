@@ -3,19 +3,19 @@
 void Explosion_gases::get_Thermal_imaging()  //热成像信息读取
 {
     read(Thermal_ID, 0x0100, 8);
-    Data_Receive_Prepare(Thermal_ID);
+    Data_Receive_Prepare();
 }
 
 void Explosion_gases::get_Bms_Info() // BMS信息读取
 {
     read_Bms(3);   //读取电池基本信息
-    Data_Receive_Prepare(0xDD);
+    Data_Receive_Prepare();
 }
 
 void Explosion_gases::read_Explosion_gasese()  //防爆气体信息读取
 {
     read(Gases_ID, 0, 7);
-    Data_Receive_Prepare(Gases_ID);
+    // Data_Receive_Prepare(Gases_ID);
 }
 
 void Explosion_gases::read_Bms(uint16_t comand_ID) // 只需要填写寄存器ID和寄存器个数
@@ -30,6 +30,7 @@ void Explosion_gases::read_Bms(uint16_t comand_ID) // 只需要填写寄存器ID
     crc = (~(data_to_send[2] + data_to_send[3])) + 1; // ID+长度+数据取反之后加一
     data_to_send[cnt++] = BYTE1(crc);
     data_to_send[cnt++] = BYTE0(crc);
+    data_to_send[cnt++] = 0x77;
     hal.serial(2)->write(data_to_send, cnt);
 }
 
@@ -72,31 +73,35 @@ void Explosion_gases::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
     }
     else if (data_buf[0] == 0xDD)
     {
-        Bms_info.All_Vol = ((data_buf[4] << 8) + data_buf[5])*0.01;
+        Bms_info.All_Vol = ((data_buf[4] << 8) + data_buf[5])*0.1;
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Bms_info.All_Vol :%d", Bms_info.All_Vol);
-        Bms_info.I_cur = ((data_buf[6] << 8) + data_buf[7])*0.01;
+        Bms_info.I_cur = ((data_buf[6] << 8) + data_buf[7]);
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Bms_info.I_cur :%d", Bms_info.I_cur);
         Bms_info.RSOC =  data_buf[23];
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Bms_info.RSOC :%d", Bms_info.RSOC);
-        Bms_info.temp = (((data_buf[27] << 8) + data_buf[28]) -2713)*0.1;
+        Bms_info.temp = (((data_buf[27] << 8) + data_buf[28]) -2713);
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Bms_info.temp :%d", Bms_info.temp);
     }
 }
 
-void Explosion_gases::Data_Receive_Prepare(uint8_t device_ID)   //使用串口4用于传感器数据采集
+void Explosion_gases::Data_Receive_Prepare()   //使用串口4用于传感器数据采集
 {
+
     uint8_t num = hal.serial(2)->available(); // 读取串口有多少个数据
+
     // gcs().send_text(MAV_SEVERITY_CRITICAL, "num:%d", num);
     uint8_t c;
     static uint8_t stat = 0, rece_len = 0, data_len = 0;
     static uint8_t data_buff[255];
     while (num > 0)
     {
+        
         c = hal.serial(2)->read();
         num--;
+        // hal.serial(7)->write(&c, 1); // 测试接受到的数据用的
         if (stat == 0)
         {
-            if (c == device_ID) // 如果等于发射器发送的帧头0x01：表示气体传感器 
+            if (c == 0XDD || c == Thermal_ID || c == Gases_ID) // 如果等于发射器发送的帧头0x01：表示气体传感器
             {
                 data_buff[rece_len++] = c;
                 stat++;
@@ -152,21 +157,22 @@ void Explosion_gases::Data_Receive_Prepare(uint8_t device_ID)   //使用串口4�
             data_buff[rece_len++] = c;
             if (data_len == 0) // 代表接收完毕
             {
-                if (data_buff[0] == 0XDD && data_buff[2] == 0 && data_buff[rece_len - 1] == 0x77)
+                if (data_buff[0] == 0XDD && data_buff[rece_len - 1] == 0x77)
                 {
                     uint16_t crc = 0;
                     for (uint8_t i = 2; i <= data_buff[3]+3;i++) // 这里进行和校验取反 +1
                     {
                         crc += data_buff[i];
                     }
-                    crc = ~crc + 1;
-                    if (crc == ((data_buff[rece_len - 2] << 8) | data_buff[rece_len - 1]))
+                    
+                    crc = (~crc) + 1;
+                    // gcs().send_text(MAV_SEVERITY_CRITICAL, "crc:%d", crc);
+                    if (crc == ((data_buff[rece_len - 3] << 8) | data_buff[rece_len - 2]))  //CRC倒数第二、第三位，高位在前低位后
                     {
+                        // hal.serial(7)->write(data_buff,rece_len);
                         Data_Receive_Anl_Task(data_buff, rece_len);
                         /* code */
                     }
-                    rece_len = 0;
-                    stat = 0;
                 }
                 else
                 {
@@ -175,9 +181,10 @@ void Explosion_gases::Data_Receive_Prepare(uint8_t device_ID)   //使用串口4�
                     {
                         Data_Receive_Anl_Task(data_buff, rece_len);
                     }
-                    rece_len = 0;
-                    stat = 0;
+
                 }
+                rece_len = 0;
+                stat = 0;
             }
         }
         else if(stat == 4)
@@ -185,7 +192,7 @@ void Explosion_gases::Data_Receive_Prepare(uint8_t device_ID)   //使用串口4�
             data_buff[rece_len++] = c;
             data_len = c + 3;
             stat = 3;
-
+            // gcs().send_text(MAV_SEVERITY_CRITICAL, "data_len:%d", data_len);
         }
         else
         {

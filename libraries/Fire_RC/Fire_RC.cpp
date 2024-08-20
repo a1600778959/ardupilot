@@ -1,4 +1,5 @@
 #include "Fire_RC.h"
+
 #include <GCS_MAVLink/GCS.h> //地面站
 int16_t Rc_In[25];
 uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
@@ -123,7 +124,7 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
         send_buff[cnt++] = BYTE0(temp_32 );                     // temp_32海拔
         send_buff[cnt++] = BYTE1(temp_16);                         // temp_32航向
         send_buff[cnt++] = BYTE0(temp_16);                         // temp_32航向
-        
+        temp_16 = 1;                                               // arming.is_armed();
         send_buff[cnt++] = BYTE1(temp_16);                         // temp_32状态
         send_buff[cnt++] = BYTE0(temp_16);                         // temp_32状态
         
@@ -200,7 +201,7 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
         
         send_buff[cnt++] = BYTE1(temp_16);                         // none21
         send_buff[cnt++] = BYTE0(temp_16);                         // none21
-        
+        temp_16 = 1;
         send_buff[cnt++] = BYTE1(temp_16);                         // 车体ID
         send_buff[cnt++] = BYTE0(temp_16);                         // 车体ID
         
@@ -212,13 +213,13 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
         temp_16 = E_g.Bms_info.RSOC;
         send_buff[cnt++] = BYTE1(temp_16);                         // 车体电量
         send_buff[cnt++] = BYTE0(temp_16);                         // 车体电量
-        temp_16 = 1234;
+        temp_16 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft) / 1000.0f);
         send_buff[cnt++] = BYTE1(temp_16);                         // 左电机转速
         send_buff[cnt++] = BYTE0(temp_16);                         // 左电机转速
         
         send_buff[cnt++] = BYTE1(temp_16);                         // 右电机转速
         send_buff[cnt++] = BYTE0(temp_16);                         // 右电机转速
-        temp_16 = E_g.Bms_info.I_cur;
+        temp_16 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) / 1000.0f);
         send_buff[cnt++] = BYTE1(temp_16);                         // 车体放电电流
         send_buff[cnt++] = BYTE0(temp_16);                         // 车体放电电流
         temp_16 = E_g.Bms_info.I_cur;
@@ -520,6 +521,8 @@ uint8_t Fire_RC::Data_Receive_Prepare()
                 {
                     uint8_t res = Data_Receive_Anl_Task(data_buff, rece_len);
                     // gcs().send_text(MAV_SEVERITY_CRITICAL, "res:%d", res);
+                    rece_len = 0;
+                    stat = 0;
                     if (frist_rcin == 0 )
                     {
                         if (res == 2 && Rc_In[3] > 1400)

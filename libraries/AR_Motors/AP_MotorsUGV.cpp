@@ -16,10 +16,10 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsUGV.h"
-#include <Fire_motor_485/Fire_motor_485.h>
+// #include <Fire_motor_485/Fire_motor_485.h>
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
-Fire_motor_485 F_motor;
+// Fire_motor_485 F_motor;
 
 extern const AP_HAL::HAL &hal;
 
