@@ -196,7 +196,7 @@ void Rover::FireFight_open() // 每2毫秒执行一次
     if ( arming.is_armed()) //&& current_v > 40)
     {
         fire_led.launch_motor();
-        firefight_rover.function_fire_fight(40);
+        firefight_rover.function_fire_fight(5);
 
         // firefight_rover.read_one(1, 25, 2);   // 发送读取脉冲数值命令
         // firefight_rover.check_send_one(0x01); // 串口接收返回脉冲数值
@@ -213,7 +213,7 @@ void Rover::FireFight_open() // 每2毫秒执行一次
         // }
         // else
         // {
-        firefight_rover.function_fire_fight(40);
+        firefight_rover.function_fire_fight(5);
         // }
             
         // fire_motor_rover.motor_input(0, 0);
