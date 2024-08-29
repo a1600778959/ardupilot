@@ -68,30 +68,22 @@ uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
 // update all the input channels
 uint8_t RC_Channels::read_input(void)
 {
-    uint8_t resp = 0;
-    // if (hal.rcin->new_input()) {
-    //     _has_had_rc_receiver = true;
-    // } else if (!has_new_overrides) {
-    //     return false;
-    // }
+    if (hal.rcin->new_input())
+    {
+        _has_had_rc_receiver = true;
+    }
+    else if (!has_new_overrides)
+    {
+        return false;
+    }
 
     has_new_overrides = false;
 
     last_update_ms = AP_HAL::millis();
-    resp = F_RC.Data_Receive_Prepare();
-    // gcs().send_text(MAV_SEVERITY_CRITICAL, "resp:%d",resp);
-    if (resp == 3)
-    {
-        return 3;
-        /* code */
-    }
-    else if(resp == 0)
-    {
-        return 0;
-    }
-    
+
     bool success = false;
-    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+    for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++)
+    {
         success |= channel(i)->update();
     }
 

@@ -10,5 +10,8 @@
         "ratio": "cpp"
     },
     "cmake.sourceDirectory": "/home/dzd/ardupilot/modules/Micro-CDR/test/case",
-    "C_Cpp.errorSquiggles": "disabled"
+    "C_Cpp.errorSquiggles": "disabled",
+    "Lua.diagnostics.disable": [
+        "unused-local"
+    ]
 }

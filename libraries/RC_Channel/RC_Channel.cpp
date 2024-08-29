@@ -145,19 +145,25 @@ bool RC_Channel::get_reverse(void) const
 // read input from hal.rcin or overrides
 bool RC_Channel::update(void)
 {
-        // if (has_override() && !rc().ignore_overrides()) {
-        //     radio_in = override_value;
-        // } else if (rc().has_had_rc_receiver() && !rc().ignore_receiver()) {
-        //     radio_in = hal.rcin->read(ch_in); //
-        // } else {
-        //     return false;
-        // }
-    radio_in = Rc_In[ch_in];
-    // radio_in;
-    // gcs().send_text(MAV_SEVERITY_CRITICAL, "F_RC.Rc_In[%d]:%d", ch_in, Rc_In[ch_in]);
-    if (type_in == ControlType::RANGE) {
+    if (has_override() && !rc().ignore_overrides())
+    {
+        radio_in = override_value;
+    }
+    else if (rc().has_had_rc_receiver() && !rc().ignore_receiver())
+    {
+        radio_in = hal.rcin->read(ch_in);
+    }
+    else
+    {
+        return false;
+    }
+
+    if (type_in == ControlType::RANGE)
+    {
         control_in = pwm_to_range();
-    } else {
+    }
+    else
+    {
         // ControlType::ANGLE
         control_in = pwm_to_angle();
     }

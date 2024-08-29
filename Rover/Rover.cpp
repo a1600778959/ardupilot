@@ -156,16 +156,17 @@ void Rover::FireFight_parm()  //2秒一次
 // }
 void Rover::Fire_Gimbal_Co()  //云台控制程序20HZ
 {
-    static uint8_t i = 0;
-    i++;
-    if (arming.is_armed()) //&& current_v > 40)
-    {
-        Fire_Gim.control_by_RC();
-    }
-    else
-    {
-        Fire_Gim.stop();
-    }
+    ;
+    // static uint8_t i = 0;
+    // i++;
+    // if (arming.is_armed()) //&& current_v > 40)
+    // {
+    //     Fire_Gim.control_by_RC();
+    // }
+    // else
+    // {
+    //     Fire_Gim.stop();
+    // }
     // if (i >= 10)
     // {
     // Fire_Gim.Data_Receive_Prepare(); // 每500ms读取一次云台角度数值反馈
