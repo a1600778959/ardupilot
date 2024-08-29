@@ -239,7 +239,7 @@ function update()
   --   gcs:send_named_float('RECM_EngineSpeedRPM',ECM_EngineSpeedRPM)
   end
 
-  return update, 100
+  return update, 10
 
 end
 

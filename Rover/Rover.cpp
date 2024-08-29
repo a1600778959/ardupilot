@@ -76,7 +76,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_rangefinders, 50, 200, 9),
     SCHED_TASK(FireFight_open, 200, 200, 10), // 消防炮功能函数，200HZ速度
 // SCHED_TASK(Fire_CLED, 50, 100, 13), // LED功能函数，50HZ速度
-    SCHED_TASK(Fire_Gimbal_Co,50,400,11),
+    // SCHED_TASK(Fire_Gimbal_Co,50,400,11),
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow, &rover.optflow, update, 200, 160, 13),
 #endif
@@ -138,7 +138,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(crash_check, 10, 200, 123),
     SCHED_TASK(cruise_learn_update, 50, 200, 126),
     SCHED_TASK(FireFight_parm, 0.1, 200, 127),      // 消防炮参数任务
-    SCHED_TASK(Fire_CLED, 50, 100, 128),            // LED功能函数，50HZ速度
+    // SCHED_TASK(Fire_CLED, 50, 100, 128),            // LED功能函数，50HZ速度
     // SCHED_TASK(Explosion_get_gases, 0.2, 200, 129), // 气体检测，更新速率0.2HZ
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check, 10, 200, 129),
@@ -203,22 +203,22 @@ void Rover::FireFight_open() // 每2毫秒执行一次
         // firefight_rover.check_send_one(0x01); // 串口接收返回脉冲数值
         // stop_button = 0;
     }
-    else
-    {
-        // fire_led.stop_motor();
-        // if (0 == 0)
-        // {
-        //     firefight_rover.write_two(0x01, 0x0010, 0, 0);   //柱雾电机锁定
-        //     firefight_rover.write_two(0x01, 12, 0, 0);       //上下电机锁定
-        //     firefight_rover.write_two(0x01, 14, 0, 0);       //左右电机锁定
-        // }
-        // else
-        // {
-        firefight_rover.function_fire_fight(40);
-        // }
+    // else
+    // {
+    //     // fire_led.stop_motor();
+    //     // if (0 == 0)
+    //     // {
+    //     //     firefight_rover.write_two(0x01, 0x0010, 0, 0);   //柱雾电机锁定
+    //     //     firefight_rover.write_two(0x01, 12, 0, 0);       //上下电机锁定
+    //     //     firefight_rover.write_two(0x01, 14, 0, 0);       //左右电机锁定
+    //     // }
+    //     // else
+    //     // {
+    //     firefight_rover.function_fire_fight(40);
+    //     // }
             
-        // fire_motor_rover.motor_input(0, 0);
-    }
+    //     // fire_motor_rover.motor_input(0, 0);
+    // }
 }
 
 void Rover::Fire_CLED()

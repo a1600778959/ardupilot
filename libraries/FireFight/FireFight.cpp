@@ -309,75 +309,91 @@ void FireFight::playback_button(uint16_t val)
 
 void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很重要
 {
-
-    int16_t action_pitch_1 = 0, action_pitch_2 = 0;   // pitch轴标志位
-    int16_t action_roll_1 = 0, action_roll_2 = 0;     //
-    int16_t action_zhu_1 = 0, action_zhu_2 = 0;       //
-    static uint8_t flag = 0;
-    uint16_t under_offset = 1700;
-    uint16_t low_offset = 1300;
+    static uint16_t time_count_ms = 0;
+    static uint8_t ignition_lock = 0;
+    int16_t action_stop_1 = 0,action_stop_2 = 0;                    // pitch轴标志位
+    int16_t action_ignition_1 = 0, action_ignition_2 = 0;           //
+    // static uint8_t flag = 0;
+    uint16_t under_offset = 1800;
+    uint16_t low_offset = 1200;
     // int8_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
-    uint16_t rcin_2 = Rc_In[2];
-    uint16_t rcin_3 = Rc_In[3];
-    uint16_t rcin_4 = Rc_In[13];
-    if (abs(rcin_3 - 1500) > 100)
+    uint16_t stop_ctrl = (hal.rcin->read(4));  //刹车控制
+    uint16_t ignition_ctrl_frist = (hal.rcin->read(5));  //一级软件点火控制
+    uint16_t ignition_ctrl_second = (hal.rcin->read(11));  // 二级软件点火控制
+    // uint16_t LED_ctrl = (hal.rcin->read(6));        //灯控制
+    // 起爆逻辑如下：ignition_ctrl_frist、ignition_ctrl_second杆必须在规定时间执行以下操作：
+    // 1：ignition_ctrl_frist杆先推到下，再推到上，保持不动，开启一级解保护
+    // 2：ignition_ctrl_second 先旋转至最小，再旋转至最大，重复两次，开启二级解保护，启动引爆继电器
+    if (abs(ignition_ctrl_frist - 1500) > 100)
     {
-            ((rcin_3 - 1500) > 0) ? (action_pitch_1 = 1, action_pitch_2 = 0) : (action_pitch_1 = 0, action_pitch_2 = 1); 
+
+        if (time_count_ms > 5000)
+        {
+            ignition_lock = 0;
+            time_count_ms = 0;  //启动失败，请重新进入起爆流程
+                // lock_flag = 1; // Push_rod_fan_ID_2 ^ 0x0001  Self_spraying_ID3 ^ 0x0001
+            // ((T_8 - 1500) > 0) ? (Push_rod_fan_ID_2 = 1) : (Push_rod_fan_ID_2 = 0);
+        }
+        else if (time_count_ms <= 5000) //在5秒内进行判断
+        {
+            if (ignition_ctrl_frist < 1500 && ignition_lock == 0)
+            {
+                ignition_lock = 1; // 必须初始数值向下
+            }
+            else if(ignition_ctrl_frist > 1500 && ignition_lock == 1) 
+            {
+                ignition_lock = 2;
+            }
+            else if (ignition_ctrl_frist > 1500 && ignition_ctrl_second < low_offset && ignition_lock == 2)
+            {
+                ignition_lock = 3;
+            }
+            else if (ignition_ctrl_frist > 1500 && ignition_ctrl_second > under_offset && ignition_lock == 3)
+            {
+                ignition_lock = 4;
+            }
+            else if (ignition_ctrl_frist > 1500 && ignition_ctrl_second < low_offset && ignition_lock == 4)
+            {
+                ignition_lock = 5;
+            }
+            else if (ignition_ctrl_frist > 1500 && ignition_ctrl_second > under_offset && ignition_lock == 5)
+            {
+                ignition_lock = 0;  //重置标志位，避免未起爆
+                if (action_ignition_2 == 0 && action_ignition_1 == 0) // 如果第一次，则优先使用action1去尝试起爆
+                {
+                    action_ignition_1 = action_ignition_1 ^ 0x0001;
+                }
+                else  //启用第二套起爆
+                {
+                    action_ignition_1 = action_ignition_1 ^ 0x0001;
+                    action_ignition_2 = action_ignition_2 ^ 0x0001;
+                }
+                
+            }
+            
+        }
+        if (ignition_lock > 0)
+        {
+            time_count_ms += DT_ms;
+        }
+
         // {exp_offset_Up_Down = 1} : exp_offset_Up_Down = -1; // 等于1表示上，-1表示向下
     }
-    else if (abs(rcin_3 - 1500) < 100)
-    {
-        action_pitch_1 = 0, action_pitch_2 = 0;
-    }
 
-    if (abs(rcin_2 - 1500) > 100)
-    {
-        ((rcin_2 - 1500) > 0) ? (action_roll_1 = 0, action_roll_2 = 1):(action_roll_1 = 1, action_roll_2 = 0);
-        // exp_offset_Left_Right = 1:exp_offset_Left_Right=-1; //等于1表示向右，-1表示向左边
-    }
-    else //if (replay_flag != 1)
-    {
-        action_roll_1 = 0, action_roll_2 = 0;
-    }
-
-    // write_two(1,0,exp_offset_Up_Down,exp_offset_Left_Right);
-
-    if ((rcin_4) > under_offset)
-    {
-        action_zhu_1 = 1, action_zhu_2 = 0;
-        // write_two(0x01,0x0010,1,0);
-
-    }
-    else if ((rcin_4) < low_offset)
-    {
-        // write_two(0x01,0x0010,0,0);
-        action_zhu_1 = 0, action_zhu_2 = 1;
-    }
-
-    else if (((rcin_4) > low_offset) && ((rcin_4) < under_offset))
-    {
-        // write_two(0x01,0x0010,0,1);
-        action_zhu_1 = 0, action_zhu_2 = 0;
-    }
-    if (flag == 0)
-    {
-        write_six(1, 12, action_pitch_1, action_pitch_2, action_roll_1, action_roll_2, action_zhu_1, action_zhu_2);
-        /* code */
-        flag++;
-    }
-    else if (flag == 1)
-    {
-        FireFight_ID2(DT_ms);
-        flag++;
-    }
-    else if(flag == 2)
-    {
-        FireFight_ID3(DT_ms);
-        flag = 0;
-    }
-
-        
     
+    if (abs(stop_ctrl - 1500) > 100)
+    {
+        ((stop_ctrl - 1500) > 0) ? (action_stop_1 = 1, action_stop_2 = 0) : (action_stop_1 = 0, action_stop_2 = 1);
+        // {exp_offset_Up_Down = 1} : exp_offset_Up_Down = -1; // 等于1表示上，-1表示向下
+    }
+    else if (abs(stop_ctrl - 1500) < 100)
+    {
+        action_stop_1 = 0, action_stop_2 = 0;
+    }
+
+    write_six(1, 12, action_stop_1, action_stop_2, action_stop_1, action_stop_2, action_ignition_1, action_ignition_2);
+    /* code */
+  
 }
 
 void FireFight::FireFight_ID2(uint8_t DT_ms) // 执行周期，传入DT很重要

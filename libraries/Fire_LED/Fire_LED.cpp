@@ -24,8 +24,18 @@ Fire_LED::Fire_LED(/* args */)
 
 void Fire_LED::launch_motor()
 {
-    C1_off;
-    C2_off;
+    uint16_t LED_ctrl = (hal.rcin->read(6)); // 刹车控制
+    if (LED_ctrl > 1500)
+    {
+        C1_on;
+        C2_on;
+    }    
+    else
+    {
+        C1_off;
+        C2_off;
+    }
+        
 }
 
 void Fire_LED::stop_motor()
