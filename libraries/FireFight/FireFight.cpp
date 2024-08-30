@@ -367,12 +367,12 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
     }
     else if (flag == 1)
     {
-        FireFight_ID2(DT_ms);
+        FireFight_ID2(DT_ms*3);
         flag++;
     }
     else if(flag == 2)
     {
-        FireFight_ID3(DT_ms);
+        FireFight_ID3(DT_ms*3);
         flag = 0;
     }
 
