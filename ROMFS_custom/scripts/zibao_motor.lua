@@ -38,7 +38,15 @@ function from_uint(val, min, max, bits)
   for i = 0, bits - 1 do
     int_range = int_range | (1 << i)
   end
-  return ((val / int_range) * range) + min
+  if val >  int_range/2 then
+    val = val - int_range;     
+  end
+  if val > max then
+    val = max;
+  elseif val < min then
+    val = min;
+  end  
+  return val
 end
 
 -- send a motor command
@@ -54,7 +62,7 @@ function send(left_rpm,right_rpm , left_torque, right_torque)
   assert(math.abs(right_rpm) <= max, "right_rpm out of range")
   assert(math.abs(left_torque) <= max, "left_torque out of range")
   assert(math.abs(right_torque) <= max, "right_torque out of range")
-
+  
   -- convert from decimal to integer
   -- left_rpm = to_uint(left_rpm, min,    max,    16)
   -- right_rpm = to_uint(right_rpm, min,    max,    16)
@@ -160,6 +168,8 @@ function zero()
   driver:write_frame(msg, 10000)
 end
 
+
+
 -- receive data from motor
 function receive()
 
@@ -193,7 +203,7 @@ function receive()
   local ECM_EngineSpeedRPM = (frame:data(7) << 8) | (frame:data(6))
   -- gcs:send_named_float("CAN_RXID",ID);
   -- from integer to decimal
-  ID = from_uint(ID,0,255,32)
+  -- ID = from_uint(ID,0,255,32)
   ECM_ControllerTemp = from_uint(ECM_ControllerTemp,0,255,8) - 40
   ECM_MotorTemp      = from_uint(ECM_MotorTemp,0,255,8) - 40
   ECM_BusVoltage     = from_uint(ECM_BusVoltage,0,65535,16)*0.1
@@ -208,8 +218,8 @@ end
 function get_output()
   local left_rpm = SRV_Channels:get_output_pwm(73)   --获取通道1输出数值 
   local right_rpm = SRV_Channels:get_output_pwm(74)   --获取通道3输出数值
-  left_rpm = math.floor(((left_rpm-1500)/500) * 500)
-  right_rpm = math.floor(((right_rpm-1500)/500) * 500)
+  left_rpm = math.floor(((left_rpm-1500)/500) * 5000)
+  right_rpm = math.floor(((right_rpm-1500)/500) * 5000)
   
 
   
