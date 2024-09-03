@@ -119,8 +119,11 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THST_ASYM", 14, AP_MotorsUGV, _thrust_asymmetry, 1.0f),
 
-    AP_GROUPEND
-};
+    AP_GROUPINFO("L_offset", 15, AP_MotorsUGV, L_offset, 1.0f),
+
+    AP_GROUPINFO("R_offset", 16, AP_MotorsUGV, R_offset, 1.0f),
+
+    AP_GROUPEND};
 
 AP_MotorsUGV::AP_MotorsUGV(AP_ServoRelayEvents &relayEvents, AP_WheelRateControl& rate_controller) :
         _relayEvents(relayEvents),
@@ -818,8 +821,8 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     }
 
     // add in throttle and steering//由于遥控器原因，这里需要设置成反向
-    float motor_left = throttle_scaled*0.8f + steering_scaled ;
-    float motor_right = throttle_scaled  - steering_scaled ;
+    float motor_left = throttle_scaled * L_offset + steering_scaled;
+    float motor_right = throttle_scaled * R_offset - steering_scaled;
 
     // Apply asymmetry correction
     if (is_negative(motor_right)) {

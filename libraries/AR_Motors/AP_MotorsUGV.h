@@ -125,6 +125,8 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
+    AP_Float L_offset;
+    AP_Float R_offset;
 
 private:
 
