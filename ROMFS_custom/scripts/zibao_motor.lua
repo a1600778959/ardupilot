@@ -9,8 +9,8 @@ local driver = CAN:get_device(20)
 
 local target_ID = uint32_t(1168)
 
-local max = 32767
-local min = -32768
+local max = 10000
+local min = -10000
 --local vel_max = 65
 --local Kp_min = 0
 --local Kp_max = 500
@@ -38,7 +38,15 @@ function from_uint(val, min, max, bits)
   for i = 0, bits - 1 do
     int_range = int_range | (1 << i)
   end
-  return ((val / int_range) * range) + min
+  if val >  int_range/2 then
+    val = val - int_range;     
+  end
+  if val > max then
+    val = max;
+  elseif val < min then
+    val = min;
+  end  
+  return val
 end
 
 -- send a motor command
@@ -54,39 +62,42 @@ function send(left_rpm,right_rpm , left_torque, right_torque)
   assert(math.abs(right_rpm) <= max, "right_rpm out of range")
   assert(math.abs(left_torque) <= max, "left_torque out of range")
   assert(math.abs(right_torque) <= max, "right_torque out of range")
-
+  
   -- convert from decimal to integer
-    left_rpm = to_uint(left_rpm, min,    max,    16)
-    right_rpm = to_uint(right_rpm, min,    max,    16)
-    right_torque = to_uint(right_torque, min,    max,    16)
-    left_torque = to_uint(left_torque, min,    max,    16)
+  -- left_rpm = to_uint(left_rpm, min,    max,    16)
+  -- right_rpm = to_uint(right_rpm, min,    max,    16)
+  -- right_torque = to_uint(right_torque, min,    max,    16)
+  -- left_torque = to_uint(left_torque, min,    max,    16)
 
+  gcs:send_named_float('left_rpm',left_rpm) 
+  gcs:send_named_float('right_rpm',right_rpm) 
+  
   msg = CANFrame()
   msg:id(target_ID)
 
   -- 0: [left_rpm[15-8]]
-  msg:data(0, left_rpm >> 8)
+  msg:data(0, left_rpm & 0xFF)
 
   -- 1: [left_rpm[7-0]] 
-  msg:data(1, left_rpm & 0xFF)
+  msg:data(1, (left_rpm >> 8) & 0xff)
 
   -- 2: [right_rpm[15-8]]
-  msg:data(2, right_rpm >> 8)
+  msg:data(2, right_rpm & 0xFF)
 
   -- 3: [right_rpm[7-0]]
-  msg:data(3, right_rpm & 0xFF)
+  msg:data(3, (right_rpm >> 8)& 0xff)
 
   -- 4: [right_rpm[15-8]]
-  msg:data(4, left_torque >> 8)
+  msg:data(4, left_torque & 0xFF)
 
   -- 5: [right_rpm[7-0]]
-  msg:data(5, left_torque & 0xFF)
+  msg:data(5, (left_torque >> 8)& 0xff)
 
   -- 6: [right_rpm[15-8]]
-  msg:data(6, right_torque >> 8)
+  msg:data(6, right_torque & 0xFF)
 
   -- 7: [right_rpm[7-0]]
-  msg:data(7, right_torque & 0xFF)
+  msg:data(7, right_torque>> 8 )
 
 
   -- sending 8 bytes of data
@@ -157,6 +168,8 @@ function zero()
   driver:write_frame(msg, 10000)
 end
 
+
+
 -- receive data from motor
 function receive()
 
@@ -190,7 +203,7 @@ function receive()
   local ECM_EngineSpeedRPM = (frame:data(7) << 8) | (frame:data(6))
   -- gcs:send_named_float("CAN_RXID",ID);
   -- from integer to decimal
-  ID = from_uint(ID,0,255,32)
+  -- ID = from_uint(ID,0,255,32)
   ECM_ControllerTemp = from_uint(ECM_ControllerTemp,0,255,8) - 40
   ECM_MotorTemp      = from_uint(ECM_MotorTemp,0,255,8) - 40
   ECM_BusVoltage     = from_uint(ECM_BusVoltage,0,65535,16)*0.1
@@ -200,15 +213,26 @@ function receive()
   return ID, ECM_ControllerTemp, ECM_MotorTemp, ECM_BusVoltage,ECM_BusCurrent,ECM_EngineSpeedRPM
 
 end
+
+
 function get_output()
-  -- SRV_Channels:
+  local left_rpm = SRV_Channels:get_output_pwm(73)   --获取通道1输出数值 
+  local right_rpm = SRV_Channels:get_output_pwm(74)   --获取通道3输出数值
+  left_rpm = math.floor(((left_rpm-1500)/500) * 5000)
+  right_rpm = math.floor(((right_rpm-1500)/500) * 5000)
+  
+
+  
+  send(left_rpm,right_rpm,0,0)
 end
+
 
 
 function update()
 
-  send(1000, 2000, 3000, 4000)
+  -- send(1000, 2000, 3000, 4000)
   -- gcs:send_named_float('TEST——ID',555)
+  get_output();
   local ID, ECM_ControllerTemp, ECM_MotorTemp, ECM_BusVoltage,ECM_BusCurrent,ECM_EngineSpeedRPM = receive()
   if ID then
     -- gcs:send_named_float('ID',ID)
