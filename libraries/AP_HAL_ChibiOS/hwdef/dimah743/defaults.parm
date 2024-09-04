@@ -46,6 +46,7 @@ RCMAP_PITCH 3
 # BATT_VILT_MULT
 BATT_VOLT_MULT 21.17
 
+#range_finder
 AVOID_ENABLE 2
 PRX1_TYPE 6
 
@@ -56,4 +57,18 @@ SERVO1_REVERSED 1
 SERVO2_FUNCTION 74
 SERVO3_FUNCTION 58
 SERVO4_FUNCTION 60
+
+#This is the script command for using CAN1
+#this is the script enable button
+SCR_ENABLE 1
+#this is the script falsh capacity
+SCR_HEAP_SIZE 102400
+#THIS IS THE script command for using CAN1
+CAN_D1_PROTOCOL 10
+#This is choose the frist drives
+CAN_P1_DRIVER 1
+#Swlect the baud rate to 250k
+CAN_P2_BITRATE 250000
+
+
 
