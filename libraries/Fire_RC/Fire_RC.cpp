@@ -19,7 +19,8 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
     switch (data_buf[1])
     {
     case 0x03: 
-        E_g.read_Explosion_gasese();
+        E_g.read_Explosion_gasese();  //读取防爆气体
+        E_g.get_Broa_info();   //读取压力传感器数据
         E_g.get_Bms_Info();
         send_buff[cnt++] = 0x4D; //遥控器ID
         send_buff[cnt++] = 0x03; // 返回功能位

@@ -68,7 +68,7 @@ CAN_D1_PROTOCOL 10
 #This is choose the frist drives
 CAN_P1_DRIVER 1
 #Swlect the baud rate to 250k
-CAN_P2_BITRATE 250000
+CAN_P1_BITRATE 250000
 
 
 

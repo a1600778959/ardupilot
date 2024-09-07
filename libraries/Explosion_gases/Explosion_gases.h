@@ -8,6 +8,8 @@
 #define Thermal_ID 0x01   //热成像ID
 #define Gases_ID 0x02     //气体传感器ID
 #define Bms_ID 0XDD       //Bms传感器ID
+#define Broa_ID 0X03       // Bms传感器ID
+
 extern const AP_HAL::HAL &hal;
 
 struct Ex_Gases
@@ -16,7 +18,7 @@ struct Ex_Gases
     int16_t NH3;
     int16_t temp; //设备温度
     int16_t humidity; //外部湿度
-
+    int16_t waterpress; //水压
     /* data */
 };
 
@@ -54,6 +56,7 @@ public :
     void get_Thermal_imaging();    //读取热成像数据
     void read_Explosion_gasese();  //读取气体传感器数据
     void get_Bms_Info();     //读取BMS信息
+    void get_Broa_info();     //读取水压
 };  
 
 

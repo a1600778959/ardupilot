@@ -447,8 +447,8 @@ void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
     static uint16_t time_count_ms_T7 = 0, lock_flag_T7 = 0;
     static uint16_t time_count_ms_T8 = 0, lock_flag_T8 = 0;
     static int16_t release_belt_ID_1 = 0, fan_ID_2 = 0; // pitch轴标志位
-    static int16_t GPIO_LED_ID_3 = 0, GPIO_LED_ID_4 = 0;   //
-    static int16_t ID5 = 0, ID6 = 0;     //
+    static int16_t GPIO_LED_ID_4 = 0;   //
+    // static int16_t ID5 = 0, ID6 = 0;     //
 
     uint16_t under_offset = 1700;
     uint16_t low_offset = 1300;
@@ -458,12 +458,15 @@ void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
     uint16_t T_4 = Rc_In[14];
     if (abs(T_7 - 1500) > 100 && lock_flag_T7 == 0)
     {
-        if (time_count_ms_T7 > 3000)
+        if (time_count_ms_T7 > 500)
         {
             lock_flag_T7 = 1;
-            ((T_7 - 1500) > 0) ? (ID5 = 0) : (release_belt_ID_1 = release_belt_ID_1 ^ 0x0001);
+            if ((T_7 - 1500) > 0)
+            {
+                (release_belt_ID_1 = release_belt_ID_1 ^ 0x0001);
+            }
+             
         }
-        else
         {
             time_count_ms_T7 += DT_ms;
         }
@@ -478,7 +481,7 @@ void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
     if (abs(T_8 - 1500) > 100 && lock_flag_T8 == 0)
     {
 
-        if (time_count_ms_T8 > 1000)
+        if (time_count_ms_T8 > 500)
         {
             lock_flag_T8 = 1;
             ((T_8 - 1500) > 0) ? (fan_ID_2 = 1) : ( fan_ID_2 = 0);
@@ -497,15 +500,16 @@ void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
 
     if ((T_4) > under_offset)
     {
-        GPIO_LED_ID_3 = 1, GPIO_LED_ID_4 = 1;
+        GPIO_LED_ID_4 = 1;
         // write_two(0x01,0x0010,1,0);
     }
     else if ((T_4) < low_offset)
     {
         // write_two(0x01,0x0010,0,0);
-        GPIO_LED_ID_3 = 0, GPIO_LED_ID_4 = 0;
+         GPIO_LED_ID_4 = 0;
     }
-    write_six(3, 12, release_belt_ID_1, fan_ID_2, GPIO_LED_ID_3, GPIO_LED_ID_4, ID5, ID6);
+                    //上  下   左  右   flow foc
+    write_six(3, 12, fan_ID_2, fan_ID_2, release_belt_ID_1, GPIO_LED_ID_4, fan_ID_2, fan_ID_2);
     // 这里设置初始地址为12,因为方便几个板子间移植
 }
 void FireFight::parm_change()
