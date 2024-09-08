@@ -429,7 +429,7 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
         RC.F18 = (uint8_t)((data_buf[9] & 0x02) >> 1);
         RC.F17 = (uint8_t)((data_buf[9] & 0x04) >> 2);
         RC.F21 = (uint8_t)((data_buf[9] & 0x20) >> 5);
-        Rc_In[21] = -RC.F21 * 1000 + 2000;
+        Rc_In[21] = RC.F21 * 1000 + 1000;
         RC.F22 = (uint8_t)((data_buf[9] & 0x40) >> 6);
         return 2; // 表示遥控器更新完毕
         break;
