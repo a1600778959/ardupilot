@@ -291,9 +291,9 @@ void Fire_Gimbal::control_by_RC()
         roll = 0;
     }
 
-    if (abs(Rc_In[9] - 1500) > 100)
+    if (abs(Rc_In[7] - 1500) > 100)
     {
-        ((Rc_In[9] - 1500) > 0) ? multiple = 1 : multiple = 2;
+        ((Rc_In[7] - 1500) > 0) ? multiple = 1 : multiple = 2;
     }
     else
     {
@@ -305,9 +305,9 @@ void Fire_Gimbal::control_by_RC()
         
     }
 
-    if (abs(Rc_In[8] - 1500) > 100)
+    if (abs(Rc_In[6] - 1500) > 100)
     {
-        ((Rc_In[9] - 1500) > 0) ? zoom = 1 : zoom = 2;
+        ((Rc_In[6] - 1500) > 0) ? zoom = 1 : zoom = 2;
     }
     else
     {

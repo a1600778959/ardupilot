@@ -320,6 +320,7 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
     uint16_t rcin_2 = Rc_In[2];
     uint16_t rcin_3 = Rc_In[3];
     uint16_t rcin_4 = Rc_In[13];
+    uint16_t F5 = Rc_In[19];
     if (abs(rcin_3 - 1500) > 100)
     {
             ((rcin_3 - 1500) > 0) ? (action_pitch_1 = 1, action_pitch_2 = 0) : (action_pitch_1 = 0, action_pitch_2 = 1); 
@@ -349,6 +350,17 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
 
     }
     else if ((rcin_4) < low_offset)
+    {
+        // write_two(0x01,0x0010,0,0);
+        action_zhu_1 = 0, action_zhu_2 = 1;
+    }
+
+    if ((F5) > under_offset)
+    {
+        action_zhu_1 = 1, action_zhu_2 = 0;
+        // write_two(0x01,0x0010,1,0);
+    }
+    else if ((F5) < low_offset)
     {
         // write_two(0x01,0x0010,0,0);
         action_zhu_1 = 0, action_zhu_2 = 1;
@@ -478,7 +490,7 @@ void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
     // int8_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
     uint16_t T_7 = Rc_In[15];
     uint16_t T_8 = Rc_In[16];
-    uint16_t T_4 = Rc_In[14];
+    uint16_t F_22 = Rc_In[22];  
     if (abs(T_7 - 1500) > 100 && lock_flag_T7 == 0)
     {
         if (time_count_ms_T7 > 500)
@@ -521,12 +533,12 @@ void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
         time_count_ms_T8 = 0;
     }
 
-    if ((T_4) > under_offset)
+    if ((F_22) > under_offset)
     {
         GPIO_LED_ID_4 = 1;
         // write_two(0x01,0x0010,1,0);
     }
-    else if ((T_4) < low_offset)
+    else if ((F_22) < low_offset)
     {
         // write_two(0x01,0x0010,0,0);
          GPIO_LED_ID_4 = 0;

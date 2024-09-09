@@ -216,10 +216,10 @@ end
 
 function get_degree()
     local degree_L,degree_R = 0,0;
-    local P3_UD =   rc:get_pwm(8);    --获取P3上下遥感的数值
+    local P4_UD =   rc:get_pwm(10);    --获取P3上下遥感的数值
     local P5_UD =   rc:get_pwm(12);   --获取P5上下遥感的数值
-    if(math.abs(P3_UD - 1500)>60) then
-      degree_L = (P3_UD - 1500)*3    --每度数值27.7，控制周期为200HZ，杆量推满时候每秒2度
+    if(math.abs(P4_UD - 1500)>60) then
+      degree_L = (P4_UD - 1500)*3    --每度数值27.7，控制周期为200HZ，杆量推满时候每秒2度
     else
       degree_L = 0;
     end
