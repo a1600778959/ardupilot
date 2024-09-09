@@ -71,7 +71,7 @@ SCHED_TASK_CLASS arguments:
 const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     //         Function name,          Hz,     us,
     // SCHED_TASK(Fire_RC_F, 50, 200, 2),
-    SCHED_TASK(read_radio, 50, 200, 3),
+    SCHED_TASK(read_radio, 50, 500, 3),
     SCHED_TASK(ahrs_update, 400, 400, 6),
     SCHED_TASK(read_rangefinders, 50, 200, 9),
     SCHED_TASK(FireFight_open, 200, 200, 10), // 消防炮功能函数，200HZ速度

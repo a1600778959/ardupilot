@@ -19,7 +19,7 @@ local target_R_control_ID = uint32_t(0x06000002)  --右边can发送包
 local current_L_pos = 0;
 local current_R_pos = 0;
 
-local L_inc_degree,R_inc_degree = 0,0;
+
 
 local current_contro_status_L = 0;
 local current_contro_status_R = 0;
@@ -215,10 +215,20 @@ function get_output()
 end
 
 function get_degree()
-    local P3_UD =   rc:get_pwm(7);    --获取P3上下遥感的数值
-    local P5_UD =   rc:get_pwm(11);   --获取P5上下遥感的数值
-    local degree_L = (P3_UD - 1500)/500*54/200    --每度数值27.7，控制周期为200HZ，杆量推满时候每秒2度
-    local degree_R = (P5_UD - 1500)/500*54/200    --每度数值27.7，控制周期为200HZ，杆量推满时候每秒2度
+    local degree_L,degree_R = 0,0;
+    local P3_UD =   rc:get_pwm(8);    --获取P3上下遥感的数值
+    local P5_UD =   rc:get_pwm(12);   --获取P5上下遥感的数值
+    if(math.abs(P3_UD - 1500)>60) then
+      degree_L = (P3_UD - 1500)*3    --每度数值27.7，控制周期为200HZ，杆量推满时候每秒2度
+    else
+      degree_L = 0;
+    end
+    
+    if(math.abs(P5_UD - 1500)>60) then
+      degree_R = (P5_UD - 1500)*3   --每度数值27.7，控制周期为200HZ，杆量推满时候每秒2度
+    else
+      degree_R = 0;
+    end
     return degree_L,degree_R
 end
 
@@ -241,6 +251,25 @@ function enable(target_ID)  --使能函数
     driver:write_frame(msg, 10000)  
 end
 
+function temp_fb(target_ID)  --转子绝对值位置反馈
+    msg = CANFrame()
+    -- enable(target_ID) 
+    msg:id( (uint32_t(1) << 31) | target_ID)
+    msg:data(0, 0x40)
+    msg:data(1, 0x0F)
+    msg:data(2, 0x21)
+    msg:data(3, 0x01)
+    msg:data(4, 0x00)
+    msg:data(5, 0x00)
+    msg:data(6, 0x00)
+    msg:data(7, 0x00)
+
+    msg:dlc(8)
+
+    driver:write_frame(msg, 10000)    
+    
+end
+
 function rotor_pos_fb(target_ID)  --转子绝对值位置反馈
     msg = CANFrame()
     -- enable(target_ID) 
@@ -248,7 +277,7 @@ function rotor_pos_fb(target_ID)  --转子绝对值位置反馈
     msg:data(0, 0x40)
     msg:data(1, 0x04)
     msg:data(2, 0x21)
-    msg:data(3, 0x01)
+    msg:data(3, 0x02)
     msg:data(4, 0x00)
     msg:data(5, 0x00)
     msg:data(6, 0x00)
@@ -267,6 +296,23 @@ function in_range(num,min,max)
         num = max;
     end
     return num;
+end
+
+function speed_contro(target_ID,speed)  --需要进行角度限制
+    enable(target_ID)  --使能
+    msg = CANFrame()
+    -- degree = in_range(degree,-60,60)  --暂定限制角度为-60～60
+    msg:id( (uint32_t(1) << 31) | target_ID)
+    msg:data(0, 0x23)
+    msg:data(1, 0x00)
+    msg:data(2, 0x20)
+    msg:data(3, 0x01)
+    msg:data(4, (speed >> 24)&0xff)
+    msg:data(5, (speed >> 16)&0xff)
+    msg:data(6, (speed >> 8)&0xff)
+    msg:data(7, speed & 0xff)
+    msg:dlc(8)
+    driver:write_frame(msg, 10000)
 end
 
 function pos_contro(target_ID,degree)  --需要进行角度限制
@@ -289,6 +335,7 @@ end
 
 function update()
   -- enable(target_L_control_ID)
+  local L_inc_degree,R_inc_degree = 0,0;
   rotor_pos_fb(target_L_control_ID)
 
   -- send(1000, 2000, 3000, 4000)
@@ -296,35 +343,29 @@ function update()
   local receive_buff = receive();
   if receive_buff then
     ID = receive_buff:id()
-    -- ID = (uint32_t(0x01111111)&(receive_buff:id()))
-    -- gcs:send_text(0,string.format("ID is:" .. tostring(ID)))
-    -- gcs:send_text(0,string.format("target_L_fb_ID is:"..tostring((uint32_t(1) << 31) |target_L_fb_ID)))
-    
-    -- gcs:send_text(0,string.format("CAN[%u] msg from " .. tostring(ID) .. ": %i, %i, %i, %i, %i, %i, %i, %i", 1, frame:data(0), frame:data(1), frame:data(2), frame:data(3), frame:data(4), frame:data(5), frame:data(6), frame:data(7)))
     if ID == ((uint32_t(1) << 31) |target_L_fb_ID) then
-        gcs:send_text(0,string.format("msg:"  .. ": %i, %i, %i, %i, %i, %i, %i, %i", receive_buff:data(0), receive_buff:data(1), receive_buff:data(2), receive_buff:data(3), receive_buff:data(4), receive_buff:data(5), receive_buff:data(6), receive_buff:data(7)))
-        if ((receive_buff:data(0) == 0x60) and (receive_buff:data(1) == 0x04) and (receive_buff:data(2) == 0x21) and (receive_buff:data(3) == 0x01)) then  --帧头
-          current_L_pos = (receive_buff:data(6) << 8) | (receive_buff:data(7)) 
-          gcs:send_named_float('L_pos',current_L_pos/27.7)
-          gcs:send_text(0,string.format("L_pos is:" .. tostring(current_L_pos/27.7)))
+        -- gcs:send_text(0,string.format("msg:"  .. ": %i, %i, %i, %i, %i, %i, %i, %i", receive_buff:data(0), receive_buff:data(1), receive_buff:data(2), receive_buff:data(3), receive_buff:data(4), receive_buff:data(5), receive_buff:data(6), receive_buff:data(7)))
+        if ((receive_buff:data(0) == 0x60) and (receive_buff:data(1) == 0x04) and (receive_buff:data(2) == 0x21) and (receive_buff:data(3) == 0x02)) then  --帧头
+          current_L_pos = (receive_buff:data(4) << 24) |(receive_buff:data(5) << 16) |(receive_buff:data(6) << 8) | (receive_buff:data(7)) 
+          gcs:send_named_float('L_pos',current_L_pos)
+          -- gcs:send_text(0,string.format("L_pos is:" .. tostring(current_L_pos/27.7)))
         end
-      end
       -- if ID == ((uint32_t(1) << 31) |target_R_fb_ID) then
       --   if receive_buff:data(1) == 0x60 and receive_buff:data(2) == 0x04 and receive_buff:data(3) == 0x21 and receive_buff:data(4) == 0x01 then  --帧头
       --     current_R_pos = (receive_buff:data(6) << 8) | (receive_buff:data(7)) 
       --     gcs:send_named_float('R_pos',current_R_pos/27.7)
       --   end
       -- end
-      if ID == ((uint32_t(1) << 31) |target_L_heart_ID) then
-        gcs:send_text(0,"target_L_heart_ID")
-        if receive_buff:data(1) == 0x05 and receive_buff:data(2) == 0x00 then  --帧头
+    elseif ID == ((uint32_t(1) << 31) |target_L_heart_ID) then
+        -- gcs:send_text(0,"target_L_heart_ID")
+        if receive_buff:data(0) == 0x05 and receive_buff:data(1) == 0x00 then  --帧头
           current_contro_status_L = (receive_buff:data(4) << 8) | (receive_buff:data(5)) 
           Err_status_L = (receive_buff:data(6) << 8) | (receive_buff:data(7)) 
           gcs:send_named_float('L_current',current_contro_status_L)
           gcs:send_named_float('L_Err',Err_status_L)
           gcs:send_text(0,string.format("L_current is:" .. tostring(current_contro_status_L)))
         end
-      end
+    end
       -- if ID == ((uint32_t(1) << 31) |target_R_heart_ID) then
       --   if receive_buff:data(1) == 0x05 and receive_buff:data(2) == 0x00 then  --帧头
       --     current_contro_status_R = (receive_buff:data(4) << 8) | (receive_buff:data(5)) 
@@ -334,50 +375,85 @@ function update()
       --   end
       -- end    
   end
-  -- rotor_pos_fb(target_R_control_ID)
-  -- local receive_buff = receive();
-  -- if receive_buff then
-  --   ID = receive_buff:id()
-  --   -- ID = (uint32_t(0x01111111)&(receive_buff:id()))
-  --   -- gcs:send_text(0,string.format("CAN[%u] msg from " .. tostring(ID) .. ": %i, %i, %i, %i, %i, %i, %i, %i", 1, frame:data(0), frame:data(1), frame:data(2), frame:data(3), frame:data(4), frame:data(5), frame:data(6), frame:data(7)))
-  --   if ID == ((uint32_t(1) << 31) |target_L_fb_ID) then
-  --       if receive_buff:data(1) == 0x60 and receive_buff:data(2) == 0x04 and receive_buff:data(3) == 0x21 and receive_buff:data(4) == 0x01 then  --帧头
-  --         current_L_pos = (receive_buff:data(6) << 8) | (receive_buff:data(7)) 
-  --         gcs:send_named_float('L_pos',current_L_pos/27.7)
-  --       end
-  --     end
-  --     if ID == ((uint32_t(1) << 31) |target_R_fb_ID) then
-  --       if receive_buff:data(1) == 0x60 and receive_buff:data(2) == 0x04 and receive_buff:data(3) == 0x21 and receive_buff:data(4) == 0x01 then  --帧头
-  --         current_R_pos = (receive_buff:data(6) << 8) | (receive_buff:data(7)) 
-  --         gcs:send_named_float('R_pos',current_R_pos/27.7)
-  --       end
-  --     end
-  --     if ID == ((uint32_t(1) << 31) |target_L_heart_ID) then
-  --       if receive_buff:data(1) == 0x05 and receive_buff:data(2) == 0x00 then  --帧头
-  --         current_contro_status_L = (receive_buff:data(4) << 8) | (receive_buff:data(5)) 
-  --         Err_status_L = (receive_buff:data(6) << 8) | (receive_buff:data(7)) 
-  --         gcs:send_named_float('L_current',current_contro_status_L)
-  --         gcs:send_named_float('L_Err',Err_status_L)
-  --       end
-  --     end
-  --     if ID == ((uint32_t(1) << 31) |target_R_heart_ID) then
-  --       if receive_buff:data(1) == 0x05 and receive_buff:data(2) == 0x00 then  --帧头
+  rotor_pos_fb(target_R_control_ID)
+  local receive_buff = receive();
+  if receive_buff then
+    ID = receive_buff:id()
+    if ID == ((uint32_t(1) << 31) |target_R_fb_ID) then
+        -- gcs:send_text(0,string.format("msg:"  .. ": %i, %i, %i, %i, %i, %i, %i, %i", receive_buff:data(0), receive_buff:data(1), receive_buff:data(2), receive_buff:data(3), receive_buff:data(4), receive_buff:data(5), receive_buff:data(6), receive_buff:data(7)))
+        if ((receive_buff:data(0) == 0x60) and (receive_buff:data(1) == 0x04) and (receive_buff:data(2) == 0x21) and (receive_buff:data(3) == 0x01)) then  --帧头
+          current_R_pos = (receive_buff:data(6) << 8) | (receive_buff:data(7)) 
+          gcs:send_named_float('L_pos',current_R_pos/27.7)
+          -- gcs:send_text(0,string.format("L_pos is:" .. tostring(current_L_pos/27.7)))
+        end
+    end
+  end  
+
+  temp_fb(target_R_control_ID)
+  local receive_buff = receive();
+  if receive_buff then
+    ID = receive_buff:id()
+    if ID == ((uint32_t(1) << 31) |target_R_fb_ID) then
+        -- gcs:send_text(0,string.format("msg:"  .. ": %i, %i, %i, %i, %i, %i, %i, %i", receive_buff:data(0), receive_buff:data(1), receive_buff:data(2), receive_buff:data(3), receive_buff:data(4), receive_buff:data(5), receive_buff:data(6), receive_buff:data(7)))
+        if ((receive_buff:data(0) == 0x60) and (receive_buff:data(1) == 0x0F) and (receive_buff:data(2) == 0x21) and (receive_buff:data(3) == 0x01)) then  --帧头
+          R_temp = (receive_buff:data(6)) 
+          gcs:send_named_float('R_temp',R_temp)
+          -- gcs:send_text(0,string.format("L_pos is:" .. tostring(current_L_pos/27.7)))
+        end
+    end
+  end  
+  --     -- if ID == ((uint32_t(1) << 31) |target_R_fb_ID) then
+  --     --   if receive_buff:data(1) == 0x60 and receive_buff:data(2) == 0x04 and receive_buff:data(3) == 0x21 and receive_buff:data(4) == 0x01 then  --帧头
+  --     --     current_R_pos = (receive_buff:data(6) << 8) | (receive_buff:data(7)) 
+  --     --     gcs:send_named_float('R_pos',current_R_pos/27.7)
+  --     --   end
+  --     -- end
+  --   elseif ID == ((uint32_t(1) << 31) |target_R_heart_ID) then
+  --       -- gcs:send_text(0,"target_L_heart_ID")
+  --       if receive_buff:data(0) == 0x05 and receive_buff:data(1) == 0x00 then  --帧头
   --         current_contro_status_R = (receive_buff:data(4) << 8) | (receive_buff:data(5)) 
   --         Err_status_R = (receive_buff:data(6) << 8) | (receive_buff:data(7)) 
   --         gcs:send_named_float('R_current',current_contro_status_L)
   --         gcs:send_named_float('R_Err',Err_status_L)
+  --         -- gcs:send_text(0,string.format("L_current is:" .. tostring(current_contro_status_L)))
   --       end
-  --     end    
+  --   end
+  --     -- if ID == ((uint32_t(1) << 31) |target_R_heart_ID) then
+  --     --   if receive_buff:data(1) == 0x05 and receive_buff:data(2) == 0x00 then  --帧头
+  --     --     current_contro_status_R = (receive_buff:data(4) << 8) | (receive_buff:data(5)) 
+  --     --     Err_status_R = (receive_buff:data(6) << 8) | (receive_buff:data(7)) 
+  --     --     gcs:send_named_float('R_current',current_contro_status_L)
+  --     --     gcs:send_named_float('R_Err',Err_status_L)
+  --     --   end
+  --     -- end    
   -- end
-
+  local L_control = 0;
+  local R_control = 0;
   if arming:is_armed() then
     L_inc_degree,R_inc_degree = get_degree()  --从遥控器获取角度增量
+    if L_inc_degree then
+      L_control = L_inc_degree;   
+
+    end
+    if R_inc_degree then
+      R_control = R_inc_degree;   
+
+    end
   else
     L_inc_degree,R_inc_degree = 0,0;
+    L_control,R_control = 0,0;
   end
 
-  -- pos_contro(target_R_control_ID,R_inc_degree+current_R_pos)
-  pos_contro(target_L_control_ID,L_inc_degree+current_L_pos)
+  L_control = math.floor(L_control);
+  gcs:send_text(0,"L_control:"..tostring(L_control))
+  speed_contro(target_L_control_ID,L_control);
+  speed_contro(target_R_control_ID,R_control);
+
+  -- -- pos_contro(target_R_control_ID,uint32_t(R_inc_degree+current_R_pos))
+  -- pos_contro(target_L_control_ID,-30000)
+  -- pos_contro(target_R_control_ID,-50000)
+
+  -- speed_contro(target_R_control_ID,R_inc_degree);
   return update, 10  --实际周期为*20
 
 end
