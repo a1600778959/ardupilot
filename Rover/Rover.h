@@ -47,7 +47,7 @@
 #include <Fire_motor_485/Fire_motor_485.h> //添加电机驱动头文件
 #include <Fire_Gimbal/Fire_Gimbal.h>       //添加云台驱动头文件
 // #include <Fire_RC/Fire_RC.h>               //添加遥控器头文件
-// #include <Explosion_gases/Explosion_gases.h>  //添加气体检测头文件
+#include <Explosion_gases/Explosion_gases.h>  //添加气体检测头文件
 // Configuration
 #include "defines.h"
 #include "config.h"
@@ -116,7 +116,7 @@ private:
     Fire_motor_485 fire_motor_rover;
     Fire_Gimbal Fire_Gim;
     // Fire_RC F_RC;
-    // Explosion_gases E_g;
+    Explosion_gases rover_E_g;
     // must be the first AP_Param variable declared to ensure its
     // constructor runs before the constructors of the other AP_Param
     // variables
@@ -288,7 +288,7 @@ private:
     // void Fire_RC_F();  //遥控器函数运行周期25hz
 
     void FireFight_parm();  //参数储存
-    // void Explosion_get_gases();  //获取有害气体的量
+    void Explosion_get_gases();  //获取有害气体的量
     void Fire_Gimbal_Co();  //云台控制相关程序
 
     void stats_update();

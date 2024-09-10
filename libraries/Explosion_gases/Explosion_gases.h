@@ -5,11 +5,11 @@
 #define BYTE1(dwTemp) (*((char *)(&dwTemp) + 1))
 #define BYTE2(dwTemp) (*((char *)(&dwTemp) + 2))
 #define BYTE3(dwTemp) (*((char *)(&dwTemp) + 3))
-#define Thermal_ID 0x01   //热成像ID
+#define Thermal_ID 0x04   //热成像ID
 #define Gases_ID 0x02     //气体传感器ID
 #define Bms_ID 0XDD       //Bms传感器ID
 #define Broa_ID 0x03       // 压力传感器ID
-#define Temp_ID 0x04      //温湿度传感器
+#define Temp_ID 0x01      //温湿度传感器
 extern const AP_HAL::HAL &hal;
 
 struct Ex_Gases
@@ -19,7 +19,7 @@ struct Ex_Gases
     int16_t temp; //设备温度
     int16_t humidity; //外部湿度
     int16_t waterpress; //水压
-    int16_t T_temp;  //外部温湿度传感器温度
+    int16_t T_temp;  //外部温湿度传感器温度   --仓体温度
     int16_t T_humidity; // 外部温湿度传感器湿度
 
     /* data */

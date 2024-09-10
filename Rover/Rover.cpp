@@ -75,8 +75,8 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(ahrs_update, 400, 400, 6),
     SCHED_TASK(read_rangefinders, 50, 200, 9),
     SCHED_TASK(FireFight_open, 200, 200, 10), // 消防炮功能函数，200HZ速度
-// SCHED_TASK(Fire_CLED, 50, 100, 13), // LED功能函数，50HZ速度
-    SCHED_TASK(Fire_Gimbal_Co,50,400,11),
+                                              // SCHED_TASK(Fire_CLED, 50, 100, 13), // LED功能函数，50HZ速度
+    SCHED_TASK(Fire_Gimbal_Co, 50, 400, 11),
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow, &rover.optflow, update, 200, 160, 13),
 #endif
@@ -137,11 +137,12 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
     SCHED_TASK(crash_check, 10, 200, 123),
     SCHED_TASK(cruise_learn_update, 50, 200, 126),
-    SCHED_TASK(FireFight_parm, 0.1, 200, 127),      // 消防炮参数任务
-    SCHED_TASK(Fire_CLED, 50, 100, 128),            // LED功能函数，50HZ速度
+    SCHED_TASK(FireFight_parm, 0.1, 200, 127), // 消防炮参数任务
+    SCHED_TASK(Fire_CLED, 50, 100, 128),       // LED功能函数，50HZ速度
+    SCHED_TASK(Explosion_get_gases,1,500,129),
     // SCHED_TASK(Explosion_get_gases, 0.2, 200, 129), // 气体检测，更新速率0.2HZ
 #if ADVANCED_FAILSAFE == ENABLED
-    SCHED_TASK(afs_fs_check, 10, 200, 129),
+        SCHED_TASK(afs_fs_check, 10, 200, 129),
 #endif
 };
 //这是huayu项目文件
@@ -150,10 +151,33 @@ void Rover::FireFight_parm()  //2秒一次
     firefight_rover.parm_change();
 }
 
-// void Rover::Explosion_get_gases()
-// {
-//     E_g.read_Explosion_gasese();
-// }
+void Rover::Explosion_get_gases()
+{
+    static uint8_t send_flag = 0;
+    if (send_flag == 0) // 几个传感器按照规划进行查询
+    {
+        rover_E_g.read_Explosion_gasese(); // 读取防爆气体
+    }
+    else if (send_flag == 1)
+    {
+        rover_E_g.get_Temp();
+    }
+    else if (send_flag == 2)
+    {
+        rover_E_g.get_Bms_Info();
+        /* code */
+    }
+    else if (send_flag == 3)
+    {
+        rover_E_g.get_Broa_info(); // 读取压力传感器数据
+    }
+
+    send_flag++;
+    if (send_flag >= 4) // 查询完毕，重置标志位
+    {
+        send_flag = 0;
+    }
+}
 void Rover::Fire_Gimbal_Co()  //云台控制程序20HZ
 {
     static uint8_t i = 0;

@@ -39,13 +39,13 @@ void Fire_LED::Fire_Alert_LED()
     uint16_t under_offset = 1550; // 死区设置
     uint16_t low_offset = 1450;
     // uint16_t mid_offset = 1500;
-    uint16_t rcin_7 = hal.rcin->read(7);
-    if (rcin_7 > under_offset /* condition */)
+    uint16_t F5 = Rc_In[19];
+    if (F5 > under_offset /* condition */)
     {
         Alert_led_on;
         /* code */
     }
-    else if (rcin_7 < low_offset)
+    else if (F5 < low_offset)
     {
         Alert_led_off;
     }

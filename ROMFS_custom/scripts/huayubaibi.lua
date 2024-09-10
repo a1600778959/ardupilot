@@ -219,15 +219,15 @@ function get_degree()
     local P4_UD =   rc:get_pwm(10);    --获取P3上下遥感的数值
     local P5_UD =   rc:get_pwm(12);   --获取P5上下遥感的数值
     if(math.abs(P4_UD - 1500)>60) then
-      degree_L = (P4_UD - 1500)*3    --每度数值27.7，控制周期为200HZ，杆量推满时候每秒2度
+      degree_R = -(P4_UD - 1500)*4    --每度数值27.7，控制周期为200HZ，杆量推满时候每秒2度
     else
-      degree_L = 0;
+      degree_R = 0;
     end
     
     if(math.abs(P5_UD - 1500)>60) then
-      degree_R = (P5_UD - 1500)*3   --每度数值27.7，控制周期为200HZ，杆量推满时候每秒2度
+      degree_L = (P5_UD - 1500)*4   --每度数值27.7，控制周期为200HZ，杆量推满时候每秒2度
     else
-      degree_R = 0;
+      degree_L = 0;
     end
     return degree_L,degree_R
 end
@@ -363,7 +363,7 @@ function update()
           Err_status_L = (receive_buff:data(6) << 8) | (receive_buff:data(7)) 
           gcs:send_named_float('L_current',current_contro_status_L)
           gcs:send_named_float('L_Err',Err_status_L)
-          gcs:send_text(0,string.format("L_current is:" .. tostring(current_contro_status_L)))
+          -- gcs:send_text(0,string.format("L_current is:" .. tostring(current_contro_status_L)))
         end
     end
       -- if ID == ((uint32_t(1) << 31) |target_R_heart_ID) then
@@ -445,7 +445,7 @@ function update()
   end
 
   L_control = math.floor(L_control);
-  gcs:send_text(0,"L_control:"..tostring(L_control))
+  -- gcs:send_text(0,"L_control:"..tostring(L_control))
   speed_contro(target_L_control_ID,L_control);
   speed_contro(target_R_control_ID,R_control);
 

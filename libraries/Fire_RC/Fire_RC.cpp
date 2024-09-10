@@ -11,7 +11,7 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
     uint16_t crc = 0;
     volatile int16_t temp_16;
     volatile int32_t temp_32;
-    static uint8_t send_flag = 0;
+
     // uint16_t register_add = 0;
     // uint16_t register_num = 0;
     // int16_t write_data = 0;
@@ -19,40 +19,16 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
     switch (data_buf[1])
     {
     case 0x03: 
-        if(send_flag == 0)  //几个传感器按照规划进行查询
-        {
-            E_g.read_Explosion_gasese(); // 读取防爆气体
-        }
-        else if(send_flag == 1)
-        {
-            E_g.get_Broa_info(); // 读取压力传感器数据
-        }
-        else if (send_flag == 2)
-        {
-            E_g.get_Bms_Info();
-            /* code */
-        }
-        else if(send_flag == 3)
-        {
-            E_g.get_Temp();
-        }
+
         E_g.Data_Receive_Prepare();
-        send_flag++;
-        if (send_flag >= 4)  //查询完毕，重置标志位
-        {
-            send_flag = 0;
-        }
-        
-        
-        
-        
+
         send_buff[cnt++] = 0x4D; //遥控器ID
         send_buff[cnt++] = 0x03; // 返回功能位
         send_buff[cnt++] = 224; // 返回字节数
         temp_16 = E_g.Bms_info.temp;
         send_buff[cnt++] = BYTE1(temp_16);   // 右电机温度H
         send_buff[cnt++] = BYTE0(temp_16);   // 右电机温度L
-        temp_16 = E_g.Bms_info.temp;
+        temp_16 = E_g.gases.T_temp/10;
         send_buff[cnt++] = BYTE1(temp_16); // 左电机温度H
         send_buff[cnt++] = BYTE0(temp_16); // 左电机温度L
         temp_16 = E_g.gases.temp;
@@ -238,10 +214,10 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
         temp_16 = E_g.Bms_info.RSOC;
         send_buff[cnt++] = BYTE1(temp_16);                         // 车体电量
         send_buff[cnt++] = BYTE0(temp_16);                         // 车体电量
-        temp_16 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft) / 1000.0f);
+        temp_16 = (hal.rcout->read(2));
         send_buff[cnt++] = BYTE1(temp_16);                         // 左电机转速
         send_buff[cnt++] = BYTE0(temp_16);                         // 左电机转速
-        
+        temp_16 = (hal.rcout->read(1));
         send_buff[cnt++] = BYTE1(temp_16);                         // 右电机转速
         send_buff[cnt++] = BYTE0(temp_16);                         // 右电机转速
         temp_16 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) / 1000.0f);

@@ -320,7 +320,7 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
     uint16_t rcin_2 = Rc_In[2];
     uint16_t rcin_3 = Rc_In[3];
     uint16_t rcin_4 = Rc_In[13];
-    uint16_t F5 = Rc_In[19];
+    // uint16_t F5 = Rc_In[19];
     if (abs(rcin_3 - 1500) > 100)
     {
             ((rcin_3 - 1500) > 0) ? (action_pitch_1 = 1, action_pitch_2 = 0) : (action_pitch_1 = 0, action_pitch_2 = 1); 
@@ -355,16 +355,16 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
         action_zhu_1 = 0, action_zhu_2 = 1;
     }
 
-    if ((F5) > under_offset)
-    {
-        action_zhu_1 = 1, action_zhu_2 = 0;
-        // write_two(0x01,0x0010,1,0);
-    }
-    else if ((F5) < low_offset)
-    {
-        // write_two(0x01,0x0010,0,0);
-        action_zhu_1 = 0, action_zhu_2 = 1;
-    }
+    // if ((F5) > under_offset)
+    // {
+    //     action_zhu_1 = 1, action_zhu_2 = 0;
+    //     // write_two(0x01,0x0010,1,0);
+    // }
+    // else if ((F5) < low_offset)
+    // {
+    //     // write_two(0x01,0x0010,0,0);
+    //     action_zhu_1 = 0, action_zhu_2 = 1;
+    // }
 
     else if (((rcin_4) > low_offset) && ((rcin_4) < under_offset))
     {

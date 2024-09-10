@@ -122,7 +122,7 @@ void Explosion_gases::Data_Receive_Prepare()   //使用串口4用于传感器数
         
         c = hal.serial(2)->read();
         num--;
-        hal.serial(7)->write(&c, 1); // 测试接受到的数据用的
+        // hal.serial(7)->write(&c, 1); // 测试接受到的数据用的
         if (stat == 0)
         {
             if (c == 0XDD || c == Thermal_ID || c == Gases_ID || c == Broa_ID || c == Temp_ID) // 如果等于发射器发送的帧头0x01：表示气体传感器
