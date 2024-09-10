@@ -20,7 +20,7 @@ private:
     uint8_t linebuf[10];
     uint8_t linebuf_len = 0;
     FireFightCRC CRC;
-
+    Explosion_gases E_g;
     // void write_two(uint8_t address_ID,uint16_t start_reg_adress,uint16_t val_1,uint16_t val_2);
 
     /* data */

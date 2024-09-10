@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h> //地面站
 #include <array>             // 使用标准库中的array代替C风格数组
+#include <Explosion_gases/Explosion_gases.h>
 // #include "RC_Channel.h"         //加入遥控读取通道
 // #include "rover/Rover.h"
 
@@ -395,6 +396,7 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
 void FireFight::FireFight_ID2(uint8_t DT_ms) // 执行周期，传入DT很重要
 {
     static uint16_t time_count_ms = 0, time_count_ms_T7 = 0;
+    static uint16_t time_count_ms_water_press = 0;
     static uint8_t lock_flag = 0,lock_flag_T7 = 0;  //当持续拨动某个杠超过1s时候则置位
     static int16_t Push_rod_fan_ID_2 = 0; // pitch轴标志位
     static int16_t Self_spraying_ID3 = 0, Push_rod_fan_ID_1 = 0;
@@ -407,10 +409,26 @@ void FireFight::FireFight_ID2(uint8_t DT_ms) // 执行周期，传入DT很重要
     uint16_t F21 = Rc_In[21];
     // uint16_t F5 = Rc_In[19];
     uint16_t T_7 = Rc_In[15];
-    if (abs(T_8 - 1500) > 100 && lock_flag == 0)
+
+    if ((abs(T_8 - 1500) > 100 && lock_flag == 0 )||E_g.gases.waterpress > 100)
     {
-        
-        if(time_count_ms > 500)
+        if(E_g.gases.waterpress > 100)
+        {
+            if(time_count_ms_water_press < 1500)
+            {
+                Push_rod_fan_ID_2 = 0, Push_rod_fan_ID_1 = 1;
+            }
+            else if (time_count_ms_water_press  >= 1500/* condition */)
+            {
+                Push_rod_fan_ID_2 = 0, Push_rod_fan_ID_1 = 0;
+                /* code */
+            }      
+            else
+            {
+                time_count_ms_water_press += DT_ms;
+            }
+        }
+        else if(time_count_ms > 500)
         {
             lock_flag = 1; // Push_rod_fan_ID_2 ^ 0x0001  Self_spraying_ID3 ^ 0x0001
             ((T_8 - 1500) > 0) ? (Push_rod_fan_ID_2 = 1, Push_rod_fan_ID_1 = 0) : (Push_rod_fan_ID_2 = 0, Push_rod_fan_ID_1 = 1);
@@ -431,7 +449,7 @@ void FireFight::FireFight_ID2(uint8_t DT_ms) // 执行周期，传入DT很重要
     }
     // write_two(1,0,exp_offset_Up_Down,exp_offset_Left_Right);
 
-    if (F21 > under_offset)
+    if (F21 > under_offset || E_g.gases.T_temp > 60)
     {
         Self_spraying_ID3 = 1;
         // write_two(0x01,0x0010,1,0);
@@ -513,10 +531,14 @@ void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
         time_count_ms_T7 = 0;
     }
 
-    if (abs(T_8 - 1500) > 100 && lock_flag_T8 == 0)
+    if ((abs(T_8 - 1500) > 100 && lock_flag_T8 == 0) || E_g.gases.waterpress > 100)
     {
-
-        if (time_count_ms_T8 > 500)
+        if (E_g.gases.waterpress > 100)
+        {
+            /* code */
+            fan_ID_2 = 0;
+        }
+        else if (time_count_ms_T8 > 500)
         {
             lock_flag_T8 = 1;
             ((T_8 - 1500) > 0) ? (fan_ID_2 = 1) : ( fan_ID_2 = 0);
