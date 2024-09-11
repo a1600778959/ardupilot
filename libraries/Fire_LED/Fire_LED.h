@@ -17,6 +17,7 @@ extern const AP_HAL::HAL &hal;
 class Fire_LED
 {
 private:
+    Explosion_gases E_g;
     /* data */
 public:
     Fire_LED(/* args */);

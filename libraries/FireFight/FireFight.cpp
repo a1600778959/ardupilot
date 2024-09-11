@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h> //地面站
 #include <array>             // 使用标准库中的array代替C风格数组
-#include <Explosion_gases/Explosion_gases.h>
+// #include <Explosion_gases/Explosion_gases.h>
 // #include "RC_Channel.h"         //加入遥控读取通道
 // #include "rover/Rover.h"
 
@@ -346,15 +346,16 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
 
     if ((rcin_4) > under_offset)
     {
-        action_zhu_1 = 1, action_zhu_2 = 0;
+        action_zhu_1 = 0, action_zhu_2 = 1;
         // write_two(0x01,0x0010,1,0);
 
     }
     else if ((rcin_4) < low_offset)
     {
         // write_two(0x01,0x0010,0,0);
-        action_zhu_1 = 0, action_zhu_2 = 1;
+        action_zhu_1 = 1, action_zhu_2 = 0;
     }
+
 
     // if ((F5) > under_offset)
     // {
@@ -511,7 +512,7 @@ void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
     uint16_t F_22 = Rc_In[22];  
     if (abs(T_7 - 1500) > 100 && lock_flag_T7 == 0)
     {
-        if (time_count_ms_T7 > 500)
+        if (time_count_ms_T7 > 100)
         {
             lock_flag_T7 = 1;
             if ((T_7 - 1500) > 0)

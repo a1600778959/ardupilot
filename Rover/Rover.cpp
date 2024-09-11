@@ -228,6 +228,8 @@ void Rover::FireFight_open() // 每2毫秒执行一次
     }
     else
     {
+        firefight_rover.write_six(1, 12, 0, 0, 0, 0, 0, 0);
+        
         // fire_led.stop_motor();
         // if (0 == 0)
         // {
@@ -237,7 +239,7 @@ void Rover::FireFight_open() // 每2毫秒执行一次
         // }
         // else
         // {
-        firefight_rover.function_fire_fight(5);
+        // firefight_rover.function_fire_fight(5);
         // }
             
         // fire_motor_rover.motor_input(0, 0);
