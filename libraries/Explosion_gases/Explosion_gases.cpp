@@ -103,8 +103,8 @@ void Explosion_gases::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
     {
         gases.T_temp = ((data_buf[3] << 8) + data_buf[4]);
         gases.T_humidity = ((data_buf[5] << 8) + data_buf[6]);
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "gases.T_temp :%d", gases.T_temp);
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "gases.T_humidity :%d", gases.T_humidity);
+        // gcs().send_text(MAV_SEVERITY_CRITICAL, "gases.T_temp :%d", gases.T_temp);
+        // gcs().send_text(MAV_SEVERITY_CRITICAL, "gases.T_humidity :%d", gases.T_humidity);
     }
 }
 

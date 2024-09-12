@@ -12,9 +12,9 @@ void Fire_LED::Fire_LED_Init()
     hal.gpio->pinMode(8, HAL_GPIO_OUTPUT); // 设置成输出模式
     hal.gpio->pinMode(9, HAL_GPIO_OUTPUT); // 设置成输出模式
 
-    Alert_led_on;
-    hal.scheduler->delay(1000); // 设置初始化完成声音提示时间
-    Alert_led_off;
+    // Alert_led_on;
+    // hal.scheduler->delay(1000); // 设置初始化完成声音提示时间
+    // Alert_led_off;
 }
 
 Fire_LED::Fire_LED(/* args */)
@@ -41,13 +41,14 @@ void Fire_LED::Fire_Alert_LED()
     // uint16_t mid_offset = 1500;
     uint16_t F5 = Rc_In[19];
     if (F5 > under_offset /* condition */||E_g.gases.T_temp > 80||E_g.gases.T_humidity>80)
-    {    
-        Alert_led_off;
+    {
+        Alert_led_on;
+        
         /* code */
     }
     else if (F5 < low_offset)
     {
-        Alert_led_on;  
+        Alert_led_off;
     }
 }
 

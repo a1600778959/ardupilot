@@ -214,10 +214,10 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
         temp_16 = E_g.Bms_info.RSOC;
         send_buff[cnt++] = BYTE1(temp_16);                         // 车体电量
         send_buff[cnt++] = BYTE0(temp_16);                         // 车体电量
-        temp_16 = (hal.rcout->read(2));
+        temp_16 = (hal.rcout->read(2) -1500);
         send_buff[cnt++] = BYTE1(temp_16);                         // 左电机转速
         send_buff[cnt++] = BYTE0(temp_16);                         // 左电机转速
-        temp_16 = (hal.rcout->read(1));
+        temp_16 = (hal.rcout->read(1)-1500);
         send_buff[cnt++] = BYTE1(temp_16);                         // 右电机转速
         send_buff[cnt++] = BYTE0(temp_16);                         // 右电机转速
         temp_16 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) / 1000.0f);
@@ -423,7 +423,7 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
         RC.F0 = (data_buf[7] & 0x01);
         Rc_In[12] = -RC.F0 * 1000 + 2000;
         RC.F5 = (uint8_t)((data_buf[7] & 0x20) >> 5);
-        Rc_In[19] = -RC.F5 * 1000 + 2000;
+        Rc_In[19] = RC.F5 * 1000 + 1000;
         RC.F8 = (uint8_t)((data_buf[8] & 0x01) >> 0);
         Rc_In[20] = -RC.F8 * 1000 + 2000;
         RC.F18 = (uint8_t)((data_buf[9] & 0x02) >> 1);
