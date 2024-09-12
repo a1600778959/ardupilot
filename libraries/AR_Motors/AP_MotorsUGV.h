@@ -127,6 +127,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
     AP_Float L_offset;
     AP_Float R_offset;
+    AP_Float roll_offset;
 
 private:
 
