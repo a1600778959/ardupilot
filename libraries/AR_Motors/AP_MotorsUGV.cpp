@@ -123,6 +123,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
 
     AP_GROUPINFO("R_offset", 16, AP_MotorsUGV, R_offset, 1.0f),
 
+    AP_GROUPINFO("roll_offset", 17, AP_MotorsUGV, roll_offset, 1.0f),
     AP_GROUPEND};
 
 AP_MotorsUGV::AP_MotorsUGV(AP_ServoRelayEvents &relayEvents, AP_WheelRateControl& rate_controller) :

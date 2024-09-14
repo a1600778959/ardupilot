@@ -439,12 +439,12 @@ function show_frame(dnum, frame)
 end
 
 function init()
-  gcs:send_text(6, "now is the zibao_motor");
+  -- gcs:send_text(6, "now is the huayu_motor");
   -- enable(target_L_control_ID)
   -- enable(target_L_control_ID)
   -- enable(target_R_control_ID)
   return update,100
 end
 
-gcs:send_text(6, "now is the zibao_motor")
+gcs:send_text(6, "now is the huayu_motor")
 return init, 1000

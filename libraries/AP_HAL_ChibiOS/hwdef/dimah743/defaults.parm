@@ -27,7 +27,8 @@ ARMING_CHECK 0
 
 # setup RC7_chane
 RC13_OPTION 153
-
+RC2_DZ 100
+RC1_DZ 100
 
 # setup MODE_CH
 MODE_CH 11
