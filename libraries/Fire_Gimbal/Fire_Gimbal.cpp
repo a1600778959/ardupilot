@@ -273,7 +273,7 @@ void Fire_Gimbal::control_by_RC()
     static uint8_t i = 0,multiple = 0,zoom = 0;
     static float pit = 0,last_pit = 0;
     static float roll = 0,last_roll = 0;;
-    static uint16_t last_window = 0;
+    // static uint16_t last_window = 0;
     if (abs(Rc_In[5] - 1500) > 100 )
     {
         pit = (Rc_In[5] - 1500)*0.51f;
@@ -361,19 +361,19 @@ void Fire_Gimbal::control_by_RC()
     }
     else if( i == 1)
     {
-        if (Rc_In[14] != last_window)
-        {
-            if (Rc_In[14] > 1500)
-            {
-                open_windscreen_wiper();
-                /* code */
-            }
-            else
-            {
-                close_windscreen_wiper();
-            }
-            last_window = Rc_In[14];
-        }
+        // if (Rc_In[14] != last_window)
+        // {
+        //     if (Rc_In[14] > 1500)
+        //     {
+        //         open_windscreen_wiper();
+        //         /* code */
+        //     }
+        //     else
+        //     {
+        //         close_windscreen_wiper();
+        //     }
+        //     last_window = Rc_In[14];
+        // }
 
         // control_roll((int16_t)roll);
         if (multiple != 0 || zoom != 0)

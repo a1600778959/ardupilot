@@ -324,22 +324,22 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
     // uint16_t F5 = Rc_In[19];
     if (abs(rcin_3 - 1500) > 100)
     {
-            ((rcin_3 - 1500) > 0) ? (action_pitch_1 = 1, action_pitch_2 = 0) : (action_pitch_1 = 0, action_pitch_2 = 1); 
+        ((rcin_3 - 1500) > 0) ? (action_roll_1 = 1, action_roll_2 = 0) : (action_roll_1 = 0, action_roll_2 = 1);
         // {exp_offset_Up_Down = 1} : exp_offset_Up_Down = -1; // 等于1表示上，-1表示向下
     }
     else if (abs(rcin_3 - 1500) < 100)
     {
-        action_pitch_1 = 0, action_pitch_2 = 0;
+        action_roll_1 = 0, action_roll_2 = 0;
     }
 
     if (abs(rcin_2 - 1500) > 100)
     {
-        ((rcin_2 - 1500) > 0) ? (action_roll_1 = 0, action_roll_2 = 1):(action_roll_1 = 1, action_roll_2 = 0);
+        ((rcin_2 - 1500) > 0) ? (action_pitch_1 = 1, action_pitch_2 = 0) : (action_pitch_1 = 0, action_pitch_2 = 1);
         // exp_offset_Left_Right = 1:exp_offset_Left_Right=-1; //等于1表示向右，-1表示向左边
     }
     else //if (replay_flag != 1)
     {
-        action_roll_1 = 0, action_roll_2 = 0;
+        action_pitch_1 = 0, action_pitch_2 = 0;
     }
 
     // write_two(1,0,exp_offset_Up_Down,exp_offset_Left_Right);
@@ -375,7 +375,7 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
     }
     if (flag == 0)
     {
-        write_six(1, 12, action_pitch_1, action_pitch_2, action_roll_1, action_roll_2, action_zhu_1, action_zhu_2);
+        write_six(1, 12, action_roll_1, action_roll_2, action_pitch_1, action_pitch_2, action_zhu_1, action_zhu_2);
         /* code */
         flag++;
     }

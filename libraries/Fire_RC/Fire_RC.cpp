@@ -1,9 +1,13 @@
 #include "Fire_RC.h"
-
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <GCS_MAVLink/GCS.h> //地面站
+#include <AP_Vehicle/AP_Vehicle.h>
 int16_t Rc_In[25];
 uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
 {
+    AP_AHRS &ahrs = AP::ahrs();
+    Location global_position_current;
+    // AP_ExternalAHRS::gps_data_message_t gps;
     uint8_t send_buff[255];
     uint8_t cnt = 0;
     // int16_t zero = 1234;
@@ -11,7 +15,8 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
     uint16_t crc = 0;
     volatile int16_t temp_16;
     volatile int32_t temp_32;
-
+    // double double_32;
+    ahrs.get_location(global_position_current);
     // uint16_t register_add = 0;
     // uint16_t register_num = 0;
     // int16_t write_data = 0;
@@ -110,19 +115,24 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
         temp_16 = 1234;
         send_buff[cnt++] = BYTE1(temp_16);                     // none12
         send_buff[cnt++] = BYTE0(temp_16);                     // none12
-        temp_32 = 12345678;
-        send_buff[cnt++] = BYTE3(temp_32 );                     // temp_32经度
-        send_buff[cnt++] = BYTE2(temp_32 );                     // temp_32经度
+        temp_32 = global_position_current.lng;
+        // gcs().send_text(MAV_SEVERITY_CRITICAL, "lng:%ld", temp_32);
         send_buff[cnt++] = BYTE1(temp_32 );                     // temp_32经度
         send_buff[cnt++] = BYTE0(temp_32 );                     // temp_32经度
-        send_buff[cnt++] = BYTE3(temp_32 );                     // temp_32维度
-        send_buff[cnt++] = BYTE2(temp_32 );                     // temp_32维度
+        send_buff[cnt++] = BYTE3(temp_32 );                     // temp_32经度
+        send_buff[cnt++] = BYTE2(temp_32 );                     // temp_32经度
+        temp_32 = global_position_current.lat;
+    //    gcs().send_text(MAV_SEVERITY_CRITICAL, "lat:%ld", temp_32);
         send_buff[cnt++] = BYTE1(temp_32 );                     // temp_32维度
         send_buff[cnt++] = BYTE0(temp_32 );                     // temp_32维度
-        send_buff[cnt++] = BYTE3(temp_32 );                     // temp_32海拔
-        send_buff[cnt++] = BYTE2(temp_32 );                     // temp_32海拔
+        send_buff[cnt++] = BYTE3(temp_32 );                     // temp_32维度
+        send_buff[cnt++] = BYTE2(temp_32 );                     // temp_32维度
+        temp_32 = 0;
         send_buff[cnt++] = BYTE1(temp_32 );                     // temp_32海拔
         send_buff[cnt++] = BYTE0(temp_32 );                     // temp_32海拔
+        send_buff[cnt++] = BYTE3(temp_32 );                     // temp_32海拔
+        send_buff[cnt++] = BYTE2(temp_32 );                     // temp_32海拔
+        
         send_buff[cnt++] = BYTE1(temp_16);                         // temp_32航向
         send_buff[cnt++] = BYTE0(temp_16);                         // temp_32航向
         temp_16 = 1;                                               // arming.is_armed();
@@ -220,7 +230,7 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
         temp_16 = (hal.rcout->read(1)-1500);
         send_buff[cnt++] = BYTE1(temp_16);                         // 右电机转速
         send_buff[cnt++] = BYTE0(temp_16);                         // 右电机转速
-        temp_16 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) / 1000.0f);
+        temp_16 = 66;
         send_buff[cnt++] = BYTE1(temp_16);                         // 车体放电电流
         send_buff[cnt++] = BYTE0(temp_16);                         // 车体放电电流
         temp_16 = E_g.Bms_info.I_cur;
@@ -332,9 +342,10 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
         send_buff[cnt++] = BYTE0(temp_16); // none27
 
         crc = CRC.Funct_CRC16(send_buff, cnt);                        // 官方给的CRC校验
-        send_buff[cnt++] = BYTE0(crc);
         send_buff[cnt++] = BYTE1(crc);
+        send_buff[cnt++] = BYTE0(crc);
         hal.serial(6)->write(send_buff, cnt);
+       // hal.serial(7)->write(send_buff, cnt);
         return 1; //表示气体传感器更新完毕
         // gcs().send_text(MAV_SEVERITY_CRITICAL, "cnt:%d", cnt);
         // 如果是读寄存器则执行以下函数
