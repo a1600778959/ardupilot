@@ -190,20 +190,7 @@ void Rover::Fire_Gimbal_Co()  //云台控制程序20HZ
     {
         Fire_Gim.stop();
     }
-    // if (i >= 10)
-    // {
-    // Fire_Gim.Data_Receive_Prepare(); // 每500ms读取一次云台角度数值反馈
-    //     i = 0;
-    //     /* code */
-    // }
 }
-// void Rover::Fire_RC_F()
-// {
-//     // static uint8_t i = 0;
-//     F_RC.Data_Receive_Prepare();
-//     // gcs().send_text(MAV_SEVERITY_CRITICAL, "F_RC.Rc_In[%d]:%d", i, F_RC.get_RC(i));
-//     // (i < 16)?i++:i=0;
-// }
 
 void Rover::FireFight_open() // 每2毫秒执行一次
 {
@@ -229,7 +216,9 @@ void Rover::FireFight_open() // 每2毫秒执行一次
     else
     {
         firefight_rover.write_six(1, 12, 0, 0, 0, 0, 0, 0);
-        
+        firefight_rover.write_six(2, 12, 0, 0, 0, 0, 0, 0);
+        firefight_rover.write_six(3, 12, 0, 0, 0, 0, 0, 0);
+
         // fire_led.stop_motor();
         // if (0 == 0)
         // {
