@@ -391,7 +391,7 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
                 Rc_In[16] = 2000;
             }
             RC.T9 = (data_buf[25] << 8) + data_buf[26];   //跟随遥控
-            Rc_In[17] = RC.T9 * 1000 + 1000;
+            Rc_In[8] = RC.T9 * 1000 + 1000;
             RC.T10 = (data_buf[27] << 8) + data_buf[28];  //模式切换
             Rc_In[18] = RC.T10 * 142 + 858;
             (Rc_In[18] > 2000) ? Rc_In[18] = 2000 : Rc_In[18] = Rc_In[18];
@@ -420,7 +420,7 @@ uint8_t Fire_RC::Data_Receive_Anl_Task(uint8_t *data_buf, uint16_t num)
             RC.P3_UD = data_buf[14];
             Rc_In[7] = data_buf[14] * 3.9063f + 1000;
             RC.P4_LR = data_buf[15];
-            Rc_In[8] = data_buf[15] * 3.9063f + 1000;
+            Rc_In[17] = data_buf[15] * 3.9063f + 1000;
             RC.P4_UD = data_buf[16];
             Rc_In[9] = data_buf[16] * 3.9063f + 1000;
             RC.P5_LR = data_buf[17];

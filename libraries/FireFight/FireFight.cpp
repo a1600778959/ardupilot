@@ -512,7 +512,7 @@ void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
     }
     else if (abs(T_8 - 1500) < 100)
     {
-        fan_ID_2 = 0;
+        // fan_ID_2 = 0;
         lock_flag_T8 = 0;
         time_count_ms_T8 = 0;
     }
@@ -525,7 +525,7 @@ void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
     else if ((F_22) < low_offset)
     {
         // write_two(0x01,0x0010,0,0);
-        if (abs(hal.rcout(0) - 1500) > 50 || abs(hal.rcout(0) - 1500) > 50)
+        if (abs(hal.rcout->read(0) - 1500) > 50 || abs(hal.rcout->read(1) - 1500) > 50)
         {
             STOP_ID_4 = 1;
             /* code */

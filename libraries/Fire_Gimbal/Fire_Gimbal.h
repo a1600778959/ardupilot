@@ -40,8 +40,7 @@ private:
     void down_right(uint8_t pitch, uint8_t roll); // 下右边控制
     void down_left(uint8_t pitch, uint8_t roll); // 下左边控制
 
-    void control_pitch(int16_t pitch);
-    void control_roll(int16_t roll);
+
     /* data */
 public:
 
@@ -50,6 +49,8 @@ public:
     void Data_Receive_Prepare();
     void control_by_RC();
     void stop(); // 停止
+    void control_pitch(int16_t pitch);
+    void control_roll(int16_t roll);
 };
 
 

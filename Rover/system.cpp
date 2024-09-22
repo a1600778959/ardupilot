@@ -163,6 +163,9 @@ void Rover::init_ardupilot()
     firefight_rover.uart_init();
     fire_motor_rover.motor_init();
     fire_led.Fire_LED_Init(); // 初始化完成播放声音
+    // Fire_Gim.control_pitch(90);
+    // Fire_Gim.control_roll(0);
+
     initialised = true;
 }
 

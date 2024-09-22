@@ -68,6 +68,8 @@ SERVO4_REVERSED 1
 
 SERVO_RATE 400
 
+MODE_CH 9
+#MODE1 3
 
 #This is the script command for using CAN1
 #this is the script enable button
