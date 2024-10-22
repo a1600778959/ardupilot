@@ -470,7 +470,7 @@ void FireFight::FireFight_ID2(uint8_t DT_ms) // 执行周期，传入DT很重要
     }
     else if (abs(T_7 - 1500) < 100)
     {
-        release_belt_ID_1 = 0;
+        // release_belt_ID_1 = 0;
         // lock_flag_T7 = 0;
         time_count_ms_T7 = 0;
     }
