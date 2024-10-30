@@ -367,17 +367,17 @@ void Fire_motor_485::motor_input(int16_t motor_left, int16_t motor_right)
     else if (golab_cnt == 1) // 如果更新数值没有改变，则见不输出V_R != last_V_R
     {
         V_R = -V_R;
-        if (V_R > 400 * 0.978f)
+        if (V_R > 400)
         {
 
             write_two(Right_motor, 0X2000, 2, (uint16_t)V_R);
         }
-        else if (V_R < -400 * 0.978f)
+        else if (V_R < -400 )
         {
 
             write_two(Right_motor, 0X2000, 1, (uint16_t)(-V_R));
         }
-        else if (abs(V_R) < 400 * 0.978f)
+        else if (abs(V_R) < 400 )
         {
             if (stop_button)
             {
