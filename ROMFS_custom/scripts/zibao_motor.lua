@@ -218,10 +218,27 @@ end
 function get_output()
   local left_rpm = SRV_Channels:get_output_pwm(73)   --获取通道1输出数值 
   local right_rpm = SRV_Channels:get_output_pwm(74)   --获取通道3输出数值
-  left_rpm = math.floor(((left_rpm-1500)/500) * 5000)
-  right_rpm = math.floor(((right_rpm-1500)/500) * 5000)
-  
 
+  local out_max_min = rc:get_pwm(11);
+
+  if out_max_min then
+    out_max_min = (out_max_min - 1050)/900;
+  else
+    out_max_min = 0;
+  end
+  
+  if left_rpm then
+    left_rpm = math.floor(((left_rpm-1500)/500) * 5000 *out_max_min) 
+  else
+    left_rpm = 0;
+  end
+  if right_rpm then
+    right_rpm = math.floor(((right_rpm-1500)/500) * 5000*out_max_min) 
+  else
+    right_rpm = 0;
+  end
+
+  gcs:send_named_float("out_max_min",out_max_min)
   
   send(left_rpm,right_rpm,0,0)
 end
