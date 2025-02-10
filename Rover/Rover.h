@@ -45,6 +45,10 @@
 #include <FireFight/FireFight.h>           //添加消防炮头文件
 #include <Fire_LED/Fire_LED.h>             //添加灯的头文件
 #include <Fire_motor_485/Fire_motor_485.h> //添加电机驱动头文件
+#include <AP_AOA/AP_AOAFilter.h>            //添加AOA头文件
+#include <AP_AOA/AP_AOAPID.h>
+#include <AP_AOA/AP_AOA_ALX.h>
+
 // Configuration
 #include "defines.h"
 #include "config.h"
@@ -94,6 +98,7 @@ public:
     friend class ModeRTL;
     friend class ModeSmartRTL;
     friend class ModeFollow;
+    friend class ModeAoafllow;
     friend class ModeSimple;
 #if MODE_DOCK_ENABLED == ENABLED
     friend class ModeDock;
@@ -244,6 +249,7 @@ private:
     ModeSmartRTL mode_smartrtl;
     ModeFollow mode_follow;
     ModeSimple mode_simple;
+    ModeAoafllow mode_aoafollow; // <- 新增此行
 #if MODE_DOCK_ENABLED == ENABLED
     ModeDock mode_dock;
 #endif

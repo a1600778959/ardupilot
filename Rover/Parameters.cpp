@@ -204,7 +204,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode6
     // @Description: Driving mode for switch position 6 (1750 to 2049)
-    GSCALAR(mode6, "MODE6", Mode::Number::MANUAL),
+    GSCALAR(mode6, "MODE6", Mode::Number::AOAFOLLOW),
 
     // variables not in the g class which contain EEPROM saved variables
 
@@ -396,8 +396,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(firefight_rover, "STA_C_", FireFight), // 堵转电流左右
     // GOBJECT(firefight_rover, "STA_CURRENT_UD", Stl_ct_UD), // 堵转电流上下
 
-    AP_VAREND
-};
+    AP_VAREND};
 
 /*
   2nd group of parameters

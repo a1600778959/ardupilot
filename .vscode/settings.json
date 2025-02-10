@@ -3,7 +3,26 @@
     "astyle.astylerc": "${workspaceFolder}/Tools/CodeStyle/astylerc",
     "files.associations": {
         "chrono": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "type_traits": "cpp",
+        "array": "cpp",
+        "deque": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "regex": "cpp",
+        "*.ipp": "cpp",
+        "any": "cpp",
+        "bitset": "cpp",
+        "memory": "cpp",
+        "random": "cpp",
+        "future": "cpp",
+        "optional": "cpp"
     },
     "cmake.sourceDirectory": "/home/dzd/ardupilot/modules/Micro-CDR/test/case"
 }

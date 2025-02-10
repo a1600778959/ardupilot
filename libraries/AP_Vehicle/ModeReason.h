@@ -16,7 +16,8 @@
 #include <stdint.h>
 
 // interface to set the vehicles mode
-enum class ModeReason : uint8_t {
+enum class ModeReason : uint8_t
+{
   UNKNOWN = 0,
   RC_COMMAND = 1,
   GCS_COMMAND = 2,
@@ -68,4 +69,5 @@ enum class ModeReason : uint8_t {
   RADIO_FAILSAFE_RECOVERY = 48,
   QLAND_INSTEAD_OF_RTL = 49,
   DEADRECKON_FAILSAFE = 50,
+  // MODE_REASON_AOA_TIMEOUT = 51,  //改变模式原因
 };
