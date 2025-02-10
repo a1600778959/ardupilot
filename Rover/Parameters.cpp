@@ -242,10 +242,14 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: Mode6
     // @Description: Driving mode for switch position 6 (1750 to 2049)
 <<<<<<< HEAD
+<<<<<<< HEAD
     GSCALAR(mode6,           "MODE6",         (int8_t)Mode::Number::MANUAL),
 =======
     GSCALAR(mode6, "MODE6", Mode::Number::MANUAL),
 >>>>>>> 7c661be6e9 (1、增加了消防炮参数改写、基础逻辑为先发送查询，记录当前flash中保存的参加，若参数发生变化则发送改变后的参数，保存参数；)
+=======
+    GSCALAR(mode6, "MODE6", Mode::Number::AOAFOLLOW),
+>>>>>>> 2cec4ba9ba (增加了跟随代码，但未进行验证)
 
     // variables not in the g class which contain EEPROM saved variables
 
@@ -449,8 +453,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(firefight_rover, "STA_C_", FireFight), // 堵转电流左右
     // GOBJECT(firefight_rover, "STA_CURRENT_UD", Stl_ct_UD), // 堵转电流上下
 
-    AP_VAREND
-};
+    AP_VAREND};
 
 /*
   2nd group of parameters

@@ -30,6 +30,7 @@ def build(bld):
             'FireFight',
             'Fire_LED',
             'Fire_motor_485',
+            'AP_AOA',
         ],
     )
 

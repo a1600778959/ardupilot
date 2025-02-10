@@ -54,7 +54,14 @@
 #include <FireFight/FireFight.h>           //添加消防炮头文件
 #include <Fire_LED/Fire_LED.h>             //添加灯的头文件
 #include <Fire_motor_485/Fire_motor_485.h> //添加电机驱动头文件
+<<<<<<< HEAD
 >>>>>>> 60eae1ec85 (初检查移植完毕，未在实机测试，能够进行编译)
+=======
+#include <AP_AOA/AP_AOAFilter.h>            //添加AOA头文件
+#include <AP_AOA/AP_AOAPID.h>
+#include <AP_AOA/AP_AOA_ALX.h>
+
+>>>>>>> 2cec4ba9ba (增加了跟随代码，但未进行验证)
 // Configuration
 #include "defines.h"
 #include "config.h"
@@ -113,7 +120,11 @@ public:
     friend class ModeSmartRTL;
 #if MODE_FOLLOW_ENABLED == ENABLED
     friend class ModeFollow;
+<<<<<<< HEAD
 #endif
+=======
+    friend class ModeAoafllow;
+>>>>>>> 2cec4ba9ba (增加了跟随代码，但未进行验证)
     friend class ModeSimple;
 #if MODE_DOCK_ENABLED == ENABLED
     friend class ModeDock;
@@ -275,6 +286,7 @@ private:
     ModeFollow mode_follow;
 #endif
     ModeSimple mode_simple;
+    ModeAoafllow mode_aoafollow; // <- 新增此行
 #if MODE_DOCK_ENABLED == ENABLED
     ModeDock mode_dock;
 #endif
