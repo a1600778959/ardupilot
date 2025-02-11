@@ -2,8 +2,7 @@
 #pragma once
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-
-#define AOA_MAX_PAYLOAD 32
+#define AOA_MAX_PAYLOAD 37
 class AP_AOA_ALX
 {
 public:
@@ -22,8 +21,8 @@ private:
         WAIT_HEADER2,
         WAIT_HEADER3,
         WAIT_HEADER4,
-        PARSE_LENGTH_L,
         PARSE_LENGTH_H,
+        PARSE_LENGTH_L,
         PARSE_PAYLOAD,
         CHECK_XOR
     };

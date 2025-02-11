@@ -22,7 +22,8 @@
         "memory": "cpp",
         "random": "cpp",
         "future": "cpp",
-        "optional": "cpp"
+        "optional": "cpp",
+        "cstddef": "cpp"
     },
     "cmake.sourceDirectory": "/home/dzd/ardupilot/modules/Micro-CDR/test/case"
 }

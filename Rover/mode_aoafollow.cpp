@@ -8,8 +8,8 @@ const AP_Param::GroupInfo ModeAoafllow::var_info[] = {
     AP_GROUPINFO("ANGLE_KP", 4, ModeAoafllow, _angle_kp, 0.6f),
     AP_GROUPINFO("ANGLE_KD", 5, ModeAoafllow, _angle_kd, 0.15f),
     // 运行参数
-    AP_GROUPINFO("TARGET_DIST", 6, ModeAoafllow, _target_dist, 2.0f),
-    AP_GROUPINFO("MAX_SPEED", 7, ModeAoafllow, _max_speed, 2.5f),
+    AP_GROUPINFO("TARGET_DIST", 6, ModeAoafllow, _target_dist, 1.0f),
+    AP_GROUPINFO("MAX_SPEED", 7, ModeAoafllow, _max_speed, 1.0f),
     AP_GROUPINFO("STEER_LIM", 8, ModeAoafllow, _steer_limit, 30.0f),
     AP_GROUPEND};
 
@@ -41,15 +41,18 @@ void ModeAoafllow::update()
     const uint32_t now_ms = AP_HAL::millis();
     const float dt = (now_ms - _last_update_ms) * 0.001f;
     _last_update_ms = now_ms;
-
+    // gcs().send_text(MAV_SEVERITY_INFO, "AOA Follow update start work");
     // 1. 获取原始传感器数据
     float raw_dist, raw_angle;
+    aoa_sensor.update();
     if (!aoa_sensor.get_raw_data(raw_dist, raw_angle))
     {
         _handle_data_loss(dt);
         return;
     }
-
+    // gcs().send_named_float("dist",raw_dist);
+    // gcs().send_named_float("raw_angle", raw_angle);
+    // gcs().send_text(MAV_SEVERITY_INFO, "传感器测量值:%f , %f", raw_dist, raw_angle);
     // 2. 卡尔曼滤波更新
     _kalman_filter.predict(dt);
     _kalman_filter.update(raw_dist, raw_angle);
@@ -58,6 +61,9 @@ void ModeAoafllow::update()
     // 3. 获取滤波状态
     const float filtered_dist = _kalman_filter.get_distance();
     const float filtered_angle = _kalman_filter.get_angle();
+
+    gcs().send_named_float("filtered_dist", filtered_dist);
+    gcs().send_named_float("filtered_angle", filtered_angle);
 
     // 4. 安全监测
     if (!_safety_check(filtered_dist))
@@ -78,17 +84,18 @@ void ModeAoafllow::update()
 void ModeAoafllow::_handle_data_loss(float dt)
 {
     // 数据超时处理（超过1秒无数据）
-    // if (AP_HAL::millis() - _data_timeout_ms > 1000)
-    // {
-    //     rover.set_mode(rover.mode_hold, ModeReason::FAILSAFE);
-    //     gcs().send_text(MAV_SEVERITY_WARNING, "AOA Data Timeout!");
-    //     return;
-    // }
+    if (AP_HAL::millis() - _data_timeout_ms > 1000)
+    {
+        gcs().send_text(MAV_SEVERITY_WARNING, "AOA Data Timeout!");
+        // 缓降速处理
+        _throttle_out *= 0.8f;
+        _steering_out *= 0.8f;
+        _set_actuators(Vector2f(_throttle_out, _steering_out));
+        // rover.set_mode(rover.mode_hold, ModeReason::FAILSAFE);
+        // gcs().send_text(MAV_SEVERITY_WARNING, "AOA Data Timeout!");
+        return;
+    }
 
-    // 缓降速处理
-    _throttle_out *= 0.9f;
-    _steering_out *= 0.9f;
-    _set_actuators(Vector2f(_throttle_out, _steering_out));
 }
 
 bool ModeAoafllow::_safety_check(float current_dist)
@@ -145,9 +152,10 @@ void ModeAoafllow::_set_actuators(const Vector2f &control)
 
 void ModeAoafllow::_send_debug_info(uint32_t timestamp, float dist, float angle, const Vector2f &control)
 {
+    // static uint32_t _last_debug_ms;
 #define AOA_DEBUG 0
 #if AOA_DEBUG
-    // 发送MAVLink调试信息（每200ms）
+        // 发送MAVLink调试信息（每200ms）
     if (timestamp - _last_debug_ms > 200)
     {
         _last_debug_ms = timestamp;
