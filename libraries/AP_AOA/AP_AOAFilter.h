@@ -13,6 +13,6 @@ public:
     void reset();
     void predict(float dt);
     void update(float meas_angle, float meas_dist);
-    float get_angle() const { return x[0]; }
-    float get_distance() const { return x[1]; }
+    float get_angle() const { return x[1]; }
+    float get_distance() const { return x[0]; }
 };
