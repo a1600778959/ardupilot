@@ -87,7 +87,7 @@ void AP_AOA_ALX::update()
                 _reset_parser();
                 break;
             }
-            gcs().send_text(MAV_SEVERITY_INFO, "_payload_len:%d", _payload_len);
+            // gcs().send_text(MAV_SEVERITY_INFO, "_payload_len:%d", _payload_len);
             _parse_state = PARSE_PAYLOAD;
             _payload_cnt = 0;
             _xor_sum ^= byte;
