@@ -245,9 +245,9 @@ public:
 
         // 254,255: reserved
 
-        k_param_vehicle = 257,         // vehicle common block of parameters
-        k_param_firefight_rover = 258, 
-
+        k_param_vehicle = 257, // vehicle common block of parameters
+        k_param_firefight_rover = 258,
+        k_param_mode_aoafollow = 259,
     };
     AP_Int16    format_version;
 

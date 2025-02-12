@@ -431,7 +431,8 @@ private:
     // 添加油门和转向输出变量
     float _throttle_out;
     float _steering_out;
-    AP_AOAPID _dist_pid, _angle_pid;
+    AP_AOAPID _dist_pid;   //距离控制PID
+    AP_AOAPID _angle_pid;  //角度控制PID
 };
 
 class ModeCircle : public Mode
