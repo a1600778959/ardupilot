@@ -18,7 +18,7 @@ ModeAoafllow::ModeAoafllow() : Mode(), // 必须首先初始化基类
                                _data_timeout_ms(0),
                                _throttle_out(0.0f),
                                _steering_out(0.0f),
-                                _emergency_stop(false)
+                               _emergency_stop(false)
 {
 
     AP_Param::setup_object_defaults(this, var_info);
