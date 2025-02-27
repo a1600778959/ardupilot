@@ -6,11 +6,12 @@ const AP_Param::GroupInfo ModeAoafllow::var_info[] = {
     AP_GROUPINFO("DIST_KI", 2, ModeAoafllow, _dist_ki, 0.05f),
     AP_GROUPINFO("DIST_KD", 3, ModeAoafllow, _dist_kd, 0.2f),
     AP_GROUPINFO("ANGLE_KP", 4, ModeAoafllow, _angle_kp, 0.6f),
-    AP_GROUPINFO("ANGLE_KD", 5, ModeAoafllow, _angle_kd, 0.15f),
+    AP_GROUPINFO("ANGLE_KI", 5, ModeAoafllow, _angle_ki, 0.1f),
+    AP_GROUPINFO("ANGLE_KD", 6, ModeAoafllow, _angle_kd, 0.15f),
     // 运行参数
-    AP_GROUPINFO("TARGET_DIST", 6, ModeAoafllow, _target_dist, 1.0f),
-    AP_GROUPINFO("MAX_SPEED", 7, ModeAoafllow, _max_speed, 1.0f),
-    AP_GROUPINFO("STEER_LIM", 8, ModeAoafllow, _steer_limit, 30.0f),
+    AP_GROUPINFO("TARGET_DIST", 7, ModeAoafllow, _target_dist, 1.0f),
+    AP_GROUPINFO("MAX_SPEED", 8, ModeAoafllow, _max_speed, 1.0f),
+    AP_GROUPINFO("STEER_LIM", 9, ModeAoafllow, _steer_limit, 1.0f),
     AP_GROUPEND};
 
 ModeAoafllow::ModeAoafllow() : Mode(), // 必须首先初始化基类
@@ -30,8 +31,8 @@ bool ModeAoafllow::_enter()
     aoa_sensor.init();
 
     //写入PID参数
-    _dist_pid.set_gains(_dist_kp.get(), _dist_ki.get(), _dist_kd.get(), 0.1);
-    _angle_pid.set_gains(_angle_kp.get(), 0, _angle_kd.get(), 0);
+    _dist_pid.set_gains(_dist_kp.get(), _dist_ki.get(), _dist_kd.get(), 0.01);
+    _angle_pid.set_gains(_angle_kp.get(), _angle_ki.get(), _angle_kd.get(), 0.01);
 
     // 重置控制器状态
     reset_controllers();
@@ -43,6 +44,7 @@ bool ModeAoafllow::_enter()
 
 void ModeAoafllow::update()
 {
+    static float x_out = 0,y_out=0;
     const uint32_t now_ms = AP_HAL::millis();
     const float dt = (now_ms - _last_update_ms) * 0.001f;
     _last_update_ms = now_ms;
@@ -66,9 +68,26 @@ void ModeAoafllow::update()
     // 3. 获取滤波状态
     const float filtered_dist = _kalman_filter.get_distance();
     const float filtered_angle = _kalman_filter.get_angle();
+    //转换到笛卡尔坐标系
+    float y = filtered_dist * cosf(filtered_angle * 0.01745f);
+    float x = filtered_angle;
+    
+    if (abs(y) > 20)
+    {
+        y = 20 * (y/abs(y));
+    }
 
-    gcs().send_named_float("filtered_dist", filtered_dist);
-    gcs().send_named_float("filtered_angle", filtered_angle);
+    if (abs(x) > 60)
+    {
+        x = 60 * (x / abs(x));
+    }
+
+    //底通滤波
+    x_out = x_out*0.8 + 0.2 * x;
+    y_out = y_out*0.8 + 0.2 * y;
+
+    gcs().send_named_float("x", x_out);
+    gcs().send_named_float("y", y_out);
 
     // 4. 安全监测
     if (!_safety_check(filtered_dist))
@@ -77,7 +96,7 @@ void ModeAoafllow::update()
     }
 
     // 5. PID控制计算
-    Vector2f control_out = _calculate_control(filtered_dist, filtered_angle, dt);
+    Vector2f control_out = _calculate_control(y, x, dt);
 
     // 6. 执行器输出
     _set_actuators(control_out);
@@ -106,7 +125,7 @@ void ModeAoafllow::_handle_data_loss(float dt)
 bool ModeAoafllow::_safety_check(float current_dist)
 {
     // 紧急制动检查
-    if (current_dist < 1.0f)
+    if (current_dist < _target_dist)
     {
         _emergency_stop = true;
         rover.g2.motors.set_throttle(0);
@@ -117,7 +136,7 @@ bool ModeAoafllow::_safety_check(float current_dist)
     }
 
     // 重置急停状态
-    if (_emergency_stop && current_dist > 1.0f)
+    if (_emergency_stop && current_dist > _target_dist)
     {
         _emergency_stop = false;
         reset_controllers();
@@ -153,8 +172,28 @@ void ModeAoafllow::_set_actuators(const Vector2f &control)
     // gcs().send_named_float("set_steering：", (control.y * _steer_limit) * 4500);
     // gcs().send_named_float("set_throttle：", (control.x * _max_speed) * 100);
     // 设置转向和油门
-    rover.g2.motors.set_steering((control.y * _steer_limit)*4500);
-    rover.g2.motors.set_throttle(-(control.x * _max_speed)*100);
+    if (abs(control.y) > 0.06)
+    {
+        int8_t i = control.y/abs(control.y);
+        rover.g2.motors.set_steering((control.y * _steer_limit) * 4000 + 270*i);
+        /* code */
+    }
+    else
+    {
+        rover.g2.motors.set_steering(0);
+    }
+
+    if (abs(control.x) > 0.06)
+    {
+        int8_t i = -control.x / abs(control.x);
+        rover.g2.motors.set_throttle(-(control.x * _max_speed) * 90 + i*6);
+        /* code */
+    }
+    else
+    {
+        rover.g2.motors.set_throttle(0);
+    }
+    
 }
 
 void ModeAoafllow::_send_debug_info(uint32_t timestamp, float dist, float angle, const Vector2f &control)

@@ -426,7 +426,7 @@ private:
     void reset_controllers();
     // 参数声明
     AP_Float _dist_kp, _dist_ki, _dist_kd;
-    AP_Float _angle_kp, _angle_kd;
+    AP_Float _angle_kp, _angle_ki,_angle_kd;
     AP_Float _target_dist, _max_speed, _steer_limit;
     // 添加油门和转向输出变量
     float _throttle_out;
