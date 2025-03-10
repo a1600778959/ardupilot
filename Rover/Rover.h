@@ -48,7 +48,7 @@
 #include <AP_AOA/AP_AOAFilter.h>            //添加AOA头文件
 #include <AP_AOA/AP_AOAPID.h>
 #include <AP_AOA/AP_AOA_ALX.h>
-
+#include <AP_AOA/AP_AOA_Ultrasonic_ranging.h>
 // Configuration
 #include "defines.h"
 #include "config.h"
