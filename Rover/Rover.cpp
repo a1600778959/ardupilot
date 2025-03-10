@@ -73,11 +73,12 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_radio, 50, 200, 3),
     SCHED_TASK(ahrs_update, 400, 400, 6),
     SCHED_TASK(read_rangefinders, 50, 200, 9),
-    SCHED_TASK(FireFight_open, 200, 200, 10), // 消防炮功能函数，200HZ速度
-    // SCHED_TASK(Fire_CLED, 50, 100, 13), // LED功能函数，50HZ速度
+    // SCHED_TASK(AP_MultiDistanceSensor::update_sensor_task, 50, 100),
+// SCHED_TASK(FireFight_open, 200, 200, 10), // 消防炮功能函数，200HZ速度
+// SCHED_TASK(Fire_CLED, 50, 100, 13), // LED功能函数，50HZ速度
 
 #if AP_OPTICALFLOW_ENABLED
-    SCHED_TASK_CLASS(AP_OpticalFlow, &rover.optflow, update, 200, 160, 13),
+        SCHED_TASK_CLASS(AP_OpticalFlow, &rover.optflow, update, 200, 160, 13),
 #endif
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -191,17 +192,17 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
     SCHED_TASK(crash_check, 10, 200, 123),
     SCHED_TASK(cruise_learn_update, 50, 200, 126),
-    SCHED_TASK(FireFight_parm,0.1,200,127),     //消防炮参数任务
+    // SCHED_TASK(FireFight_parm,0.1,200,127),     //消防炮参数任务
     SCHED_TASK(Fire_CLED, 50, 100, 128), // LED功能函数，50HZ速度
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check, 10, 200, 129),
 #endif
 };
 
-void Rover::FireFight_parm()  //2秒一次
-{
-    firefight_rover.parm_change();
-}
+// void Rover::FireFight_parm()  //2秒一次
+// {
+//     firefight_rover.parm_change();
+// }
 
 void Rover::FireFight_open() // 每2毫秒执行一次
 {

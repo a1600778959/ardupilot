@@ -452,7 +452,7 @@ const AP_Param::Info Rover::var_info[] = {
     // 添加自己参数
     GOBJECT(firefight_rover, "STA_C_", FireFight), // 堵转电流左右
     // GOBJECT(firefight_rover, "STA_CURRENT_UD", Stl_ct_UD), // 堵转电流上下
-    GOBJECT(mode_aoafollow, "aoa_", ModeAoafllow), // PID参数
+    GOBJECT(mode_aoafollow, "AOA_", ModeAoafllow), // PID参数
 
     AP_VAREND};
 

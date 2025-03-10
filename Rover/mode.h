@@ -411,12 +411,13 @@ protected:
     // 添加以下成员变量声明
     uint32_t _last_update_ms;
     uint32_t _data_timeout_ms;
-    bool _emergency_stop;
+    
 
 private:
     // 其他成员...
     AP_AOA_ALX aoa_sensor;
     AOAKalmanFilter _kalman_filter;
+    AP_MultiDistanceSensor multidist_sensor;
     // void _exit() override;   // 退出模式时的清理操作
     void _handle_data_loss(float dt);
     bool _safety_check(float current_dist);
@@ -429,6 +430,7 @@ private:
     AP_Float _angle_kp, _angle_ki,_angle_kd;
     AP_Float _target_dist, _max_speed, _steer_limit;
     // 添加油门和转向输出变量
+    bool _emergency_stop;
     float _throttle_out;
     float _steering_out;
     AP_AOAPID _dist_pid;   //距离控制PID

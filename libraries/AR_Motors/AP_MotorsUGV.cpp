@@ -907,8 +907,8 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     }
 
     // send pwm value to each motor
-    // output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left, dt);
-    // output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right, dt);
+    output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left, dt);
+    output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right, dt);
     // gcs().send_text(MAV_SEVERITY_CRITICAL, "motor_left:%f", 3000.0f * motor_left);
     // gcs().send_text(MAV_SEVERITY_CRITICAL, "motor_right:%f", 3000.0f * motor_right);
     // if ((abs((hal.rcin->read(1))-1500) < 50) && (abs((hal.rcin->read(0))-1500) < 50))// && abs(((hal.rcin->read(1))-1500) < 50))
@@ -922,9 +922,9 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     //     motor_right = 0;
     // }
 
-    F_motor.motor_input(3000.0f * motor_left, 3000.0f * motor_right); // 485电机输入
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "motor_left:%f", 3000.0f * motor_left);
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "motor_right:%f", 3000.0f * motor_right);
+    // F_motor.motor_input(3000.0f * motor_left, 3000.0f * motor_right); // 485电机输入
+    // gcs().send_text(MAV_SEVERITY_CRITICAL, "motor_left:%f", 3000.0f * motor_left);
+    // gcs().send_text(MAV_SEVERITY_CRITICAL, "motor_right:%f", 3000.0f * motor_right);
 }
 
 // output for omni frames

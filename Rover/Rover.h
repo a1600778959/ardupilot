@@ -60,8 +60,12 @@
 #include <AP_AOA/AP_AOAFilter.h>            //添加AOA头文件
 #include <AP_AOA/AP_AOAPID.h>
 #include <AP_AOA/AP_AOA_ALX.h>
+<<<<<<< HEAD
 
 >>>>>>> 2cec4ba9ba (增加了跟随代码，但未进行验证)
+=======
+#include <AP_AOA/AP_AOA_Ultrasonic_ranging.h>
+>>>>>>> 3efceb85e3 (1、将电机输出更换为PWM)
 // Configuration
 #include "defines.h"
 #include "config.h"
