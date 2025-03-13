@@ -123,7 +123,7 @@ void ModeAoafllow::_handle_data_loss(float dt)
     // 数据超时处理（超过1秒无数据）
     if (AP_HAL::millis() - _data_timeout_ms > 1000)
     {
-        // gcs().send_text(MAV_SEVERITY_WARNING, "AOA Data Timeout!");
+        gcs().send_text(MAV_SEVERITY_WARNING, "AOA Data Timeout!");
         // 缓降速处理
         _throttle_out *= 0.8f;
         _steering_out *= 0.8f;
@@ -204,13 +204,13 @@ void ModeAoafllow::_set_actuators(const Vector2f &control)
         rover.g2.motors.set_steering(0);
         return;
     }
-    // gcs().send_named_float("set_steering：", (control.y * _steer_limit) * 4500);
-    // gcs().send_named_float("set_throttle：", (control.x * _max_speed) * 100);
+    gcs().send_named_float("set_steering：", (control.y * _steer_limit) * 2500);
+    gcs().send_named_float("set_throttle：", (control.x * _max_speed) * 70);
     // 设置转向和油门
     if (abs(control.y) > 0.06)
     {
-        int8_t i = control.y/abs(control.y);
-        rover.g2.motors.set_steering((control.y * _steer_limit) * 4000 + 270*i);
+        // int8_t i = control.y/abs(control.y);
+        rover.g2.motors.set_steering((-control.y * _steer_limit) * 2500);
         /* code */
     }
     else
@@ -220,8 +220,8 @@ void ModeAoafllow::_set_actuators(const Vector2f &control)
 
     if (abs(control.x) > 0.06)
     {
-        int8_t i = -control.x / abs(control.x);
-        rover.g2.motors.set_throttle(-(control.x * _max_speed) * 90 + i*6);
+        // int8_t i = -control.x / abs(control.x);
+        rover.g2.motors.set_throttle((-control.x * _max_speed) * 70);
         /* code */
     }
     else
