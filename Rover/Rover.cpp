@@ -136,7 +136,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
     SCHED_TASK(crash_check, 10, 200, 123),
     SCHED_TASK(cruise_learn_update, 50, 200, 126),
-    SCHED_TASK(FireFight_parm,0.1,200,127),     //消防炮参数任务
+    // SCHED_TASK(FireFight_parm,0.1,200,127),     //消防炮参数任务
     SCHED_TASK(Fire_CLED, 50, 100, 128), // LED功能函数，50HZ速度
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check, 10, 200, 129),
@@ -162,24 +162,24 @@ void Rover::FireFight_open() // 每2毫秒执行一次
     if (arming.is_armed()) //&& current_v > 40)
     {
         fire_led.launch_motor();
-        firefight_rover.function_fire_fight(2);
+        // firefight_rover.function_fire_fight(2);
 
-        // firefight_rover.read_one(1, 25, 2);   // 发送读取脉冲数值命令
-        firefight_rover.check_send_one(0x01); // 串口接收返回脉冲数值
+        // // firefight_rover.read_one(1, 25, 2);   // 发送读取脉冲数值命令
+        // firefight_rover.check_send_one(0x01); // 串口接收返回脉冲数值
         stop_button = 0;
     }
     else
     {
         fire_led.stop_motor();
-        if (stop_button == 0)
-        {
-            firefight_rover.write_two(0x01, 0x0010, 0, 0);   //摇摆电机锁定
-            firefight_rover.write_two(0x01, 0x0000, 0, 0);   //柱大雾锁定
-        }
-        else
-        {
-            firefight_rover.function_fire_fight(2);
-        }
+        // if (stop_button == 0)
+        // {
+        //     firefight_rover.write_two(0x01, 0x0010, 0, 0);   //摇摆电机锁定
+        //     firefight_rover.write_two(0x01, 0x0000, 0, 0);   //柱大雾锁定
+        // }
+        // else
+        // {
+        //     firefight_rover.function_fire_fight(2);
+        // }
             
         fire_motor_rover.motor_input(0, 0);
     }
