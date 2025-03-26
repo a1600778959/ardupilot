@@ -29,7 +29,7 @@ bool ModeAoafllow::_enter()
 {
     // 初始化传感器
     aoa_sensor.init();
-    multidist_sensor.init();
+
     //写入PID参数
     _dist_pid.set_gains(_dist_kp.get(), _dist_ki.get(), _dist_kd.get(), 0.01);
     _angle_pid.set_gains(_angle_kp.get(), _angle_ki.get(), _angle_kd.get(), 0.01);
@@ -46,20 +46,8 @@ void ModeAoafllow::update()
 {
     static float x_out = 0,y_out=0;
     const uint32_t now_ms = AP_HAL::millis();
-    const float dt_ms = (now_ms - _last_update_ms);
     const float dt = (now_ms - _last_update_ms) * 0.001f;
     _last_update_ms = now_ms;
-    static uint8_t t_cnt = 1;//计算周期标志位
-
-    if (t_cnt * dt_ms >= 50)
-    {
-        multidist_sensor.update();
-        t_cnt = 1;
-    }
-    else
-    {
-        t_cnt++;
-    }
     // gcs().send_text(MAV_SEVERITY_INFO, "AOA Follow update start work");
     // 1. 获取原始传感器数据
     float raw_dist, raw_angle;
@@ -136,28 +124,7 @@ void ModeAoafllow::_handle_data_loss(float dt)
 
 bool ModeAoafllow::_safety_check(float current_dist)
 {
-    static bool mul_flag_stop = false;  //多超声波避障传感器
-    uint8_t stop_cnt = 0;           //判断多个传感器是否达到停止
-    float dist;
-    for (uint8_t i = 0; i < 6; i++)
-    {
-        if(multidist_sensor.get_distance(i,dist))
-        {
-            gcs().send_text(MAV_SEVERITY_INFO, "Sensor%d: %.2fm", i, dist);
-        }
-        
-        if(dist < 2000.0f)
-        {
-            mul_flag_stop = true;
-            stop_cnt++;
-        }
-        /* code */
-    }
-    
-    if(stop_cnt == 0)
-    {
-        mul_flag_stop = false;
-    }
+    float target_dist = _target_dist.get();
     // 紧急制动检查
     if (current_dist < target_dist)
     {
@@ -210,7 +177,7 @@ void ModeAoafllow::_set_actuators(const Vector2f &control)
     if (abs(control.y) > 0.06)
     {
         int8_t i = control.y/abs(control.y);
-        rover.g2.motors.set_steering((control.y * _steer_limit) * 4000 + 270*i);
+        rover.g2.motors.set_steering(-(control.y * _steer_limit) * 4000 + 450*i);
         /* code */
     }
     else
@@ -221,7 +188,7 @@ void ModeAoafllow::_set_actuators(const Vector2f &control)
     if (abs(control.x) > 0.02)
     {
         int8_t i = -control.x / abs(control.x);
-        rover.g2.motors.set_throttle(-(control.x * _max_speed) * 90 + i*6);
+        rover.g2.motors.set_throttle((control.x * _max_speed) * 80 + i*10);
         /* code */
     }
     else

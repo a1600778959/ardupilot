@@ -33,19 +33,19 @@ SERIAL7_PROTOCOL 2
 ARMING_CHECK 0
 
 # setup RC7_chane
-RC7_OPTION 153
+RC5_OPTION 153
 
 
 # setup MODE_CH
-MODE_CH 5
-MODE4 17
+MODE_CH 7
 MODE6 10
 
 # setup RC2_chane
 RC2_REVERSED 1
 # setup RC3_chane
 RC3_REVERSED 1
-
+# setup to WP_SAVE
+#RC6_OPTION 7
 
 # setup hands
 RCMAP_THROTTLE 2
