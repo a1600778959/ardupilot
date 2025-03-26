@@ -62,7 +62,6 @@ void ModeAoafllow::update()
     }
     // gcs().send_text(MAV_SEVERITY_INFO, "AOA Follow update start work");
     // 1. 获取原始传感器数据
-
     float raw_dist, raw_angle;
     aoa_sensor.update();
     if (!aoa_sensor.get_raw_data(raw_dist, raw_angle))
@@ -96,8 +95,8 @@ void ModeAoafllow::update()
     }
 
     //底通滤波
-    x_out = x_out*0.8 + 0.2 * x;
-    y_out = y_out*0.8 + 0.2 * y;
+    x_out = x_out*0.5 + 0.5 * x;
+    y_out = y_out*0.5 + 0.5 * y;
 
     gcs().send_named_float("x", x_out);
     gcs().send_named_float("y", y_out);
@@ -160,18 +159,18 @@ bool ModeAoafllow::_safety_check(float current_dist)
         mul_flag_stop = false;
     }
     // 紧急制动检查
-    if ((current_dist < _target_dist) || (mul_flag_stop))
+    if (current_dist < target_dist)
     {
         _emergency_stop = true;
         rover.g2.motors.set_throttle(0);
-        rover.g2.motors.set_steering(0);
+        // rover.g2.motors.set_steering(0);
 
         gcs().send_text(MAV_SEVERITY_EMERGENCY, "EMERGENCY STOP!");
         return false;
     }
 
     // 重置急停状态
-    if (_emergency_stop && current_dist > _target_dist && mul_flag_stop == false)
+    if (_emergency_stop && current_dist > (target_dist + 0.5f))
     {
         _emergency_stop = false;
         reset_controllers();
@@ -181,8 +180,9 @@ bool ModeAoafllow::_safety_check(float current_dist)
 
 Vector2f ModeAoafllow::_calculate_control(float dist, float angle, float dt)
 {
+    float target_dist = _target_dist.get();
     // 距离控制
-    float dist_error = _target_dist - dist;
+    float dist_error = target_dist - dist;
     _throttle_out = _dist_pid.get_pid(dist_error, dt, 1.0f / _max_speed);
     // _throttle_out = 0;
     // 角度控制
@@ -201,16 +201,16 @@ void ModeAoafllow::_set_actuators(const Vector2f &control)
     if (_emergency_stop)
     {
         rover.g2.motors.set_throttle(0);
-        rover.g2.motors.set_steering(0);
+        // rover.g2.motors.set_steering(0);
         return;
     }
-    gcs().send_named_float("set_steering：", (control.y * _steer_limit) * 2500);
-    gcs().send_named_float("set_throttle：", (control.x * _max_speed) * 70);
+    // gcs().send_named_float("set_steering：", (control.y * _steer_limit) * 4500);
+    // gcs().send_named_float("set_throttle：", (control.x * _max_speed) * 100);
     // 设置转向和油门
     if (abs(control.y) > 0.06)
     {
-        // int8_t i = control.y/abs(control.y);
-        rover.g2.motors.set_steering((-control.y * _steer_limit) * 2500);
+        int8_t i = control.y/abs(control.y);
+        rover.g2.motors.set_steering((control.y * _steer_limit) * 4000 + 270*i);
         /* code */
     }
     else
@@ -218,10 +218,10 @@ void ModeAoafllow::_set_actuators(const Vector2f &control)
         rover.g2.motors.set_steering(0);
     }
 
-    if (abs(control.x) > 0.06)
+    if (abs(control.x) > 0.02)
     {
-        // int8_t i = -control.x / abs(control.x);
-        rover.g2.motors.set_throttle((-control.x * _max_speed) * 70);
+        int8_t i = -control.x / abs(control.x);
+        rover.g2.motors.set_throttle(-(control.x * _max_speed) * 90 + i*6);
         /* code */
     }
     else
