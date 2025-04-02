@@ -219,7 +219,7 @@ function get_output()
   local left_rpm = SRV_Channels:get_output_pwm(73)   --获取通道1输出数值 
   local right_rpm = SRV_Channels:get_output_pwm(74)   --获取通道3输出数值
 
-  local out_max_min = rc:get_pwm(11);
+  local out_max_min = rc:get_pwm(11);   --限幅通道
 
   if out_max_min then
     out_max_min = (out_max_min - 1050)/900;

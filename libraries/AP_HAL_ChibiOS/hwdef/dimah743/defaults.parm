@@ -75,5 +75,5 @@ CAN_P1_DRIVER 1
 #Select the baud rate to 250K.
 CAN_P1_BITRATE 250000
 
-
+MOT_SLEWRATE 95
 
