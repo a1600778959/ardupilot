@@ -28,8 +28,8 @@ ModeAoafllow::ModeAoafllow() : Mode(), // 必须首先初始化基类
 bool ModeAoafllow::_enter()
 {
     // 初始化传感器
-    aoa_sensor.init();
-
+    aoa_sensor1.init(6);
+    aoa_sensor2.init(7);
     //写入PID参数
     _dist_pid.set_gains(_dist_kp.get(), _dist_ki.get(), _dist_kd.get(), 0.01);
     _angle_pid.set_gains(_angle_kp.get(), _angle_ki.get(), _angle_kd.get(), 0.01);
@@ -50,25 +50,52 @@ void ModeAoafllow::update()
     _last_update_ms = now_ms;
     // gcs().send_text(MAV_SEVERITY_INFO, "AOA Follow update start work");
     // 1. 获取原始传感器数据
-    float raw_dist, raw_angle;
-    aoa_sensor.update();
-    if (!aoa_sensor.get_raw_data(raw_dist, raw_angle))
+    float raw_dist1, raw_angle1;
+    float raw_dist2, raw_angle2;
+    float filtered_angle = 0;
+    aoa_sensor1.update();
+    aoa_sensor2.update();
+    if (!aoa_sensor1.get_raw_data(raw_dist1, raw_angle1) ||
+        !aoa_sensor2.get_raw_data(raw_dist2, raw_angle2))
     {
         _handle_data_loss(dt);
         return;
     }
-    gcs().send_named_float("dist",raw_dist);
-    gcs().send_named_float("raw_angle", raw_angle);
+    gcs().send_named_float("dist1",raw_dist1);
+    gcs().send_named_float("raw_angle1", raw_angle1);
+
+    gcs().send_named_float("dist2", raw_dist2);
+    gcs().send_named_float("raw_angle2", raw_angle2);
+
     // gcs().send_text(MAV_SEVERITY_INFO, "传感器测量值:%f , %f", raw_dist, raw_angle);
     // 2. 卡尔曼滤波更新
     _kalman_filter.predict(dt);
-    _kalman_filter.update(raw_dist, raw_angle);
+    _kalman_filter.update(raw_dist1, raw_angle1);
+    
     _data_timeout_ms = now_ms;
 
     // 3. 获取滤波状态
-    const float filtered_dist = _kalman_filter.get_distance();
-    const float filtered_angle = _kalman_filter.get_angle();
+    const float filtered_dist1 = _kalman_filter.get_distance();
+    const float filtered_angle1 = _kalman_filter.get_angle();
+
+    _kalman_filter.update(raw_dist2, raw_angle2);
+    const float filtered_dist2 = _kalman_filter.get_distance();
+    const float filtered_angle2 = _kalman_filter.get_angle();
+
     //转换到笛卡尔坐标系
+
+    float filtered_dist = (filtered_dist1 + filtered_dist2) / 2;
+    if (filtered_dist2 > filtered_dist1)
+    {
+        filtered_angle = filtered_angle1;
+    }
+    else
+    {
+        filtered_angle = filtered_angle2;
+        filtered_dist = -filtered_dist;
+    }
+    
+
     float y = filtered_dist * cosf(filtered_angle * 0.01745f);
     float x = filtered_angle;
     

@@ -13,7 +13,7 @@ AP_AOA_ALX::AP_AOA_ALX() : _payload_len(0),
     memset(&_current, 0, sizeof(_current));
 }
 
-void AP_AOA_ALX::init()
+void AP_AOA_ALX::init(uint8_t sernum)
 {
     _uart = hal.serial(6);
     _uart->begin(230400, 256, 256);
