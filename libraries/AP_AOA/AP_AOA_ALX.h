@@ -7,7 +7,7 @@ class AP_AOA_ALX
 {
 public:
     AP_AOA_ALX();
-    void init();
+    void init(uint8_t sernum);
     void update();
     bool get_raw_data(float &dist_m, float &azimuth_deg);
 
