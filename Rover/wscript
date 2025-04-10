@@ -29,6 +29,8 @@ def build(bld):
             'AP_IRLock',
             'FireFight',
             'Fire_LED',
+            'Fire_motor_485',
+            'AP_AOA',
         ],
     )
 
