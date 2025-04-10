@@ -116,4 +116,11 @@ TOFSENSE_MODE 0
 
 
 
+# enable script
+SCR_ENABLE = 1
+SCR_HEAP_SIZE = 150000
+
+
+
+
 

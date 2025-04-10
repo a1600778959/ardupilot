@@ -70,18 +70,21 @@ SCHED_TASK_CLASS arguments:
  */
 const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     //         Function name,          Hz,     us,
-    SCHED_TASK(read_radio,             50,    200,   3),
-    SCHED_TASK(ahrs_update,           400,    400,   6),
-    SCHED_TASK(read_rangefinders,      50,    200,   9),
+    SCHED_TASK(read_radio, 50, 200, 3),
+    SCHED_TASK(ahrs_update, 400, 400, 6),
+    SCHED_TASK(read_rangefinders, 50, 200, 9),
+
+// SCHED_TASK(FireFight_open, 200, 200, 10), // 消防炮功能函数，200HZ速度
+// SCHED_TASK(Fire_CLED, 50, 100, 11), // LED功能函数，50HZ速度
+// SCHED_TASK(AP_MultiDistanceSensor::update_sensor_task, 50, 100,12),
 
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow, &rover.optflow, update, 200, 160, 13),
 #endif
-    SCHED_TASK(update_current_mode,   400,    200,  12),
-        SCHED_TASK(FireFight_open,    2,    200,   13),
-    SCHED_TASK(set_servos,            400,    200,  15),
-    SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300,  18),
-    SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200,  21),
+    SCHED_TASK(update_current_mode, 400, 200, 14),
+    SCHED_TASK(set_servos, 400, 200, 15),
+    SCHED_TASK_CLASS(AP_GPS, &rover.gps, update, 50, 300, 18),
+    SCHED_TASK_CLASS(AP_Baro, &rover.barometer, update, 10, 200, 21),
 #if AP_BEACON_ENABLED
     SCHED_TASK_CLASS(AP_Beacon, &rover.g2.beacon, update, 50, 200, 24),
 #endif

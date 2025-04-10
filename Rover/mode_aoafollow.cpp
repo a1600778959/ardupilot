@@ -32,6 +32,7 @@ bool ModeAoafllow::_enter()
     aoa_sensor2.init(7);
 
     // multidist_sensor.init();    // 初始化多超声波传感器
+
     //写入PID参数
     _dist_pid.set_gains(_dist_kp.get(), _dist_ki.get(), _dist_kd.get(), 0.01);
     _angle_pid.set_gains(_angle_kp.get(), _angle_ki.get(), _angle_kd.get(), 0.01);
@@ -48,7 +49,7 @@ void ModeAoafllow::update()
 {
     static float x_out = 0,y_out=0;
     const uint32_t now_ms = AP_HAL::millis();
-    // const float dt_ms = (now_ms - _last_update_ms);
+    const float dt_ms = (now_ms - _last_update_ms);
     const float dt = (now_ms - _last_update_ms) * 0.001f;
     _last_update_ms = now_ms;
     // gcs().send_text(MAV_SEVERITY_INFO, "AOA Follow update start work");
