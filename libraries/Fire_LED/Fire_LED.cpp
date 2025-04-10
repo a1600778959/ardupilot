@@ -1,20 +1,20 @@
 #include "Fire_LED.h"
-#include <GCS_MAVLink/GCS.h> //地面站
 /*#定义照明灯端口，暂留
 PC6 POWER_LED OUTPUT LOW GPIO(2)
 PC7 ALERT_LED OUTPUT LOW GPIO(3)
 PA5 C1 OUTPUT LOW GPIO(8)
 PA6 C2 OUTPUT LOW GPIO(9)
 */
-static uint8_t LED_button = 0;
 void Fire_LED::Fire_LED_Init()
 {
     hal.gpio->pinMode(2, HAL_GPIO_OUTPUT); // 设置成输出模式
     hal.gpio->pinMode(3, HAL_GPIO_OUTPUT); // 设置成输出模式
     hal.gpio->pinMode(8, HAL_GPIO_OUTPUT); // 设置成输出模式
     hal.gpio->pinMode(9, HAL_GPIO_OUTPUT); // 设置成输出模式
-    // hal.scheduler->delay(1000); // 设置初始化完成声音提示时间
 
+    Alert_led_on;
+    hal.scheduler->delay(1000); // 设置初始化完成声音提示时间
+    Alert_led_off;
 }
 
 Fire_LED::Fire_LED(/* args */)
@@ -22,52 +22,16 @@ Fire_LED::Fire_LED(/* args */)
 
 }
 
-
 void Fire_LED::launch_motor()
 {
-
-    uint16_t LED_ctrl = (hal.rcin->read(12)); // 灯光控制
-    // uint16_t shache_ctrl = (hal.rcin->read(6)); // 刹车控制
-    static uint16_t last_rcin_LED = LED_ctrl;
-    if (abs(last_rcin_LED - LED_ctrl) > 600)
-    {
-        LED_button = ~ LED_button;
-    }
-    // C1_on;
-    // C2_on;
-    if (LED_button == 0)
-    {
-        C1_on;
-        C2_on;
-    }    
-    else
-    {
-        C1_off;
-        C2_off;
-
-    }
-    last_rcin_LED = LED_ctrl;
-}
-
-void Fire_LED::stop_motor()
-{
-    LED_button = 0;
     C1_off;
     C2_off;
 }
 
-void Fire_LED::Fire_Shache_on()
+void Fire_LED::stop_motor()
 {
-    // shache_on;
-    power_led_on;
-    // gcs().send_text(MAV_SEVERITY_CRITICAL, "shache_on");
-}
-
-void Fire_LED::Fire_Shache_off()
-{
-    // gcs().send_text(MAV_SEVERITY_CRITICAL, "shache_off");
-    power_led_off;
-    // shache_off;
+    C1_on;
+    C2_on;
 }
 
 void Fire_LED::Fire_Alert_LED()
@@ -78,12 +42,12 @@ void Fire_LED::Fire_Alert_LED()
     uint16_t rcin_7 = hal.rcin->read(7);
     if (rcin_7 > under_offset /* condition */)
     {
-        // Alert_led_on;
+        Alert_led_on;
         /* code */
     }
     else if (rcin_7 < low_offset)
     {
-        // Alert_led_off;
+        Alert_led_off;
     }
 }
 

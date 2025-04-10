@@ -86,37 +86,6 @@ void FireFight::write_one(uint8_t address_ID, uint16_t reg_adress, uint16_t reg_
     hal.serial(1)->write(data_to_send, cnt);
 }
 
-void FireFight::write_six(uint8_t address_ID, uint16_t start_reg_adress, int16_t val_1, int16_t val_2, int16_t val_3, int16_t val_4, int16_t val_5, int16_t val_6) // 写两个寄存器，用于归零
-{
-    uint8_t data_to_send[30];
-    uint8_t cnt = 0;
-    uint16_t crc = 0;
-    uint16_t write_num = 0x0006;      // 怀疑写入地址错误，未验证，若验证清删除
-    data_to_send[cnt++] = address_ID; // 设备地址为01
-    data_to_send[cnt++] = 0x10;       // 写入的功能码为0x10
-    data_to_send[cnt++] = BYTE1(start_reg_adress);
-    data_to_send[cnt++] = BYTE0(start_reg_adress);
-    data_to_send[cnt++] = BYTE1(write_num); // 写入数量
-    data_to_send[cnt++] = BYTE0(write_num);
-    data_to_send[cnt++] = 12; // 写入字节数
-    data_to_send[cnt++] = BYTE1(val_1);
-    data_to_send[cnt++] = BYTE0(val_1);
-    data_to_send[cnt++] = BYTE1(val_2);
-    data_to_send[cnt++] = BYTE0(val_2);
-    data_to_send[cnt++] = BYTE1(val_3);
-    data_to_send[cnt++] = BYTE0(val_3);
-    data_to_send[cnt++] = BYTE1(val_4);
-    data_to_send[cnt++] = BYTE0(val_4);
-    data_to_send[cnt++] = BYTE1(val_5);
-    data_to_send[cnt++] = BYTE0(val_5);
-    data_to_send[cnt++] = BYTE1(val_6);
-    data_to_send[cnt++] = BYTE0(val_6);
-    crc = CRC.Funct_CRC16(data_to_send, cnt); // 官方给的CRC校验
-    data_to_send[cnt++] = BYTE0(crc);
-    data_to_send[cnt++] = BYTE1(crc);
-    hal.serial(1)->write(data_to_send, cnt);
-}
-
 void FireFight::write_two(uint8_t address_ID, uint16_t start_reg_adress, int16_t val_1, int16_t val_2) // 写两个寄存器，用于归零
 {
     uint8_t data_to_send[15];
@@ -306,224 +275,246 @@ void FireFight::playback_button(uint16_t val)
     write_one(0x01, 0x0016, val);
 }
 
-
 void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很重要
 {
-    static uint16_t time_count_ms = 0;
-    static uint8_t ignition_lock = 0;
-    int16_t action_stop_1 = 0,action_stop_2 = 0;                    // pitch轴标志位
-    int16_t action_ignition_1 = 0, action_ignition_2 = 0;           //
-    // static uint8_t flag = 0;
-    uint16_t under_offset = 1800;
-    uint16_t low_offset = 1200;
-    // int8_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
-    uint16_t stop_ctrl = (hal.rcin->read(4));  //刹车控制
-    uint16_t ignition_ctrl_frist = (hal.rcin->read(5));  //一级软件点火控制
-    uint16_t ignition_ctrl_second = (hal.rcin->read(11));  // 二级软件点火控制
-    // uint16_t LED_ctrl = (hal.rcin->read(6));        //灯控制
-    // 起爆逻辑如下：ignition_ctrl_frist、ignition_ctrl_second杆必须在规定时间执行以下操作：
-    // 1：ignition_ctrl_frist杆先推到下，再推到上，保持不动，开启一级解保护
-    // 2：ignition_ctrl_second 先旋转至最小，再旋转至最大，重复两次，开启二级解保护，启动引爆继电器
-    if (abs(ignition_ctrl_frist - 1500) > 100)
+
+    static uint8_t replay_flag = 0; // 当为1时候表示正在执行回放
+    uint16_t under_offset = 1550;
+    uint16_t low_offset = 1450;
+    int16_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
+    uint16_t rcin_2 = (hal.rcin->read(2));
+    uint16_t rcin_3 = (hal.rcin->read(3));
+    if (exp_offset_Up_Down > 3276) // 表示走原路了
+        exp_offset_Up_Down -= 6553;
+    else if (exp_offset_Up_Down < -3276)
+        exp_offset_Up_Down += 6553;
+
+    if (exp_offset_Left_Right > 3276) // 表示走原路了
+        exp_offset_Left_Right -= 6553;
+    else if (exp_offset_Left_Right < -3276)
+        exp_offset_Left_Right += 6553;
+
+    if (abs(rcin_2 - 1500) > 50)
     {
-
-        if (time_count_ms > 5000)
-        {
-            ignition_lock = 0;
-            time_count_ms = 0;  //启动失败，请重新进入起爆流程
-                // lock_flag = 1; // Push_rod_fan_ID_2 ^ 0x0001  Self_spraying_ID3 ^ 0x0001
-            // ((T_8 - 1500) > 0) ? (Push_rod_fan_ID_2 = 1) : (Push_rod_fan_ID_2 = 0);
-        }
-        else if (time_count_ms <= 5000) //在5秒内进行判断
-        {
-            if (ignition_ctrl_frist < 1500 && ignition_lock == 0)
-            {
-                ignition_lock = 1; // 必须初始数值向下
-            }
-            else if(ignition_ctrl_frist > 1500 && ignition_lock == 1) 
-            {
-                ignition_lock = 2;
-            }
-            else if (ignition_ctrl_frist > 1500 && ignition_ctrl_second < low_offset && ignition_lock == 2)
-            {
-                ignition_lock = 3;
-            }
-            else if (ignition_ctrl_frist > 1500 && ignition_ctrl_second > under_offset && ignition_lock == 3)
-            {
-                ignition_lock = 4;
-            }
-            else if (ignition_ctrl_frist > 1500 && ignition_ctrl_second < low_offset && ignition_lock == 4)
-            {
-                ignition_lock = 5;
-            }
-            else if (ignition_ctrl_frist > 1500 && ignition_ctrl_second > under_offset && ignition_lock == 5)
-            {
-                ignition_lock = 0;  //重置标志位，避免未起爆
-                if (action_ignition_2 == 0 && action_ignition_1 == 0) // 如果第一次，则优先使用action1去尝试起爆
-                {
-                    action_ignition_1 = action_ignition_1 ^ 0x0001;
-                }
-                else  //启用第二套起爆
-                {
-                    action_ignition_1 = action_ignition_1 ^ 0x0001;
-                    action_ignition_2 = action_ignition_2 ^ 0x0001;
-                }
-                
-            }
-            
-        }
-        if (ignition_lock > 0)
-        {
-            time_count_ms += DT_ms;
-        }
-
-        // {exp_offset_Up_Down = 1} : exp_offset_Up_Down = -1; // 等于1表示上，-1表示向下
+        // aim_Up_Down_pulse += add_offset;
+        exp_offset_Up_Down = (rcin_2 - 1500)*2.22;
+    }
+    else if (replay_flag != 1)
+    {
+        exp_offset_Up_Down = 0; // 期望值给0
+                                //  aim_Up_Down_pulse = Up_Down_pulse;
     }
 
-    
-    if (abs(stop_ctrl - 1500) > 100)
+    if (abs(rcin_3 - 1500) > 50)
     {
-        ((stop_ctrl - 1500) > 0) ? (action_stop_1 = 1, action_stop_2 = 0) : (action_stop_1 = 0, action_stop_2 = 1);
-        // {exp_offset_Up_Down = 1} : exp_offset_Up_Down = -1; // 等于1表示上，-1表示向下
+        // aim_Left_Right_pulse += add_offset;
+        exp_offset_Left_Right = (rcin_3 - 1500) * 2.22;
     }
-    else if (abs(stop_ctrl - 1500) < 100)
+    else if (replay_flag != 1)
     {
-        action_stop_1 = 0, action_stop_2 = 0;
+        exp_offset_Left_Right = 0; // 期望值给0
+        // aim_Left_Right_pulse = Left_Right_pulse;
     }
 
-    write_six(1, 12, action_stop_1, action_stop_2, action_stop_1, action_stop_2, action_ignition_1, action_ignition_2);
-    /* code */
+    // gcs().send_text(MAV_SEVERITY_CRITICAL, "exp_offset_Up_Down:%d", exp_offset_Up_Down);
+    // gcs().send_text(MAV_SEVERITY_CRITICAL, "exp_offset_Left_Right:%d", exp_offset_Left_Right);
+    // gcs().send_text(MAV_SEVERITY_CRITICAL, "Up_Down_pulse:%d", Up_Down_pulse);
+    // gcs().send_text(MAV_SEVERITY_CRITICAL, "Left_Right_pulse:%d", Left_Right_pulse);
+    // gcs().send_text(MAV_SEVERITY_CRITICAL, "左右的期望值为:%d", aim_Left_Right_pulse);
+
+    // if (exp_offset_Up_Down > dead_offset_motor) // 当计算期望值为正数时候，启动按键上按钮
+    // {
+
+    //     up_down = 1; // 表示当前正在向上
+
+    // }
+    // if (exp_offset_Up_Down < -dead_offset_motor) // 当计算期望值为负数时候，启动按键下按钮
+    // {
+
+    //     up_down = -1; // 表示正在向下
+
+    // }
+    // else if (abs(exp_offset_Up_Down) < dead_offset_motor) // 重复发送4次
+    // {
+
+    //     up_down = 0;
+
+    // }
+
+    // if (exp_offset_Left_Right < -dead_offset_motor)
+    // {
+    //     left_right = -1;
+
+    // }
+    // else if (exp_offset_Left_Right > dead_offset_motor)
+    // {
+
+    //     left_right = 1;
+
+    // }
+    // else if (abs(exp_offset_Left_Right) < dead_offset_motor) // 重复发送4次
+    // {
+    //     left_right = 0;
+
+    // }
+    //发送控制电机信号
+    write_two(1,0,exp_offset_Up_Down,exp_offset_Left_Right);
+
+    if ((hal.rcin->read(4)) > under_offset)
+    {
+        // if (/* condition */ time_cnt_zhu == 0)
+        // {
+        //     wu_button(0); // 将雾清零             /* code */
+        // }
+        // time_cnt_zhu++;
+        // if (time_cnt_zhu >= 2) // 延时一个执行周期
+        // {
+        //     /* code */
+        //     zhu_button(1);
+        //     time_cnt_zhu = 0;
+        // }
+        write_two(0x01,0x0010,1,0);
+
+    }
+    else if ((hal.rcin->read(4)) < low_offset)
+    {
+        // if (/* condition */ time_cnt_zhu == 0)
+        // {
+        //     zhu_button(0); // 将柱清零            /* code */
+        // }
+        // time_cnt_zhu++;
+        // if (time_cnt_zhu >= 2) // 延时一个执行周期
+        // {
+        //     /* code */
+        //     wu_button(1);
+        //     time_cnt_zhu = 0;
+        // }
+        write_two(0x01,0x0010,0,1);
+    }
+
+    else if (((hal.rcin->read(4)) > low_offset) && ((hal.rcin->read(4)) < under_offset))
+    {
+        // if (/* condition */ time_cnt_zhu == 0)
+        // {
+        //     zhu_button(0); // 将柱清零            /* code */
+        // }
+        // time_cnt_zhu++;
+        // if (time_cnt_zhu >= 2) // 延时一个执行周期
+        // {
+
+        //     /* code */
+
+        //     wu_button(0);
+        //     time_cnt_zhu = 0;
+        //     // wu_zhu++;
+        // }
+        write_two(0x01,0x0010,0,0);
+    }
+
+    if ((hal.rcin->read(5)) > under_offset) // 表示正在录制动作
+    {
+        replay_flag = 2;
+        write_two(1,21,1,0);  //发送录制按键按下指令
+        // if ((left_right != 0 || up_down != 0) && (up_down_last == 88 && left_right_last == 88)) // 有动作时开始记录
+        // {
+        //     record_delay = 0;
+        //     current_delay = 0;
+        //     aim_delay = 0;
+        //     up_down_last = up_down;
+        //     left_right_last = left_right;
+        //     num_actions = 0;
+        //     record_T = 0;
+        //     // record_Left_Right_pulse = Left_Right_pulse;  //记录初始数值
+        //     // record_Up_Down_pulse =  Up_Down_pulse;
+        //     actions[num_actions++] = Action(Left_Right_pulse, Up_Down_pulse, record_delay);
+        // }
+
+        // if (num_actions < MAX_ACTIONS) // 若指令满了，则停止记录
+        // {
+        //     if ((up_down_last != 88 && left_right_last != 88)) // 过了初始化才能进入记录
+        //     {
+        //         if (up_down != up_down_last || left_right != left_right_last || record_T * DT_ms > 2000) // 当动作发生改变时，记录当前电机脉冲数值
+        //         {
+        //             actions[num_actions++] = Action(Left_Right_pulse, Up_Down_pulse, record_delay);
+        //             up_down_last = up_down;
+        //             left_right_last = left_right;
+        //             record_T = 0;
+        //         }
+        //         record_T++;
+        //     }
+        // }
+        // record_delay++; // 记录时间
+    }
+    else if ((hal.rcin->read(5)) < low_offset)
+    {
+        replay_flag = 1;
+        write_two(1, 21, 0, 1); // 发送回放按键按下指令
+        // if (action_index == 0) // 当执行第一次动作时，需要进行归位
+        // {
+        //     aim_Left_Right_pulse = actions[action_index].record_Left_Right_pulse;
+        //     aim_Up_Down_pulse = actions[action_index].record_Up_Down_pulse;
+        //     aim_delay = actions[action_index].record_delay;
+        //     action_index++;
+        //     current_delay = 0;
+        // }
+        // else if ((abs(exp_offset_Left_Right) < play_dead_offset_motor && abs(exp_offset_Up_Down) < play_dead_offset_motor))
+        // {
+        //     if(current_delay >= aim_delay)
+        //     {
+        //         if (action_index < num_actions)
+        //         {
+        //             aim_Left_Right_pulse = actions[action_index].record_Left_Right_pulse;
+        //             aim_Up_Down_pulse = actions[action_index].record_Up_Down_pulse;
+        //             aim_delay = actions[action_index].record_delay;
+        //             if (action_index == 1)  //当为第一个动作时候，不记录时间
+        //             {
+        //                 current_delay = 0;
+        //             }
+        //             action_index++;
+                    
+        //         }
+        //         else
+        //         {
+        //             action_index = 0; // 重复动作
+        //             current_delay = 0;
+        //             aim_delay = 0;
+        //         }
+        //     }
   
+        // }
+        // current_delay++;
+    }
+
+    else if (((hal.rcin->read(5)) > low_offset) && ((hal.rcin->read(5)) < under_offset))
+    {
+        write_two(1, 21, 0, 0); // 发送清零指令
+        // if(replay_flag == 2)  //表示从录制转到中间，需要记录一次
+        // {
+        //     actions[num_actions++] = Action(Left_Right_pulse, Up_Down_pulse, record_delay);
+        //     replay_flag = 0;  //录制正式结束
+        // }
+        // if ((up_down_last != 88 && left_right_last != 88) || replay_flag == 1)
+        // {
+        //     up_down_last = 88;
+        //     left_right_last = 88;
+        //     aim_Left_Right_pulse = Left_Right_pulse;
+        //     aim_Up_Down_pulse = Up_Down_pulse;
+        //     replay_flag = 0;
+        //     action_index = 0;
+        // }
+
+        // write_two(0x01,0x0010,0,0);
+    }
+
+    // gcs().send_text(MAV_SEVERITY_CRITICAL, "通道11的数值:%d", hal.rcin->read(10));
+    // time_samp += DT_ms;
+    // if (time_samp == 6 * DT_ms)
+    // {
+    //     time_samp = 0;
+    // }
 }
 
-// void FireFight::FireFight_ID2(uint8_t DT_ms) // 执行周期，传入DT很重要
-// {
-//     static uint16_t time_count_ms = 0;
-//     static uint8_t lock_flag = 0;  //当持续拨动某个杠超过1s时候则置位
-//     static int16_t Push_rod_fan_ID_2 = 0, arm_LED_ID_1 = 0; // pitch轴标志位
-//     static int16_t Self_spraying_ID3 = 0, ID4 = 0;
-//     static int16_t ID5 = 0, ID6 = 0;
 
-//     uint16_t under_offset = 1700;
-//     uint16_t low_offset = 1300;
-//     // int8_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
-//     uint16_t T_8 = Rc_In[16];
-//     uint16_t F21 = Rc_In[21];
-//     uint16_t F5 = Rc_In[19];
-//     if (abs(T_8 - 1500) > 100 && lock_flag == 0)
-//     {
-        
-//         if(time_count_ms > 1000)
-//         {
-//             lock_flag = 1; // Push_rod_fan_ID_2 ^ 0x0001  Self_spraying_ID3 ^ 0x0001
-//             ((T_8 - 1500) > 0) ? (Push_rod_fan_ID_2 = 1) : (Push_rod_fan_ID_2 = 0);
-//         }
-//         else
-//         {
-//             time_count_ms += DT_ms;
-//         }
-        
-            
-//         // {exp_offset_Up_Down = 1} : exp_offset_Up_Down = -1; // 等于1表示上，-1表示向下
-//     }
-//     else if (abs(T_8 - 1500) < 100)
-//     {
-//         lock_flag = 0;
-//         time_count_ms = 0;
-//     }
-//     // write_two(1,0,exp_offset_Up_Down,exp_offset_Left_Right);
-
-//     if (F21 > under_offset)
-//     {
-//         Self_spraying_ID3 = 0;
-//         // write_two(0x01,0x0010,1,0);
-//     }
-//     else if ((F21) < low_offset)
-//     {
-//         // write_two(0x01,0x0010,0,0);
-//         Self_spraying_ID3 = 1;
-//     }
-
-//     if (F5 > under_offset)
-//     {
-//         arm_LED_ID_1 = 0;
-//         // write_two(0x01,0x0010,1,0);
-//     }
-//     else if ((F5) < low_offset)
-//     {
-//         // write_two(0x01,0x0010,0,0);
-//         arm_LED_ID_1 = 1;
-//     }
-//    write_six(2, 12, arm_LED_ID_1, Push_rod_fan_ID_2, Self_spraying_ID3, ID4, ID5, ID6);
-//     //这里设置初始地址为12,因为方便几个板子间移植
-// }
-
-// void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
-// {
-//     static uint16_t time_count_ms_T7 = 0, lock_flag_T7 = 0;
-//     static uint16_t time_count_ms_T8 = 0, lock_flag_T8 = 0;
-//     static int16_t release_belt_ID_1 = 0, fan_ID_2 = 0; // pitch轴标志位
-//     static int16_t GPIO_LED_ID_3 = 0, GPIO_LED_ID_4 = 0;   //
-//     static int16_t ID5 = 0, ID6 = 0;     //
-
-//     uint16_t under_offset = 1700;
-//     uint16_t low_offset = 1300;
-//     // int8_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
-//     uint16_t T_7 = Rc_In[15];
-//     uint16_t T_8 = Rc_In[16];
-//     uint16_t T_4 = Rc_In[14];
-//     if (abs(T_7 - 1500) > 100 && lock_flag_T7 == 0)
-//     {
-//         if (time_count_ms_T7 > 3000)
-//         {
-//             lock_flag_T7 = 1;
-//             ((T_7 - 1500) > 0) ? (ID5 = 0) : (release_belt_ID_1 = release_belt_ID_1 ^ 0x0001);
-//         }
-//         else
-//         {
-//             time_count_ms_T7 += DT_ms;
-//         }
-//         // {exp_offset_Up_Down = 1} : exp_offset_Up_Down = -1; // 等于1表示上，-1表示向下
-//     }
-//     else if (abs(T_7 - 1500) < 100)
-//     {
-//         lock_flag_T7 = 0;
-//         time_count_ms_T7 = 0;
-//     }
-
-//     if (abs(T_8 - 1500) > 100 && lock_flag_T8 == 0)
-//     {
-
-//         if (time_count_ms_T8 > 1000)
-//         {
-//             lock_flag_T8 = 1;
-//             ((T_8 - 1500) > 0) ? (fan_ID_2 = 1) : ( fan_ID_2 = 0);
-//         }
-//         else
-//         {
-//             time_count_ms_T8 += DT_ms;
-//         }
-
-//     }
-//     else if (abs(T_8 - 1500) < 100)
-//     {
-//         lock_flag_T8 = 0;
-//         time_count_ms_T8 = 0;
-//     }
-
-//     if ((T_4) > under_offset)
-//     {
-//         GPIO_LED_ID_3 = 1, GPIO_LED_ID_4 = 1;
-//         // write_two(0x01,0x0010,1,0);
-//     }
-//     else if ((T_4) < low_offset)
-//     {
-//         // write_two(0x01,0x0010,0,0);
-//         GPIO_LED_ID_3 = 0, GPIO_LED_ID_4 = 0;
-//     }
-//     write_six(3, 12, release_belt_ID_1, fan_ID_2, GPIO_LED_ID_3, GPIO_LED_ID_4, ID5, ID6);
-//     // 这里设置初始地址为12,因为方便几个板子间移植
-// }
 
 void FireFight::parm_change()
 {
