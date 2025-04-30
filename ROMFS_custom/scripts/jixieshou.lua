@@ -58,12 +58,12 @@ function process_can_feedback()
     if not frame then
       return false
     end
-    local ID = frame:data(0)
+    local ID = tonumber(frame:id()) -- 使用位掩码确保32位范围
 
-    gcs:send_text(0, "CAN["..can_bus.."] msg from " .. string.format("0x%X", ID) .. ": " ..
-        frame:data(1) .. ", " .. frame:data(2) .. ", " .. frame:data(3) .. ", " ..
-        frame:data(4) .. ", " .. frame:data(5) .. ", " .. frame:data(6) .. ", " ..
-        frame:data(7))
+    gcs:send_text(0, "CAN["..can_bus.."] msg from " .. string.format("0x%08X", ID) .. ": " ..
+        frame:data(0) .. ", " .. frame:data(1) .. ", " .. frame:data(2) .. ", " ..
+        frame:data(3) .. ", " .. frame:data(4) .. ", " .. frame:data(5) .. ", " ..
+        frame:data(6) .. ", " .. frame:data(7) )
     -- 解析末端位姿反馈
     if ID == 0x2A2 then  -- X/Y坐标
         current_pose.x = bytes_to_int32(frame:data(1), frame:data(2), frame:data(3), frame:data(4))
