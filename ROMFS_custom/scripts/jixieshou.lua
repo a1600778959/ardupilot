@@ -33,7 +33,10 @@ function update()
     end
 
     -- 解析反馈数据
-    process_can_feedback()
+    if not process_can_feedback() then
+        gcs:send_text(0, "CAN feedback error")
+        return update, 20
+    end
 
     -- 读取遥控器增量输入
     local delta = get_rc_delta()
@@ -53,22 +56,29 @@ function process_can_feedback()
 
     -- noting waiting, return early
     if not frame then
-      return
+      return false
     end
     local ID = frame:data(0)
 
-    
+    gcs:send_text(0, "CAN["..can_bus.."] msg from " .. string.format("0x%X", ID) .. ": " ..
+        frame:data(1) .. ", " .. frame:data(2) .. ", " .. frame:data(3) .. ", " ..
+        frame:data(4) .. ", " .. frame:data(5) .. ", " .. frame:data(6) .. ", " ..
+        frame:data(7))
     -- 解析末端位姿反馈
     if ID == 0x2A2 then  -- X/Y坐标
         current_pose.x = bytes_to_int32(frame:data(1), frame:data(2), frame:data(3), frame:data(4))
         current_pose.y = bytes_to_int32(frame:data(5), frame:data(6), frame:data(7), frame:data(8))
+        return true
     elseif ID == 0x2A3 then  -- Z/RX坐标
         current_pose.z = bytes_to_int32(frame:data(1), frame:data(2), frame:data(3), frame:data(4))
         current_pose.rx = bytes_to_int32(frame:data(5), frame:data(6), frame:data(7), frame:data(8))
+        return true
     elseif ID == 0x2A4 then  -- RY/RZ坐标
         current_pose.ry = bytes_to_int32(frame:data(1), frame:data(2), frame:data(3), frame:data(4))
         current_pose.rz = bytes_to_int32(frame:data(5), frame:data(6), frame:data(7), frame:data(8))
+        return true
     end
+    return false
 end
 
 -- 获取遥控器增量值
@@ -108,6 +118,7 @@ function update_target_pose(delta)
             end
         end
     end
+    
 end
 
 -- 发送位姿指令
@@ -123,6 +134,8 @@ function send_position()
     
     -- 设置运动模式（MOVE_P模式）
     send(0x151, {0x01, 0x00, arm_speed, 0, 0, 0, 0, 0}, 8)
+
+    gcs:send_text('0',"current_pose:"..tostring(current_pose.x)..","..tostring(current_pose.y)..","..tostring(current_pose.z)..","..tostring(current_pose.rx)..","..tostring(current_pose.ry)..","..tostring(current_pose.rz))
 end
 
 -- 共用功能函数
@@ -144,7 +157,7 @@ function send(target_ID,data,dlc)  --转子绝对值位置反馈
         msg:data(i, data[i+1])
     end
     msg:dlc(dlc)
-    gcs:send_text(0, "CAN send: " .. string.format("0x%X", target_ID) .. " " .. table.concat(data, ", "))
+    -- gcs:send_text(0, "CAN send: " .. string.format("0x%X", target_ID) .. " " .. table.concat(data, ", "))
 
     driver:write_frame(msg, 10000)
 end
@@ -170,4 +183,5 @@ function bytes_to_int32(b1, b2, b3, b4)
     return value
 end
 
+gcs:send_text(0, "Jixieshou script loaded")
 return update()
