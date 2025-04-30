@@ -14,15 +14,15 @@ local step_scaling = {     -- 增量步长比例
 
 -- 当前位姿状态
 local current_pose = {
-    x = 0, y = 0, z = 0,
-    rx = 0, ry = 0, rz = 0
+    x = 99999, y = 99999, z = 99999,
+    rx = 99999, ry = 99999, rz = 99999
 }
 local driver = CAN:get_device(5)
 -- 初始化函数
 function update()
     -- 初始化CAN总线
     -- gcs:send_text(0, "Distance:"..tostring(distance).." Instance:"..tostring(instance))
-    if not arming:is_armed() then
+    if arming:is_armed() then
         enable_motors()
         set_can_mode()
     end
@@ -38,6 +38,11 @@ function update()
         return update, 20
     end
 
+    if current_pose.x == 99999 and current_pose.y ==99999 and current_pose.z ==99999 and
+       current_pose.rx == 99999 and current_pose.ry ==99999 and current_pose.rz ==99999 then
+        gcs:send_text(0, "can't find the current pose")--查看该通道数值是否被读取到
+        return update, 20
+    end
     -- 读取遥控器增量输入
     local delta = get_rc_delta()
 
@@ -58,25 +63,60 @@ function process_can_feedback()
     if not frame then
       return false
     end
-    local ID = tonumber(frame:id()) -- 使用位掩码确保32位范围
+    local ID = frame:id() -- 使用位掩码确保32位范围
+    -- gcs:send_text(0, "CAN["..can_bus.."] msg from " .. tostring(ID) .. ": " ..
+    --         frame:data(0) .. ", " .. frame:data(1) .. ", " .. frame:data(2) .. ", " ..
+    --         frame:data(3) .. ", " .. frame:data(4) .. ", " .. frame:data(5) .. ", " ..
+    --         frame:data(6) .. ", " .. frame:data(7) )  
 
-    gcs:send_text(0, "CAN["..can_bus.."] msg from " .. string.format("0x%08X", ID) .. ": " ..
-        frame:data(0) .. ", " .. frame:data(1) .. ", " .. frame:data(2) .. ", " ..
-        frame:data(3) .. ", " .. frame:data(4) .. ", " .. frame:data(5) .. ", " ..
-        frame:data(6) .. ", " .. frame:data(7) )
+    
     -- 解析末端位姿反馈
-    if ID == 0x2A2 then  -- X/Y坐标
-        current_pose.x = bytes_to_int32(frame:data(1), frame:data(2), frame:data(3), frame:data(4))
-        current_pose.y = bytes_to_int32(frame:data(5), frame:data(6), frame:data(7), frame:data(8))
+    if ID == uint32_t(0x2A2) then  -- X/Y坐标
+        current_pose.x = bytes_to_int32(frame:data(0), frame:data(1), frame:data(2), frame:data(3))
+        current_pose.y = bytes_to_int32(frame:data(4), frame:data(5), frame:data(6), frame:data(7))
         return true
-    elseif ID == 0x2A3 then  -- Z/RX坐标
-        current_pose.z = bytes_to_int32(frame:data(1), frame:data(2), frame:data(3), frame:data(4))
-        current_pose.rx = bytes_to_int32(frame:data(5), frame:data(6), frame:data(7), frame:data(8))
+    elseif ID == uint32_t(0x2A3) then  -- Z/RX坐标
+        current_pose.z = bytes_to_int32(frame:data(0), frame:data(1), frame:data(2), frame:data(3))
+        current_pose.rx = bytes_to_int32(frame:data(4), frame:data(5), frame:data(6), frame:data(7))
         return true
-    elseif ID == 0x2A4 then  -- RY/RZ坐标
-        current_pose.ry = bytes_to_int32(frame:data(1), frame:data(2), frame:data(3), frame:data(4))
-        current_pose.rz = bytes_to_int32(frame:data(5), frame:data(6), frame:data(7), frame:data(8))
+    elseif ID == uint32_t(0x2A4) then  -- RY/RZ坐标
+        current_pose.ry = bytes_to_int32(frame:data(0), frame:data(1), frame:data(2), frame:data(3))
+        current_pose.rz = bytes_to_int32(frame:data(4), frame:data(5), frame:data(6), frame:data(7))
         return true
+    elseif ID == uint32_t(0x256) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x255) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x264) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x254) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x253) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x252) then  -- 运动模式反馈
+        return true        
+    elseif ID == uint32_t(0x251) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x2A8) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x2A7) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x2A6) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x2A5) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x2A1) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x265) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x266) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x261) then  -- 运动模式反馈
+        return true        
+    elseif ID == uint32_t(0x262) then  -- 运动模式反馈
+        return true
+    elseif ID == uint32_t(0x263) then  -- 运动模式反馈
+        return true    
     end
     return false
 end
