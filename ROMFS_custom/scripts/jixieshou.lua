@@ -2,7 +2,7 @@
 local can_bus = 1          -- CAN总线编号
 local arm_speed = 50       -- 运动速度百分比
 local deadzone = 50        -- 遥控器死区阈值
-local step_scaling = {     -- 增量步长比例
+local step_scaling = {     -- 增量步长比例W
     x = 1000,    -- 0.001mm/step
     y = 1000,
     z = 1000,
@@ -14,8 +14,8 @@ local step_scaling = {     -- 增量步长比例
 
 -- 当前位姿状态
 local current_pose = {
-    x = 99999, y = 99999, z = 99999,
-    rx = 99999, ry = 99999, rz = 99999
+    x = 56638, y = -700, z = 415721,
+    rx = -88915, ry = -19315, rz = -90648
 }
 local driver = CAN:get_device(5)
 -- 初始化函数
@@ -29,20 +29,22 @@ function update()
 
     -- 主循环
     if not arming:is_armed() then
+        
+        -- emergency_stop()
         return update, 20
     end
 
     -- 解析反馈数据
-    if not process_can_feedback() then
-        gcs:send_text(0, "CAN feedback error")
-        return update, 20
-    end
+    -- if not process_can_feedback() then
+    --     gcs:send_text(0, "CAN feedback error")
+    --     return update, 20
+    -- end
 
-    if current_pose.x == 99999 and current_pose.y ==99999 and current_pose.z ==99999 and
-       current_pose.rx == 99999 and current_pose.ry ==99999 and current_pose.rz ==99999 then
-        gcs:send_text(0, "can't find the current pose")--查看该通道数值是否被读取到
-        return update, 20
-    end
+    -- if current_pose.x == 99999 and current_pose.y ==99999 and current_pose.z ==99999 and
+    --    current_pose.rx == 99999 and current_pose.ry ==99999 and current_pose.rz ==99999 then
+    --     gcs:send_text(0, "can't find the current pose")--查看该通道数值是否被读取到
+    --     return update, 20
+    -- end
     -- 读取遥控器增量输入
     local delta = get_rc_delta()
 
@@ -172,8 +174,8 @@ function send_position()
     -- 发送RY/RZ坐标 (ID 0x154)
     send(0x154, int32_to_bytes(current_pose.ry, current_pose.rz), 8)
     
-    -- 设置运动模式（MOVE_P模式）
-    send(0x151, {0x01, 0x00, arm_speed, 0, 0, 0, 0, 0}, 8)
+    -- 设置运动模式（MOVE_L模式）
+    send(0x151, {0x01, 0x02, arm_speed, 0, 0, 0, 0, 0}, 8)
 
     gcs:send_text('0',"current_pose:"..tostring(current_pose.x)..","..tostring(current_pose.y)..","..tostring(current_pose.z)..","..tostring(current_pose.rx)..","..tostring(current_pose.ry)..","..tostring(current_pose.rz))
 end
@@ -187,6 +189,9 @@ function set_can_mode()
     send(0x151, {1, 0, 0, 0, 0, 0, 0, 0}, 8)
 end
 
+function emergency_stop()
+    send(0x150, {1, 0, 0, 0, 0, 0, 0, 0}, 8)
+end
 
 
 function send(target_ID,data,dlc)  --转子绝对值位置反馈
