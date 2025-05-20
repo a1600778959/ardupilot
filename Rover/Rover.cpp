@@ -198,9 +198,17 @@ void Rover::FireFight_open() // 每2毫秒执行一次
     {
         fire_led.launch_motor();
         firefight_rover.function_fire_fight(40);
-
+        firefight_rover.write_two(0x01, 12, 1, 0);       //上下电机锁定
+        firefight_rover.write_two(0x01, 14, 1, 0);       //左右电机锁定
         // firefight_rover.read_one(1, 25, 2);   // 发送读取脉冲数值命令
         // firefight_rover.check_send_one(0x01); // 串口接收返回脉冲数值
+        // stop_button = 0;
+    }
+    else //&& current_v > 40)
+    {
+        fire_led.stop_motor();
+        firefight_rover.write_two(0x01, 12, 0, 1);       //上下电机锁定
+        firefight_rover.write_two(0x01, 14, 0, 1);       //左右电机锁定
         // stop_button = 0;
     }
     // else

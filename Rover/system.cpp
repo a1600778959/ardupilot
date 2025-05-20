@@ -160,9 +160,9 @@ void Rover::init_ardupilot()
 
     // flag that initialisation has completed
     // 增加初始化函数
-    firefight_rover.uart_init();
-    fire_motor_rover.motor_init();
-    fire_led.Fire_LED_Init(); // 初始化完成播放声音
+    // firefight_rover.uart_init();
+    // fire_motor_rover.motor_init();
+    // fire_led.Fire_LED_Init(); // 初始化完成播放声音
     initialised = true;
 }
 
