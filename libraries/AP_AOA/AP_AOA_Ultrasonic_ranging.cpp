@@ -18,9 +18,9 @@ void AP_MultiDistanceSensor::init()
     }
 
     // 配置UART参数
-    _uart4 = hal.serial(4);
-    _uart4->begin(115200, 256, 256);
-    _uart4->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+    // _uart4 = hal.serial(4);
+    // _uart4->begin(115200, 256, 256);
+    // _uart4->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 }
 
 void AP_MultiDistanceSensor::update()
