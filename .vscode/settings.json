@@ -24,7 +24,16 @@
         "future": "cpp",
         "optional": "cpp",
         "cstddef": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "algorithm": "cpp",
+        "fstream": "cpp",
+        "iosfwd": "cpp",
+        "iostream": "cpp",
+        "istream": "cpp",
+        "numeric": "cpp",
+        "ostream": "cpp",
+        "sstream": "cpp",
+        "streambuf": "cpp"
     },
     "cmake.sourceDirectory": "/home/dzd/ardupilot/modules/Micro-CDR/test/case"
 }
