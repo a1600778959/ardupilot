@@ -5,6 +5,7 @@ PC7 ALERT_LED OUTPUT LOW GPIO(3)
 PA5 C1 OUTPUT LOW GPIO(8)
 PA6 C2 OUTPUT LOW GPIO(9)
 */
+static uint8_t LED_button = 0;
 void Fire_LED::Fire_LED_Init()
 {
     hal.gpio->pinMode(2, HAL_GPIO_OUTPUT); // 设置成输出模式
@@ -15,6 +16,7 @@ void Fire_LED::Fire_LED_Init()
     Alert_led_on;
     hal.scheduler->delay(1000); // 设置初始化完成声音提示时间
     Alert_led_off;
+
 }
 
 Fire_LED::Fire_LED(/* args */)
@@ -22,10 +24,19 @@ Fire_LED::Fire_LED(/* args */)
 
 }
 
+
 void Fire_LED::launch_motor()
 {
-    uint16_t LED_ctrl = (hal.rcin->read(6)); // 刹车控制
-    if (LED_ctrl > 1500)
+
+    uint16_t LED_ctrl = (hal.rcin->read(12)); // 刹车控制
+    static uint16_t last_rcin_LED = LED_ctrl;
+    if (abs(last_rcin_LED - LED_ctrl) > 600)
+    {
+        LED_button = ~ LED_button;
+    }
+    C1_on;
+    C2_on;
+    if (LED_button == 0)
     {
         C1_on;
         C2_on;
@@ -34,15 +45,19 @@ void Fire_LED::launch_motor()
     {
         C1_off;
         C2_off;
+
     }
-        
+    last_rcin_LED = LED_ctrl;
 }
 
 void Fire_LED::stop_motor()
 {
-    C1_on;
-    C2_on;
+    LED_button = 0;
+    C1_off;
+    C2_off;
 }
+
+
 
 void Fire_LED::Fire_Alert_LED()
 {

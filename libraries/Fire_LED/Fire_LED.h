@@ -6,10 +6,10 @@
 #define power_led_off hal.gpio->write(2, 0)
 #define Alert_led_on hal.gpio->write(3, 1)
 #define Alert_led_off hal.gpio->write(3, 0)
-#define C1_on hal.gpio->write(8, 0)
-#define C1_off hal.gpio->write(8, 1)
-#define C2_on hal.gpio->write(9, 0)
-#define C2_off hal.gpio->write(9, 1)
+#define C1_off hal.gpio->write(8, 0)
+#define C1_on hal.gpio->write(8, 1)
+#define C2_off hal.gpio->write(9, 0)
+#define C2_on hal.gpio->write(9, 1)
 
 extern const AP_HAL::HAL &hal;
 
