@@ -34,8 +34,8 @@ void Fire_LED::launch_motor()
     {
         LED_button = ~ LED_button;
     }
-    C1_on;
-    C2_on;
+    // C1_on;
+    // C2_on;
     if (LED_button == 0)
     {
         C1_on;
