@@ -78,7 +78,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_OpticalFlow,      &rover.optflow,          update,         200, 160,  11),
 #endif
     SCHED_TASK(update_current_mode,   400,    200,  12),
-        SCHED_TASK(FireFight_open,    20,    200,   13),
+        SCHED_TASK(FireFight_open,    2,    200,   13),
     SCHED_TASK(set_servos,            400,    200,  15),
     SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300,  18),
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200,  21),
@@ -172,25 +172,14 @@ Rover::Rover(void) :
 
 void Rover::FireFight_open() // 每2毫秒执行一次
 {
-    // uint8_t static stat = 0;
-    // uint16_t rcin_8 = hal.rcin->read(8);
-    // uint8_t static stop_button = 0;
-    // static uint16_t last_rcin_8 = rcin_8;
-    // // firefight_rover.function_fire_fight(5); //没有遥控器，测试用的
-    // if (abs(rcin_8 - last_rcin_8) > 800) // 判断是否有案件按下
-    // {
-    //     stop_button = ~stop_button; // 相当于按键被按下
-    // }
-    // last_rcin_8 = rcin_8;
+
     if (arming.is_armed()) //&& current_v > 40)
     {
         fire_led.launch_motor();
         firefight_rover.function_fire_fight(40);
         firefight_rover.write_two(0x01, 12, 1, 0); // 上下电机锁定
         firefight_rover.write_two(0x01, 14, 1, 0); // 左右电机锁定
-        // firefight_rover.read_one(1, 25, 2);   // 发送读取脉冲数值命令
-        // firefight_rover.check_send_one(0x01); // 串口接收返回脉冲数值
-        // stop_button = 0;
+
     }
     else //&& current_v > 40)
     {
