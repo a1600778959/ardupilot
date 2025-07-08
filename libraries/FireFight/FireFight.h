@@ -49,8 +49,8 @@ public:
     void pump_button(uint16_t val);     // 泵按钮
     void Record_button(uint16_t val);   // 录制按钮
     void playback_button(uint16_t val); // 回放按钮
-    void FireFight_ID2(uint8_t DT_ms);  // 2号消防炮板子，声光报警1；推杆风扇电机2；自喷淋3
-    void FireFight_ID3(uint8_t DT_ms);  // 3号消防炮控制板，拖带离合器1；风扇2；GPIO灯控3、4
+    // void FireFight_ID2(uint8_t DT_ms);  // 2号消防炮板子，声光报警1；推杆风扇电机2；自喷淋3
+    // void FireFight_ID3(uint8_t DT_ms);  // 3号消防炮控制板，拖带离合器1；风扇2；GPIO灯控3、4
     int16_t address_1, address_2;
     uint16_t Set_Left_motor, Read_Left_motor;
     uint16_t Set_Right_motor, Read_Right_motor;

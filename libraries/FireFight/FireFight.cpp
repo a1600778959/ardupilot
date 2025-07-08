@@ -396,134 +396,135 @@ void FireFight::function_fire_fight(uint8_t DT_ms) // 执行周期，传入DT很
   
 }
 
-void FireFight::FireFight_ID2(uint8_t DT_ms) // 执行周期，传入DT很重要
-{
-    static uint16_t time_count_ms = 0;
-    static uint8_t lock_flag = 0;  //当持续拨动某个杠超过1s时候则置位
-    static int16_t Push_rod_fan_ID_2 = 0, arm_LED_ID_1 = 0; // pitch轴标志位
-    static int16_t Self_spraying_ID3 = 0, ID4 = 0;
-    static int16_t ID5 = 0, ID6 = 0;
+// void FireFight::FireFight_ID2(uint8_t DT_ms) // 执行周期，传入DT很重要
+// {
+//     static uint16_t time_count_ms = 0;
+//     static uint8_t lock_flag = 0;  //当持续拨动某个杠超过1s时候则置位
+//     static int16_t Push_rod_fan_ID_2 = 0, arm_LED_ID_1 = 0; // pitch轴标志位
+//     static int16_t Self_spraying_ID3 = 0, ID4 = 0;
+//     static int16_t ID5 = 0, ID6 = 0;
 
-    uint16_t under_offset = 1700;
-    uint16_t low_offset = 1300;
-    // int8_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
-    uint16_t T_8 = Rc_In[16];
-    uint16_t F21 = Rc_In[21];
-    uint16_t F5 = Rc_In[19];
-    if (abs(T_8 - 1500) > 100 && lock_flag == 0)
-    {
+//     uint16_t under_offset = 1700;
+//     uint16_t low_offset = 1300;
+//     // int8_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
+//     uint16_t T_8 = Rc_In[16];
+//     uint16_t F21 = Rc_In[21];
+//     uint16_t F5 = Rc_In[19];
+//     if (abs(T_8 - 1500) > 100 && lock_flag == 0)
+//     {
         
-        if(time_count_ms > 1000)
-        {
-            lock_flag = 1; // Push_rod_fan_ID_2 ^ 0x0001  Self_spraying_ID3 ^ 0x0001
-            ((T_8 - 1500) > 0) ? (Push_rod_fan_ID_2 = 1) : (Push_rod_fan_ID_2 = 0);
-        }
-        else
-        {
-            time_count_ms += DT_ms;
-        }
+//         if(time_count_ms > 1000)
+//         {
+//             lock_flag = 1; // Push_rod_fan_ID_2 ^ 0x0001  Self_spraying_ID3 ^ 0x0001
+//             ((T_8 - 1500) > 0) ? (Push_rod_fan_ID_2 = 1) : (Push_rod_fan_ID_2 = 0);
+//         }
+//         else
+//         {
+//             time_count_ms += DT_ms;
+//         }
         
             
-        // {exp_offset_Up_Down = 1} : exp_offset_Up_Down = -1; // 等于1表示上，-1表示向下
-    }
-    else if (abs(T_8 - 1500) < 100)
-    {
-        lock_flag = 0;
-        time_count_ms = 0;
-    }
-    // write_two(1,0,exp_offset_Up_Down,exp_offset_Left_Right);
+//         // {exp_offset_Up_Down = 1} : exp_offset_Up_Down = -1; // 等于1表示上，-1表示向下
+//     }
+//     else if (abs(T_8 - 1500) < 100)
+//     {
+//         lock_flag = 0;
+//         time_count_ms = 0;
+//     }
+//     // write_two(1,0,exp_offset_Up_Down,exp_offset_Left_Right);
 
-    if (F21 > under_offset)
-    {
-        Self_spraying_ID3 = 0;
-        // write_two(0x01,0x0010,1,0);
-    }
-    else if ((F21) < low_offset)
-    {
-        // write_two(0x01,0x0010,0,0);
-        Self_spraying_ID3 = 1;
-    }
+//     if (F21 > under_offset)
+//     {
+//         Self_spraying_ID3 = 0;
+//         // write_two(0x01,0x0010,1,0);
+//     }
+//     else if ((F21) < low_offset)
+//     {
+//         // write_two(0x01,0x0010,0,0);
+//         Self_spraying_ID3 = 1;
+//     }
 
-    if (F5 > under_offset)
-    {
-        arm_LED_ID_1 = 0;
-        // write_two(0x01,0x0010,1,0);
-    }
-    else if ((F5) < low_offset)
-    {
-        // write_two(0x01,0x0010,0,0);
-        arm_LED_ID_1 = 1;
-    }
-   write_six(2, 12, arm_LED_ID_1, Push_rod_fan_ID_2, Self_spraying_ID3, ID4, ID5, ID6);
-    //这里设置初始地址为12,因为方便几个板子间移植
-}
+//     if (F5 > under_offset)
+//     {
+//         arm_LED_ID_1 = 0;
+//         // write_two(0x01,0x0010,1,0);
+//     }
+//     else if ((F5) < low_offset)
+//     {
+//         // write_two(0x01,0x0010,0,0);
+//         arm_LED_ID_1 = 1;
+//     }
+//    write_six(2, 12, arm_LED_ID_1, Push_rod_fan_ID_2, Self_spraying_ID3, ID4, ID5, ID6);
+//     //这里设置初始地址为12,因为方便几个板子间移植
+// }
 
-void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
-{
-    static uint16_t time_count_ms_T7 = 0, lock_flag_T7 = 0;
-    static uint16_t time_count_ms_T8 = 0, lock_flag_T8 = 0;
-    static int16_t release_belt_ID_1 = 0, fan_ID_2 = 0; // pitch轴标志位
-    static int16_t GPIO_LED_ID_3 = 0, GPIO_LED_ID_4 = 0;   //
-    static int16_t ID5 = 0, ID6 = 0;     //
+// void FireFight::FireFight_ID3(uint8_t DT_ms) // 执行周期，传入DT很重要
+// {
+//     static uint16_t time_count_ms_T7 = 0, lock_flag_T7 = 0;
+//     static uint16_t time_count_ms_T8 = 0, lock_flag_T8 = 0;
+//     static int16_t release_belt_ID_1 = 0, fan_ID_2 = 0; // pitch轴标志位
+//     static int16_t GPIO_LED_ID_3 = 0, GPIO_LED_ID_4 = 0;   //
+//     static int16_t ID5 = 0, ID6 = 0;     //
 
-    uint16_t under_offset = 1700;
-    uint16_t low_offset = 1300;
-    // int8_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
-    uint16_t T_7 = Rc_In[15];
-    uint16_t T_8 = Rc_In[16];
-    uint16_t T_4 = Rc_In[14];
-    if (abs(T_7 - 1500) > 100 && lock_flag_T7 == 0)
-    {
-        if (time_count_ms_T7 > 3000)
-        {
-            lock_flag_T7 = 1;
-            ((T_7 - 1500) > 0) ? (ID5 = 0) : (release_belt_ID_1 = release_belt_ID_1 ^ 0x0001);
-        }
-        else
-        {
-            time_count_ms_T7 += DT_ms;
-        }
-        // {exp_offset_Up_Down = 1} : exp_offset_Up_Down = -1; // 等于1表示上，-1表示向下
-    }
-    else if (abs(T_7 - 1500) < 100)
-    {
-        lock_flag_T7 = 0;
-        time_count_ms_T7 = 0;
-    }
+//     uint16_t under_offset = 1700;
+//     uint16_t low_offset = 1300;
+//     // int8_t exp_offset_Up_Down = 0, exp_offset_Left_Right = 0;
+//     uint16_t T_7 = Rc_In[15];
+//     uint16_t T_8 = Rc_In[16];
+//     uint16_t T_4 = Rc_In[14];
+//     if (abs(T_7 - 1500) > 100 && lock_flag_T7 == 0)
+//     {
+//         if (time_count_ms_T7 > 3000)
+//         {
+//             lock_flag_T7 = 1;
+//             ((T_7 - 1500) > 0) ? (ID5 = 0) : (release_belt_ID_1 = release_belt_ID_1 ^ 0x0001);
+//         }
+//         else
+//         {
+//             time_count_ms_T7 += DT_ms;
+//         }
+//         // {exp_offset_Up_Down = 1} : exp_offset_Up_Down = -1; // 等于1表示上，-1表示向下
+//     }
+//     else if (abs(T_7 - 1500) < 100)
+//     {
+//         lock_flag_T7 = 0;
+//         time_count_ms_T7 = 0;
+//     }
 
-    if (abs(T_8 - 1500) > 100 && lock_flag_T8 == 0)
-    {
+//     if (abs(T_8 - 1500) > 100 && lock_flag_T8 == 0)
+//     {
 
-        if (time_count_ms_T8 > 1000)
-        {
-            lock_flag_T8 = 1;
-            ((T_8 - 1500) > 0) ? (fan_ID_2 = 1) : ( fan_ID_2 = 0);
-        }
-        else
-        {
-            time_count_ms_T8 += DT_ms;
-        }
+//         if (time_count_ms_T8 > 1000)
+//         {
+//             lock_flag_T8 = 1;
+//             ((T_8 - 1500) > 0) ? (fan_ID_2 = 1) : ( fan_ID_2 = 0);
+//         }
+//         else
+//         {
+//             time_count_ms_T8 += DT_ms;
+//         }
 
-    }
-    else if (abs(T_8 - 1500) < 100)
-    {
-        lock_flag_T8 = 0;
-        time_count_ms_T8 = 0;
-    }
+//     }
+//     else if (abs(T_8 - 1500) < 100)
+//     {
+//         lock_flag_T8 = 0;
+//         time_count_ms_T8 = 0;
+//     }
 
-    if ((T_4) > under_offset)
-    {
-        GPIO_LED_ID_3 = 1, GPIO_LED_ID_4 = 1;
-        // write_two(0x01,0x0010,1,0);
-    }
-    else if ((T_4) < low_offset)
-    {
-        // write_two(0x01,0x0010,0,0);
-        GPIO_LED_ID_3 = 0, GPIO_LED_ID_4 = 0;
-    }
-    write_six(3, 12, release_belt_ID_1, fan_ID_2, GPIO_LED_ID_3, GPIO_LED_ID_4, ID5, ID6);
-    // 这里设置初始地址为12,因为方便几个板子间移植
-}
+//     if ((T_4) > under_offset)
+//     {
+//         GPIO_LED_ID_3 = 1, GPIO_LED_ID_4 = 1;
+//         // write_two(0x01,0x0010,1,0);
+//     }
+//     else if ((T_4) < low_offset)
+//     {
+//         // write_two(0x01,0x0010,0,0);
+//         GPIO_LED_ID_3 = 0, GPIO_LED_ID_4 = 0;
+//     }
+//     write_six(3, 12, release_belt_ID_1, fan_ID_2, GPIO_LED_ID_3, GPIO_LED_ID_4, ID5, ID6);
+//     // 这里设置初始地址为12,因为方便几个板子间移植
+// }
+
 void FireFight::parm_change()
 {
     static int16_t last_UD = 0,last_LR = 0,last_BUARD = 0;

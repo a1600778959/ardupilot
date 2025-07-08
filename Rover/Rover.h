@@ -45,6 +45,9 @@
 #include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_Follow/AP_Follow_config.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
+#include <FireFight/FireFight.h> //添加消防炮头文件
+#include <Fire_LED/Fire_LED.h>   //添加灯的头文件
+
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_ExternalControl_Rover.h"
 #endif
@@ -115,7 +118,8 @@ public:
     Rover(void);
 
 private:
-
+    FireFight firefight_rover; // 添加消防炮对象
+    Fire_LED fire_led;   //添加灯对象
     // must be the first AP_Param variable declared to ensure its
     // constructor runs before the constructors of the other AP_Param
     // variables
@@ -288,6 +292,9 @@ private:
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
     void nav_script_time_done(uint16_t id) override;
 #endif // AP_SCRIPTING_ENABLED
+
+    void FireFight_open(void);
+
     void stats_update();
     void ahrs_update();
     void gcs_failsafe_check(void);
@@ -299,7 +306,6 @@ private:
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);
     bool is_balancebot() const;
-
     // commands.cpp
     bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
