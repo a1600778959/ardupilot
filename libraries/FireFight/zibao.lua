@@ -76,9 +76,10 @@ function from_uint(val, min, max, bits)
   return val
 end
 
+
 function left_motor(left_rpm)
   msg = CANFrame()
-  msg:id(uint32_t(LEFT_CAN_ID:get())|0x0300) -- get the left motor ID from parameter
+  msg:id((uint32_t(1) << 31) | uint32_t(LEFT_CAN_ID:get()|0x0300)) -- get the left motor ID from parameter
 
   -- 0: [left_rpm[0-7]]
   msg:data(0, left_rpm & 0xFF)
@@ -102,7 +103,7 @@ end
 
 function right_motor(right_rpm)
   msg = CANFrame()
-  msg:id(uint32_t(RIGHT_CAN_ID:get())|0x0300) -- get the left motor ID from parameter
+  msg:id((uint32_t(1) << 31) | uint32_t(RIGHT_CAN_ID:get()|0x0300)) -- get the RIGHT motor ID from parameter
 
   -- 0: [left_rpm[0-7]]
   msg:data(0, right_rpm & 0xFF)
