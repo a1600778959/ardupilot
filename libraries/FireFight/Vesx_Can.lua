@@ -152,65 +152,7 @@ function send(left_rpm,right_rpm )
 
 end
 
--- send command to enable motor
-function enable()
-  msg = CANFrame()
 
-  msg:id(target_ID)
-
-  msg:data(0, 0xFF)
-  msg:data(1, 0xFF)
-  msg:data(2, 0xFF)
-  msg:data(3, 0xFF)
-  msg:data(4, 0xFF)
-  msg:data(5, 0xFF)
-  msg:data(6, 0xFF)
-  msg:data(7, 0xFC)
-
-  msg:dlc(8)
-
-  driver:write_frame(msg, 10000)
-end
-
--- send command to disable motor
-function disable()
-  msg = CANFrame()
-
-  msg:id(target_ID)
-
-  msg:data(0, 0xFF)
-  msg:data(1, 0xFF)
-  msg:data(2, 0xFF)
-  msg:data(3, 0xFF)
-  msg:data(4, 0xFF)
-  msg:data(5, 0xFF)
-  msg:data(6, 0xFF)
-  msg:data(7, 0xFD)
-
-  msg:dlc(8)
-
-  driver:write_frame(msg, 10000)
-end
-
--- send command to zero motor
-function zero()
-  msg = CANFrame()
-
-  msg:id(target_ID)
-
-  msg:data(0, 0xFF)
-  msg:data(1, 0xFF)
-  msg:data(2, 0xFF)
-  msg:data(3, 0xFF)
-  msg:data(4, 0xFF)
-  msg:data(5, 0xFF)
-  msg:data(6, 0xFF)
-  msg:data(7, 0xFE)
-
-  msg:dlc(8)
-
-  driver:write_frame(msg, 10000)
-end
 
 
 
@@ -294,28 +236,28 @@ function update()
   -- send(1000, 2000, 3000, 4000)
   -- gcs:send_named_float('TEST——ID',555)
   get_output();
-  local ID, ECM_ControllerTemp, ECM_MotorTemp, ECM_BusVoltage,ECM_BusCurrent,ECM_EngineSpeedRPM = receive()
-  if ID then
-    -- gcs:send_named_float('ID',ID)
-    gcs:send_named_float('LECM_ControllerTemp',ECM_ControllerTemp)
-    gcs:send_named_float('LECM_MotorTemp',ECM_MotorTemp)
-    gcs:send_named_float('LECM_BusVoltage',ECM_BusVoltage)
-    gcs:send_named_float('LECM_BusCurrent',ECM_BusCurrent)
-    gcs:send_named_float('LECM_EngineSpeedRPM',ECM_EngineSpeedRPM)
-  -- elseif (ID == 516) then
-  --   gcs:send_named_float('RECM_ControllerTemp',ECM_ControllerTemp)
-  --   gcs:send_named_float('RECM_MotorTemp',ECM_MotorTemp)
-  --   gcs:send_named_float('RECM_BusVoltage',ECM_BusVoltage)
-  --   gcs:send_named_float('RECM_BusCurrent',ECM_BusCurrent)
-  --   gcs:send_named_float('RECM_EngineSpeedRPM',ECM_EngineSpeedRPM)
-  end
+  -- local ID, ECM_ControllerTemp, ECM_MotorTemp, ECM_BusVoltage,ECM_BusCurrent,ECM_EngineSpeedRPM = receive()
+  -- if ID then
+  --   -- gcs:send_named_float('ID',ID)
+  --   gcs:send_named_float('LECM_ControllerTemp',ECM_ControllerTemp)
+  --   gcs:send_named_float('LECM_MotorTemp',ECM_MotorTemp)
+  --   gcs:send_named_float('LECM_BusVoltage',ECM_BusVoltage)
+  --   gcs:send_named_float('LECM_BusCurrent',ECM_BusCurrent)
+  --   gcs:send_named_float('LECM_EngineSpeedRPM',ECM_EngineSpeedRPM)
+  -- -- elseif (ID == 516) then
+  -- --   gcs:send_named_float('RECM_ControllerTemp',ECM_ControllerTemp)
+  -- --   gcs:send_named_float('RECM_MotorTemp',ECM_MotorTemp)
+  -- --   gcs:send_named_float('RECM_BusVoltage',ECM_BusVoltage)
+  -- --   gcs:send_named_float('RECM_BusCurrent',ECM_BusCurrent)
+  -- --   gcs:send_named_float('RECM_EngineSpeedRPM',ECM_EngineSpeedRPM)
+  -- end
 
   return update, 2.5
 
 end
 
 function init()
-  enable()
+  -- enable()
   return update, 100
 end
 gcs:send_text(6, "now is the zibao_motor")

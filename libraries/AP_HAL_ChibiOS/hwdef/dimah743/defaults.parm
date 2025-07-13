@@ -99,6 +99,9 @@ WP_PIVOT_ANGLE 0
 SCR_ENABLE  1 
 #this is the script flash capacity
 SCR_HEAP_SIZE 102400
+#SCR_PROTECT
+SCR_LD_CHECKSUM 1
+SCR_RUN_CHECKSUM 1
 #This is the script command for using CAN1
 CAN_D1_PROTOCOL 10 
 #this is choose the frist drives
