@@ -142,6 +142,9 @@ local function receive_modbus_response()
                     if DEBUG then
                         gcs:send_text(0, "Modbus: 收到有效响应")
                     end
+                    stat = 0;
+                    cur_count = 0;
+                    data_length = 0;
                     return copy
                 else
 

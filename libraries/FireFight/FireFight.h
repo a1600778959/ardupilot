@@ -27,10 +27,10 @@ private:
 public:
     void uart_init(void);
     void read(uint8_t address_ID, uint16_t reg_adress, uint16_t reg_num);
-    void wrte_one(uint8_t address_ID, uint16_t reg_adress, uint16_t reg_num);
+    void write_one(uint8_t address_ID, uint16_t reg_adress, uint16_t reg_num);
     void write_six(uint8_t address_ID, uint16_t start_reg_adress, int16_t val_1, int16_t val_2, int16_t val_3, int16_t val_4, int16_t val_5, int16_t val_6); // 连续写六个参数
     // uint8_t check_send_one(uint16_t val);
-    uint8_ti check_send_one(uint8_t addressID);
+    uint8_t check_send_one(uint8_t addressID);
     void function_fire_fight(uint8_t DT_ms); // 1号消防炮板子，具体定义见文档
     void parm_change();
     void write_two(uint8_t address_ID, uint16_t start_reg_adress, int16_t val_1, int16_t val_2);
@@ -55,10 +55,10 @@ public:
     uint16_t Set_Left_motor, Read_Left_motor;
     uint16_t Set_Right_motor, Read_Right_motor;
     static const struct AP_Param::GroupInfo var_info[];
-// protected:
-    AP_Int16 LR; //堵转电流左右
-    AP_Int16 UD; //堵转电流上下
-    AP_Int16 BUARD; //与消防炮波特率数值
+    // protected:
+    AP_Int16 LR;    // 堵转电流左右
+    AP_Int16 UD;    // 堵转电流上下
+    AP_Int16 BUARD; // 与消防炮波特率数值
 };
 
 #endif
