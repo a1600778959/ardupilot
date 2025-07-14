@@ -106,8 +106,8 @@ SCR_RUN_CHECKSUM 1
 CAN_D1_PROTOCOL 10 
 #this is choose the frist drives
 CAN_P1_DRIVER 1  
-#Select the baud rate to 250K.
-CAN_P1_BITRATE 250000
+#Select the baud rate to 500K.
+CAN_P1_BITRATE 500000
 
 MOT_SLEWRATE 95
 
