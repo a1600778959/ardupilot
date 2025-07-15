@@ -29,8 +29,8 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, PARAM_TABLE_SIZE), "
 
 -- Load CAN driver with a buffer size of 20
 
-local LEFT_CAN_ID = bind_add_param('LEFT_CAN_ID', 1, 1)
-local RIGHT_CAN_ID = bind_add_param('RIGHT_CAN_ID', 2, 2)
+local LEFT_CAN_ID = bind_add_param('L_CAN_ID', 1, 1)
+local RIGHT_CAN_ID = bind_add_param('R_CAN_ID', 2, 2)
 
 local driver = CAN:get_device(20)
 

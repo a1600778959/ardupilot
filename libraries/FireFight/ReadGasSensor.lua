@@ -1,5 +1,5 @@
 --This is a script for reading gas sensors.
-
+local DEBUG = false -- Set to true to enable debug messages
 local gas_type = {"NULL","AR","ASH3","B2H6","BR2",  --5
                  "CO","CO2","COCL2","CH20","CH202", --10
                 "CH3BR","CH4","CH40","CH4S","CH5N", --15    
@@ -89,8 +89,11 @@ local function parse_response(buffer_rx)
     local GasWorkState=buffer_rx[15];                                   --工作状态
     local DuiGas_Adc =buffer_rx[16];			
     local DuiGas_Adc = ((DuiGas_Adc<<8)&0xff00)+buffer_rx[17]; 
-    gcs:send_text(0,string.format("ID:%02X",DuiGasLocalAddrss))--当前AD值	
-    gcs:send_text(0,string.format("气体类型:%s",DuiGasIform))   
+    if DEBUG then
+        gcs:send_text(0,string.format("ID:%02X",DuiGasLocalAddrss))--当前AD值	
+        gcs:send_text(0,string.format("气体类型:%s",DuiGasIform))   
+        gcs:send_text(0,string.format("气体数值:%d",DucNowchroma))   
+    end
     gcs:send_named_float(gas_type[DuiGasIform+1],DucNowchroma);  --lua脚本原因，需要额外+1
 end
 
@@ -111,7 +114,7 @@ local function receive_modbus_response()
         n_bytes = n_bytes - 1;
 
         local byte = port:read()
-        gcs:send_text(0, string.format("n_bytes: %02x", byte))
+        -- gcs:send_text(0, string.format("n_bytes: %02x", byte))
         if stat == 0 and byte >= 0x01 and byte <= 0x04 then -- 检查从站地址
             response[1] = byte
             cur_count = 1;
@@ -126,26 +129,27 @@ local function receive_modbus_response()
             cur_count   = 3;
             stat = 3;
         elseif stat == 3 then
-            if data_length ~= 0 then
+            if data_length > 1 then
                 data_length = data_length - 1;
                 cur_count = cur_count + 1;
                 response[cur_count] = byte
             else
+                cur_count = cur_count + 1;   --获取最后一个数字
+                response[cur_count] = byte
                 local copy = shallow_copy(response) -- 复制响应数据
                 response = {} -- 清空响应数据
                 stat = 0;
+                cur_count = 0;
+                data_length = 0;
                 local crc_low, crc_high = calculate_crc({table.unpack(copy, 1, #copy)})
                 -- gcs:send_text(0, string.format("Modbus: 收到响应 %d 字节", #copy))
-                gcs:send_text(0, string.format("response: CRC校验值 = %02X %02X", copy[#copy-1], copy[#copy]))
-                gcs:send_text(0, string.format("Modbus: CRC校验值 = %02X %02X", crc_low, crc_high))
+                -- gcs:send_text(0, string.format("response: CRC校验值 = %02X %02X", copy[#copy-1], copy[#copy]))
+                -- gcs:send_text(0, string.format("Modbus: CRC校验值 = %02X %02X", crc_low, crc_high))
                 if crc_low == copy[#copy-1] and crc_high == copy[#copy] then
                     if DEBUG then
                         gcs:send_text(0, "Modbus: 收到有效响应")
                     end
-                    stat = 0;
-                    cur_count = 0;
-                    data_length = 0;
-                    return copy
+                    parse_response(copy) -- 解析响应数据
                 else
 
                     if DEBUG then
@@ -154,6 +158,8 @@ local function receive_modbus_response()
                 end
                     end
         else
+            -- gcs:send_text(0, string.format("Modbus:校验帧头为:%02X %d", byte,stat))
+            response = {} -- 清空响应数据
             stat = 0;
             cur_count = 0;
             data_length = 0;
@@ -179,10 +185,7 @@ local function update()
     -- 等待并接收响应
     local buffer_rx = receive_modbus_response()
     
-    -- 解析响应
-    if buffer_rx then
-        local data = parse_response(buffer_rx)
-    end
+
     
     -- 1秒后再次执行
     return update, 1000
