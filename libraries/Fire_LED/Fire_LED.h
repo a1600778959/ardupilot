@@ -4,8 +4,8 @@
 #include <AP_HAL/AP_HAL.h>
 #define power_led_on hal.gpio->write(2, 1)
 #define power_led_off hal.gpio->write(2, 0)
-#define Alert_led_on hal.gpio->write(3, 1)
-#define Alert_led_off hal.gpio->write(3, 0)
+#define shache_on hal.gpio->write(3, 1)
+#define shache_off hal.gpio->write(3, 0)
 #define C1_off hal.gpio->write(8, 0)
 #define C1_on hal.gpio->write(8, 1)
 #define C2_off hal.gpio->write(9, 0)
@@ -24,6 +24,8 @@ public:
     void Fire_Power_LED(float V, uint8_t DT_ms);
     void launch_motor();
     void stop_motor();
+    void Fire_Shache_on();
+    void Fire_Shache_off();
 };
 
 #endif

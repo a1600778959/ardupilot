@@ -176,6 +176,7 @@ void Rover::FireFight_open() // 每2毫秒执行一次
     if (arming.is_armed()) //&& current_v > 40)
     {
         fire_led.launch_motor();
+        fire_led.Fire_Shache_on();
         firefight_rover.function_fire_fight(40);
         firefight_rover.write_two(0x01, 12, 1, 0); // 上下电机锁定
         firefight_rover.write_two(0x01, 14, 1, 0); // 左右电机锁定
@@ -184,6 +185,7 @@ void Rover::FireFight_open() // 每2毫秒执行一次
     else //&& current_v > 40)
     {
         fire_led.stop_motor();
+        fire_led.Fire_Shache_off();
         firefight_rover.write_two(0x01, 12, 0, 1); // 上下电机锁定
         firefight_rover.write_two(0x01, 14, 0, 1); // 左右电机锁定
         // stop_button = 0;

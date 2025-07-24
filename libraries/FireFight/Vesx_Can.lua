@@ -82,16 +82,16 @@ function left_motor(left_rpm)
   msg:id((uint32_t(1) << 31) | uint32_t(LEFT_CAN_ID:get()|0x0300)) -- get the left motor ID from parameter
 
   -- 0: [left_rpm[0-7]]
-  msg:data(0, left_rpm & 0xFF)
+  msg:data(3, left_rpm & 0xFF)
 
   -- 1: [left_rpm[8-15]] 
-  msg:data(1, (left_rpm >> 8) & 0xff)
+  msg:data(2, (left_rpm >> 8) & 0xff)
 
   -- 2: [right_rpm[16-23]]
-  msg:data(2, (left_rpm >> 16) & 0xff)
+  msg:data(1, (left_rpm >> 16) & 0xff)
 
   -- 3: [right_rpm[24-31]]
-  msg:data(3, (left_rpm >> 24) & 0xff)
+  msg:data(0, (left_rpm >> 24) & 0xff)
 
   -- sending 4 bytes of data
   msg:dlc(4)
@@ -106,16 +106,16 @@ function right_motor(right_rpm)
   msg:id((uint32_t(1) << 31) | uint32_t(RIGHT_CAN_ID:get()|0x0300)) -- get the RIGHT motor ID from parameter
 
   -- 0: [left_rpm[0-7]]
-  msg:data(0, right_rpm & 0xFF)
+  msg:data(3, right_rpm & 0xFF)
 
   -- 1: [left_rpm[8-15]] 
-  msg:data(1, (right_rpm >> 8) & 0xff)
+  msg:data(2, (right_rpm >> 8) & 0xff)
 
   -- 2: [right_rpm[16-23]]
-  msg:data(2, (right_rpm >> 16) & 0xff)
+  msg:data(1, (right_rpm >> 16) & 0xff)
 
   -- 3: [right_rpm[24-31]]
-  msg:data(3, (right_rpm >> 24) & 0xff)
+  msg:data(0, (right_rpm >> 24) & 0xff)
 
   -- sending 4 bytes of data
   msg:dlc(4)
@@ -132,7 +132,7 @@ function send(left_rpm,right_rpm )
   -- 16 bit right_rpm command, between 32767 and -32768 RPM
   -- 16 bit left_torque, between 0 and 32767 and -32768  N
   -- 16 bit right_torque, between 0 and 32767 and -32768  N
-  local max = max_rpm:get(); -- max rpm
+  local max = max_rpm:get() + 1000; -- max rpm
   -- range check
   assert(math.abs(left_rpm) <= max, "left_rpm out of range")
   assert(math.abs(right_rpm) <= max, "right_rpm out of range")
@@ -214,12 +214,12 @@ function get_output()
   end
   
   if left_rpm then
-    left_rpm = math.floor(((1500-left_rpm)/500) *rpm_set*out_max_min)   --变成占空比输出-1,1
+    left_rpm = math.floor(((1500-left_rpm)/400) *rpm_set*out_max_min)   --变成占空比输出-1,1
   else
     left_rpm = 0;
   end
   if right_rpm then
-    right_rpm = math.floor(((1500-right_rpm)/500) *rpm_set*out_max_min)   --变成占空比输出-1,1
+    right_rpm = math.floor(((1500-right_rpm)/400) *rpm_set*out_max_min)   --变成占空比输出-1,1
   else
     right_rpm = 0;
   end
