@@ -9,7 +9,7 @@ local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTI
 
 local PARAM_TABLE_KEY = 1
 local PARAM_TABLE_PREFIX = "ZIBAO_"
-local PARAM_TABLE_SIZE = 4
+local PARAM_TABLE_SIZE = 5
 
 -- bind a parameter to a variable
 function bind_param(name)
@@ -48,6 +48,7 @@ local position_inc = 0.01
 --这是速度限幅通道，默认通道为5通道，可以通过地面站进行更改
 local SPEED_RC = bind_add_param('SPEED_RC', 3, 5)
 local max_rpm =  bind_add_param('MAX_RPM',4,4000) --最大转速
+local brake_current = bind_add_param('BRAKE_CUR',5,20) -- 20A brake current
 -- convert decimal to int within given range and width
 function to_uint(val, min, max, bits)
   local range = max - min
@@ -76,6 +77,29 @@ function from_uint(val, min, max, bits)
   return val
 end
 
+function left_brake_motor()
+  brake_cur = brake_current:get() * 1000 -- convert to milliampere;
+  msg = CANFrame()
+  msg:id((uint32_t(1) << 31) | uint32_t(LEFT_CAN_ID:get()|0x0200)) -- get the left motor ID from parameter
+  -- 0: [left_rpm[0-7]]
+  msg:data(3, brake_cur & 0xFF)
+
+  -- 1: [left_rpm[8-15]] 
+  msg:data(2, (brake_cur >> 8) & 0xff)
+
+  -- 2: [right_rpm[16-23]]
+  msg:data(1, (brake_cur >> 16) & 0xff)
+
+  -- 3: [right_rpm[24-31]]
+  msg:data(0, (brake_cur >> 24) & 0xff)
+
+  -- sending 4 bytes of data
+  msg:dlc(4)
+
+  -- write the frame with a 10000us timeout
+  driver:write_frame(msg, 10000)
+
+end
 
 function left_motor(left_rpm)
   msg = CANFrame()
@@ -99,6 +123,31 @@ function left_motor(left_rpm)
   -- write the frame with a 10000us timeout
   driver:write_frame(msg, 10000)
   
+end
+
+
+function right_brake_motor()
+  brake_cur = brake_current:get() * 1000; -- convert to milliampere;
+  msg = CANFrame()
+  msg:id((uint32_t(1) << 31) | uint32_t(RIGHT_CAN_ID:get()|0x0200)) -- get the left motor ID from parameter
+  -- 0: [left_rpm[0-7]]
+  msg:data(3, brake_cur & 0xFF)
+
+  -- 1: [left_rpm[8-15]] 
+  msg:data(2, (brake_cur >> 8) & 0xff)
+
+  -- 2: [right_rpm[16-23]]
+  msg:data(1, (brake_cur >> 16) & 0xff)
+
+  -- 3: [right_rpm[24-31]]
+  msg:data(0, (brake_cur >> 24) & 0xff)
+
+  -- sending 4 bytes of data
+  msg:dlc(4)
+
+  -- write the frame with a 10000us timeout
+  driver:write_frame(msg, 10000)
+
 end
 
 function right_motor(right_rpm)
@@ -147,8 +196,13 @@ function send(left_rpm,right_rpm )
 
   gcs:send_named_float('left_rpm',left_rpm) 
   gcs:send_named_float('right_rpm',right_rpm) 
-  left_motor(left_rpm)
-  right_motor(right_rpm)
+  if left_rpm ~= 0 and right_rpm ~= 0 then
+    left_motor(left_rpm)
+    right_motor(right_rpm)
+  else
+    right_brake_motor()
+    left_brake_motor()
+  end
 
 end
 
