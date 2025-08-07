@@ -47,8 +47,8 @@ local position_des = 0
 local position_inc = 0.01
 --这是速度限幅通道，默认通道为5通道，可以通过地面站进行更改
 local SPEED_RC = bind_add_param('SPEED_RC', 3, 5)
-local max_rpm =  bind_add_param('MAX_RPM',4,4000) --最大转速
-local brake_current = bind_add_param('BRAKE_CUR',5,20) -- 20A brake current
+local max_rpm =  bind_add_param('MAX_RPM',4,100000) --最大转速
+local brake_current = bind_add_param('BR_CUR',5,20) -- 20A brake current
 -- convert decimal to int within given range and width
 function to_uint(val, min, max, bits)
   local range = max - min
@@ -103,7 +103,7 @@ end
 
 function left_motor(left_rpm)
   msg = CANFrame()
-  msg:id((uint32_t(1) << 31) | uint32_t(LEFT_CAN_ID:get()|0x0300)) -- get the left motor ID from parameter
+  msg:id((uint32_t(1) << 31) | uint32_t(LEFT_CAN_ID:get()|0x0000)) -- get the left motor ID from parameter
 
   -- 0: [left_rpm[0-7]]
   msg:data(3, left_rpm & 0xFF)
@@ -152,7 +152,7 @@ end
 
 function right_motor(right_rpm)
   msg = CANFrame()
-  msg:id((uint32_t(1) << 31) | uint32_t(RIGHT_CAN_ID:get()|0x0300)) -- get the RIGHT motor ID from parameter
+  msg:id((uint32_t(1) << 31) | uint32_t(RIGHT_CAN_ID:get()|0x0000)) -- get the RIGHT motor ID from parameter
 
   -- 0: [left_rpm[0-7]]
   msg:data(3, right_rpm & 0xFF)
@@ -181,7 +181,7 @@ function send(left_rpm,right_rpm )
   -- 16 bit right_rpm command, between 32767 and -32768 RPM
   -- 16 bit left_torque, between 0 and 32767 and -32768  N
   -- 16 bit right_torque, between 0 and 32767 and -32768  N
-  local max = max_rpm:get() + 1000; -- max rpm
+  local max = max_rpm:get() + 20000; -- max rpm
   -- range check
   assert(math.abs(left_rpm) <= max, "left_rpm out of range")
   assert(math.abs(right_rpm) <= max, "right_rpm out of range")
@@ -196,7 +196,9 @@ function send(left_rpm,right_rpm )
 
   gcs:send_named_float('left_rpm',left_rpm) 
   gcs:send_named_float('right_rpm',right_rpm) 
-  if left_rpm ~= 0 and right_rpm ~= 0 then
+  -- left_motor(left_rpm)
+  -- right_motor(right_rpm)
+  if left_rpm ~= 0 or right_rpm ~= 0 then
     left_motor(left_rpm)
     right_motor(right_rpm)
   else
@@ -259,7 +261,7 @@ function get_output()
   local left_rpm = SRV_Channels:get_output_pwm(73)   --获取通道1输出数值 
   local right_rpm = SRV_Channels:get_output_pwm(74)   --获取通道3输出数值
   local rpm_set = max_rpm:get();  --获取最大转速
-  local out_max_min = rc:get_pwm(SPEED_RC:get()) or 1500;   --限幅通道
+  local out_max_min = rc:get_pwm(SPEED_RC:get());   --限幅通道
 
   if out_max_min then
     out_max_min = (out_max_min - 1050)/900;
