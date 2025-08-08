@@ -114,8 +114,8 @@ local function pack_data()
         -- 消息类型 UINT8
         data[20] = 0x10 -- 0x10固定值
         -- 消息ID UINT16
-        data[21] = 0x00-- 0x00固定值
-        data[22] = 0x20 -- 0x20固定值
+        data[21] = 0x20-- 0x00固定值
+        data[22] = 0x00 -- 0x20固定值
         -- 编码类型UINT8
         data[23] = 0x00 -- 0x00固定值
         -- table.insert(data, 0x00) -- 0x00固定值
@@ -141,10 +141,9 @@ local function pack_data()
             lon = math.floor(lon / 0x100)
         end  
         -- 离地高度UINT32
-        local lon = gps_loc:alt()
         for i=1,4 do
-            data[44 + i - 1] = (lon % 0x100)&0xff
-            lon = math.floor(lon / 0x100)
+            data[44 + i - 1] = 0x00
+
         end  
         -- 装备气压高度UINT32
         local lon = math.floor(baro:get_altitude()*100)
