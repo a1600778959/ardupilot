@@ -68,8 +68,8 @@ local function calculate_crc(data)
 end
 
 
--- 数据打包
-local function pack_data()
+-- 0x2002数据打包
+local function pack_data_2002()
     local data = {}
     local length_current = 1;
     local roll = math.floor(math.deg(ahrs:get_roll())*10)
@@ -96,8 +96,8 @@ local function pack_data()
         -- 帧类别 UINT8
         data[12] = FRAME_CATEGORY -- 0x20固定值
         -- 帧长度（动态计算） UINT8
-        local length_pos = #data + 1
-        data[13] = 0 -- 占位，稍后更新 
+        -- local length_pos = #data + 1
+        data[13] = 0x5f -- 长度为95
         -- 帧计数器 UINT8
         data[14] = FRAME_COUNTER -- 0x00固定值
         -- table.insert(data, string.char(FRAME_COUNTER))
@@ -114,8 +114,8 @@ local function pack_data()
         -- 消息类型 UINT8
         data[20] = 0x10 -- 0x10固定值
         -- 消息ID UINT16
-        data[21] = 0x00-- 0x00固定值
-        data[22] = 0x20 -- 0x20固定值
+        data[21] = 0x20-- 0x00固定值
+        data[22] = 0x00 -- 0x20固定值
         -- 编码类型UINT8
         data[23] = 0x00 -- 0x00固定值
         -- table.insert(data, 0x00) -- 0x00固定值
@@ -141,10 +141,9 @@ local function pack_data()
             lon = math.floor(lon / 0x100)
         end  
         -- 离地高度UINT32
-        local lon = gps_loc:alt()
         for i=1,4 do
-            data[44 + i - 1] = (lon % 0x100)&0xff
-            lon = math.floor(lon / 0x100)
+            data[44 + i - 1] = 0x00
+
         end  
         -- 装备气压高度UINT32
         local lon = math.floor(baro:get_altitude()*100)
@@ -223,9 +222,9 @@ local function pack_data()
         --像元尺寸 UINT16
         data[91] = 0x00 -- 像元尺寸
         data[92] = 0x00 -- 像元尺寸
-        -- 计算帧长度
-        local length = #data - length_pos
-        data[length_pos] = (length) -- 更新帧长度
+        -- -- 计算帧长度
+        -- local length = #data - length_pos
+        -- data[length_pos] = (length) -- 更新帧长度
         -- 计算CRC校验
         local crc = calculate_crc(data)
         data[93] = (crc % 0x100)&0xff -- CRC低字节
@@ -246,13 +245,224 @@ local function pack_data()
 
 end
 
+-- 0x2001数据打包
+local function pack_data_2001()
+    local data = {}
+    local length_current = 1;
+    local roll = math.floor(math.deg(ahrs:get_roll())*10)
+    local pitch = math.floor(math.deg(ahrs:get_pitch())*10)
+    local yaw = math.floor(math.deg(ahrs:get_yaw())*10)
+
+    local gps_loc = ahrs:get_position()
+    if gps_loc then
+        --帧头 UINT16
+        data[1] = FRAME_HEADER1
+        data[2] = FRAME_HEADER2
+        -- 发送用户ID UINT32
+        data[3] = 0x00 -- 0x00固定值
+        data[4] = 0x00 -- 0x00固定值
+        data[5] = 0x00 -- 0x00固定值
+        data[6] = 0x00 -- 0x00固定值
+        -- 接收用户ID UINT32
+        data[7] = 0x00 -- 0x00固定值
+        data[8] = 0x00 -- 0x00固定值
+        data[9] = 0x00 -- 0x00固定值
+        data[10] = 0x00 -- 0x00固定值
+        -- 协议版本号 UINT8
+        data[11] = 0x41 -- 0x41固定值
+        -- 帧类别 UINT8
+        data[12] = FRAME_CATEGORY -- 0x20固定值
+        -- 帧长度（动态计算） UINT8
+        -- local length_pos = #data + 1
+        data[13] = 0x77 -- 整帧长度为119
+        -- 帧计数器 UINT8
+        data[14] = FRAME_COUNTER -- 0x00固定值
+        -- table.insert(data, string.char(FRAME_COUNTER))
+        -- 节点编号 0 UINT8
+        data[15] = NODE_ID -- 0x00固定值
+        -- table.insert(data, string.char(NODE_ID))
+        -- 装备类型 UINT16
+        -- gcs:send_text(0,string.format("EQUIPMENT_TYPE:%d",EQUIPMENT_TYPE % 0x100))--当前AD值	
+        data[16] = (EQUIPMENT_TYPE % 0x100)&0Xff
+        data[17] = math.floor(EQUIPMENT_TYPE / 0x100)&0xff
+        -- 装备ID UINT16
+        data[18] = (EQUIPMENT_ID % 0x100)&0xff
+        data[19] = (math.floor(EQUIPMENT_ID / 0x100))&0xff
+        -- 消息类型 UINT8
+        data[20] = 0x10 -- 0x10固定值
+        -- 消息ID UINT16
+        data[21] = 0x20-- 0x00固定值
+        data[22] = 0x00 -- 0x20固定值
+        -- 编码类型UINT8
+        data[23] = 0x00 -- 0x00固定值
+        -- table.insert(data, 0x00) -- 0x00固定值
+        -- 经度UINT64
+        local lon = gps_loc:lng()
+        gcs:send_text(0,string.format("lon:%s",tostring(lon)))--当前AD值	
+        for i=1,8 do
+            data[24 + i - 1] = (lon % 0x100)&0xff
+            lon = math.floor(lon / 0x100)
+        end    
+        -- 纬度UINT64
+        local lon = gps_loc:lat()
+        gcs:send_text(0,string.format("lat:%s",tostring(lon)))--当前AD值	
+        for i=1,8 do
+            data[32 + i - 1] = (lon % 0x100)&0xff
+            lon = math.floor(lon / 0x100)
+        end        
+        -- 海拔高度UINT32
+        local lon = gps_loc:alt()
+        gcs:send_text(0,string.format("alt:%s",tostring(lon)))--当前AD值	
+        for i=1,4 do
+            data[40 + i - 1] = (lon % 0x100)&0xff
+            lon = math.floor(lon / 0x100)
+        end  
+        -- 离地高度UINT32
+        for i=1,4 do
+            data[44 + i - 1] = 0x00
+
+        end  
+        -- 装备气压高度UINT32
+        local lon = math.floor(baro:get_altitude()*100)
+        gcs:send_text(0,string.format("altitude:%s",tostring(lon)))--当前AD值	
+        for i=1,4 do
+            data[48 + i - 1] = (lon % 0x100)&0xff
+            lon = math.floor(lon / 0x100)
+        end  
+        -- 地理坐标系UINT8
+        data[52] = 0x01 -- 0x01固定值 WGS-84
+        -- 装备俯仰角UINT16
+        -- gcs:send_text(0,string.format("roll:%02X",math.floor(roll / 0x100)))--当前AD值	        
+        data[53] = ((roll % 0x100)&0xff)
+        data[54] = ((roll >> 8)&0Xff)
+        -- 装备横滚角UINT16
+        data[55] = ((pitch % 0x100)&0xff)
+        data[56] = ((pitch >> 8)&0xff)
+        -- 装备偏航角UINT16
+        data[57] = ((yaw % 0x100)&0xff)
+        data[58] = ((yaw >> 8)&0xff)
+        -- 装备指示空速UINT16
+        
+        local v_speed = math.floor(gps:ground_speed(0) * 100) -- 转换为厘米每秒
+        data[59] = ((v_speed % 0x100)&0xff)
+        data[60] = ((v_speed >> 8)&0xff)
+        -- 装备地速UINT16
+        data[61] = ((v_speed % 0x100)&0xff)
+        data[62] = ((v_speed >> 8)&0xff)
+        -- 风速UINT16
+        data[63] = 0x00-- 0x00固定值
+        data[64] = 0x00 -- 0x00固定值
+        -- 风向UINT16
+        data[65] = 0x00 -- 0x00固定值
+        data[66] = 0x00 -- 0x00固定值
+        -- 剩余油量 UINT16
+        data[67] = 0x00 -- 0x00固定值
+        data[68] = 0x00 -- 0x00固定值
+        -- 装备剩余电量 UINT32
+        local battery_re = 10000       
+        for i=1,4 do
+            data[69 + i - 1] = (battery_re % 0x100)&0xff
+            battery_re = math.floor(battery_re / 0x100)
+        end          
+     -- 电量百分比
+        -- 装备状态 UINT8 0x00：在线正常状态；
+        --0x01：在线故障状态；
+        --0x02：在线警告状态；
+        --0x03：离线状态。FRAME_COUNTER
+        data[73] = 0x00 -- 0x00正常状态
+        -- 标识符 装备属性 0x2001 光电载荷状态 0x2002  UINT16
+        data[74] = 0x01 -- 0x2001固定
+        data[75] = 0x20 -- 0x2001固定
+        -- 最大载油量 UINT16
+        data[76] = 0x00 -- 0x00正常状态FRAME_COUNTER
+        data[77] = 0x00
+        -- 最大电量 UINT32
+       local battery_ca = math.floor(battery:pack_capacity_mah(0))         
+        for i=1,4 do
+            data[78 + i - 1] = (battery_ca % 0x100)&0xff
+            battery_re = math.floor(battery_ca / 0x100)
+        end        
+        -- 装备在空状态 INT8
+        data[82] = 0x00 -- 0x00固定值 表示在地
+        -- 爬升率 UINT16
+        data[83] = 0x00 -- 0x00固定值
+        data[84] = 0x00 -- 0x00固定值
+        -- 下降率 UINT16
+        data[85] = 0x00 -- 0x00固定值
+        data[86] = 0x00 -- 0x00固定值
+        -- 最大速度 最大速度为5m/s
+        data[87] = 0x32 -- 0x00固定值
+        data[88] = 0x00 -- 0x00固定值
+        -- 最小速度 最小速度为0m/s
+        data[89] = 0x00 -- 0x00固定值
+        data[90] = 0x00 -- 0x00固定值
+        -- 最小转弯半径
+        data[91] = 0x00 -- 0x00固定值
+        data[92] = 0x00 -- 0x00固定值
+        -- 水平安全距离
+        local temp = 100 -- 水平安全距离为1米        
+        for i=1,4 do
+            data[93 + i - 1] = (temp % 0x100)&0xff
+            battery_re = math.floor(temp / 0x100)
+        end 
+        -- 垂直安全距离
+        local temp = 100 -- 垂直安全距离为0.5米
+        for i=1,4 do
+            data[97 + i - 1] = (temp % 0x100)&0xff
+            battery_re = math.floor(temp / 0x100)
+        end
+        -- 油耗率
+        data[101] = 0x00 -- 0x00固定值
+        -- 空机重量 300kg
+        local temp = 300000 -- 300kg
+        for i=1,4 do
+            data[102 + i - 1] = (temp % 0x100)&0xff
+            battery_re = math.floor(temp / 0x100)
+        end
+        -- 最大起飞重量
+        local temp = 600000 -- 600kg
+        for i=1,4 do
+            data[106 + i - 1] = (temp % 0x100)&0xff
+            battery_re = math.floor(temp / 0x100)
+        end
+        --飞行高限
+        data[110] = 0x00 -- 0x00固定值
+        data[111] = 0x00 -- 0x00固定值
+        --飞行低限
+        data[112] = 0x00 -- 0x00固定值
+        data[113] = 0x00 -- 0x00固定值
+        --装备挂点数量
+        data[114] = 0x00 -- 0x00固定值
+        --不同挂点可以挂载的弹种
+        data[115] = 0x00 -- 0x00固定值
+        --装备可携带的侦察载荷类型
+        data[116] = 0x00 -- 0x00固定值
+        -- 计算CRC校验
+        local crc = calculate_crc(data)
+        data[117] = (crc % 0x100)&0xff -- CRC低字节
+        data[118] = (crc>>8)&0xff -- CRC高字节
+        -- 添加帧尾
+        data[119] = FRAME_TAIL -- 帧尾
+        -- gcs:send_text(0, string.format("date:%s",table.concat(data, " ")))
+        -- 发送数据        
+        for i = 1, #data do
+            port:write((data[i]));
+        end
+        FRAME_COUNTER = (FRAME_COUNTER + 1) % 256 -- 更新帧计数器   
+    else
+        if DEBUG then
+            gcs:send_text(0, "No GPS data")
+        end
+    end
+
+end
 
 -- 主循环
 local address = 1;
 local function update()
     
     -- 发送命令
-    pack_data()
+    pack_data_2001()
     -- send_modbus_command(address)
     -- address = address + 1;
     -- if address >= 5 then
