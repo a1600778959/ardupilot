@@ -74,7 +74,7 @@
 #include <AC_PrecLand/AC_PrecLand.h>
 #endif
 #include "RC_Channel.h"                  // RC Channel Library
-
+#include "AP_AOA/AP_AOA_Ultrasonic_ranging.h"
 #include "mode.h"
 
 class Rover : public AP_Vehicle {
@@ -123,6 +123,7 @@ private:
     // must be the first AP_Param variable declared to ensure its
     // constructor runs before the constructors of the other AP_Param
     // variables
+    AP_MultiDistanceSensor distance_sensor;
     AP_Param param_loader;
 
     // all settable parameters
@@ -375,6 +376,7 @@ private:
     void compass_save(void);
     void update_wheel_encoder();
     void read_rangefinders(void);
+    void update_distance_sensor(void);
 
     // Steering.cpp
     void set_servos(void);

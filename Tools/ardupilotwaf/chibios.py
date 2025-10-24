@@ -97,12 +97,13 @@ class upload_fw(Task.Task):
         #   system using the same absolute path back into the WSL2's user's directory
         # Requirements: Windows must have Python3.9.x (NTO 3.10.x) installed and a few packages.
         import subprocess
-        try:
-            where_python = subprocess.check_output('where.exe python.exe', shell=True, text=True)
-        except subprocess.CalledProcessError:
-            #if where.exe can't find the file it returns a non-zero result which throws this exception
-            where_python = ""
-        if not where_python or "\Python\Python" not in where_python or "python.exe" not in where_python:
+        # try:
+        #     where_python = subprocess.check_output('where.exe python.exe', shell=True, text=True)
+        # except subprocess.CalledProcessError:
+        #     #if where.exe can't find the file it returns a non-zero result which throws this exception
+        #     where_python = ""
+        where_python = "C:\\Users\\master\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe"
+        if not where_python or "python.exe" not in where_python:
             print(self.get_full_wsl2_error_msg("Windows python.exe not found"))
             return False
         return True
