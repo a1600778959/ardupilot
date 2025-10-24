@@ -8,6 +8,11 @@ void Rover::update_compass(void)
     compass.read();
 }
 
+void Rover::update_distance_sensor(void)
+{
+    distance_sensor.update();
+}
+
 // Save compass offsets
 void Rover::compass_save() {
     if (AP::compass().available() &&

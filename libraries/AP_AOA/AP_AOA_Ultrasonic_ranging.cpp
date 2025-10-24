@@ -1,9 +1,9 @@
 // File: libraries/AP_Modbus/AP_MultiDistanceSensor.cpp
 #include "AP_AOA_Ultrasonic_ranging.h"
 
-AP_MultiDistanceSensor::AP_MultiDistanceSensor() : current_sensor_idx(0)
+AP_MultiDistanceSensor::AP_MultiDistanceSensor()
 {
-    ;
+    current_sensor_idx = -1;
 }
 
 void AP_MultiDistanceSensor::init()
@@ -18,72 +18,101 @@ void AP_MultiDistanceSensor::init()
     }
 
     // 配置UART参数
-    _uart4 = hal.serial(4);
-    _uart4->begin(115200, 256, 256);
-    _uart4->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+    _uart = hal.serial(MODBUS_UART_NUM);
+    if (_uart == nullptr)
+    {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "485 uart is not config");
+        return;
+    }
+
+    _uart->set_stop_bits(1);
+    _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+    // hal.serial(MODBUS_UART_NUM)->set_unbuffered_writes(true);
+    //_uart->begin(115200);
+    hal.scheduler->delay(100); // 等待初始化串口
+    // hal.serial(MODBUS_UART_NUM)->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+    // hal.serial(MODBUS_UART_NUM)->set_stop_bits(1);
 }
 
-void AP_MultiDistanceSensor::update()
+void AP_MultiDistanceSensor::send_request()
 {
-    SensorData sensor = sensors[current_sensor_idx];
-
     // 构造请求帧
-    uint8_t request[8] = {
-        sensor.address,
+    if (current_sensor_idx < SENSOR_COUNT - 1)
+    {
+        current_sensor_idx++;
+    }
+    else
+    {
+        current_sensor_idx = 0;
+    }
+    uint8_t request[MODBUS_REQUEST_SIZE] = {
+        sensors[current_sensor_idx].address,
         0x03,
         (PROCESSED_REG >> 8),
         (PROCESSED_REG & 0xFF),
         0x00, 0x01,
         0x00, 0x00};
-
     // 添加CRC
     uint16_t crc = calc_crc_modbus(request, sizeof(request) - 2);
     request[6] = crc & 0xFF;
     request[7] = (crc >> 8) & 0xFF;
     // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "start collect:%d", current_sensor_idx);
     // 发送请求
-    _uart4->write(request, 8);
-    // 接收响应
-    uint8_t response[255] = {0};
-    // uint32_t start = AP_HAL::millis();
-    uint8_t idx = 0;
+    _uart->write(request, 8);
 
-    // while ((AP_HAL::millis() - start) < MODBUS_TIMEOUT_MS)
-    // {
-    uint8_t rec_num = _uart4->available();
-    
-    while (rec_num > 0)
+}
+
+void AP_MultiDistanceSensor::read_data(uint8_t *rep)
+{
+    for (int i = 0; i < MODBUS_RESPONSE_SIZE; i++)
     {
-        rec_num--; 
-        response[idx++] = _uart4->read();
-
+        rep[i] = _uart->read();
     }
-    // }
-    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%#X,%#X,%#X,%#X,%#X,%#X,%#X,", response[0], response[1], response[2], response[3], response[4], response[5], response[6]);
-    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "crc:%#X", calc_crc_modbus(response, 5));
-    // 解析响应
-    if (idx >= 5 &&
-        response[1] == 0x03 &&
-        response[2] == 0x02)
+    if (rep[1] == 0x03 && rep[2] == 0x02)
     {
-        if (calc_crc_modbus(response, 5) == ((response[6] << 8) | response[5]))
+        uint32_t sensor_idx = rep[0] - 1;
+        if (calc_crc_modbus(rep, 5) == ((rep[6] << 8) | rep[5]))
         {
-            uint16_t raw_val = (response[3] << 8) | response[4];
-            sensor.distance = raw_val;
-            sensor.valid = true;
-            sensor.last_update = AP_HAL::millis();
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "S%d: %.2fm OK",
-                          response[0], sensor.distance*0.001f);
+            uint16_t raw_val = (rep[3] << 8) | rep[4];
+            sensors[sensor_idx].distance = raw_val;
+            sensors[sensor_idx].valid = true;
+            sensors[sensor_idx].last_update = AP_HAL::millis();
+            // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "S%d: %.2fm OK",
+            //               rep[0], sensors[sensor_idx].distance * 0.001f);
         }
         else
         {
-            sensor.valid = false;
+            sensors[sensor_idx].valid = false;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "S%d CRC Error",
-                          response[0]);
+                          rep[0]);
         }
     }
+}
 
-    current_sensor_idx = (current_sensor_idx + 1) % SENSOR_COUNT;
+void AP_MultiDistanceSensor::update()
+{
+    // 获取传感器的处理值时, 需要大于等于300ms的间隔
+    // 这个间隔时间太大, 对于cpu来讲，不可能在这里一直等待返回
+    // 因此每次轮询应该为先读取上一次发送请求的数据, 在发送读的命令
+    if (!is_init)
+    {
+        is_init = true;
+        init();
+        send_request();
+        return;
+    }
+    uint8_t rec_num = _uart->available();
+    if (rec_num > 0)
+    {
+        read_data(response);
+    }
+    else
+    {
+        sensors[current_sensor_idx].valid = false;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AOA data is invalid");
+    }
+    // 发送请求
+    send_request();
 }
 
 bool AP_MultiDistanceSensor::get_distance(uint8_t sensor_idx, float &dist) const
@@ -92,6 +121,19 @@ bool AP_MultiDistanceSensor::get_distance(uint8_t sensor_idx, float &dist) const
         return false;
     dist = sensors[sensor_idx].distance;
     return sensors[sensor_idx].valid;
+}
+
+// 返回有效的超声波检测的距离最小值
+int AP_MultiDistanceSensor::get_min_distance(){
+    int min = 999;
+    for (int i = 0; i < SENSOR_COUNT; i++)
+    {
+        if (sensors[i].distance < min && sensors[i].valid)
+        {
+            min = sensors[i].distance;
+        }
+    }
+    return min;
 }
 
 // 任务调度注册
