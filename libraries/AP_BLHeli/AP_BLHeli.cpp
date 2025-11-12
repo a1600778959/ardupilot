@@ -345,12 +345,6 @@ void AP_BLHeli::msp_process_command(void)
 {
     debug("MSP cmd %u len=%u", msp.cmdMSP, msp.dataSize);
     switch (msp.cmdMSP) {
-    case MSP_API_VERSION: {
-        debug("MSP_API_VERSION");
-        uint8_t buf[3] = { MSP_PROTOCOL_VERSION, API_VERSION_MAJOR, API_VERSION_MINOR };
-        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
-        break;
-    }
 
     case MSP_FC_VARIANT:
         debug("MSP_FC_VARIANT");

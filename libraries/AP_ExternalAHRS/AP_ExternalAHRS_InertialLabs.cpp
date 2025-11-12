@@ -26,7 +26,6 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
@@ -477,16 +476,6 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         AP::compass().handle_external(mag_data);
     }
 #endif
-#if AP_AIRSPEED_EXTERNAL_ENABLED && (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane))
-    // only on plane and copter as others do not link AP_Airspeed
-    if (GOT_MSG(DIFFERENTIAL_PRESSURE) &&
-        GOT_MSG(TEMPERATURE)) {
-        auto *arsp = AP::airspeed();
-        if (arsp != nullptr) {
-            arsp->handle_external(airspeed_data);
-        }
-    }
-#endif // AP_AIRSPEED_EXTERNAL_ENABLED
     buffer_ofs = 0;
 
 #if HAL_LOGGING_ENABLED

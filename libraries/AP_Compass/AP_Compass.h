@@ -10,7 +10,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 #include "AP_Compass_Backend.h"
@@ -349,10 +348,6 @@ public:
                                  float lat_deg, float lon_deg,
                                  bool force_use=false);
 
-#if AP_COMPASS_MSP_ENABLED
-    void handle_msp(const MSP::msp_compass_data_message_t &pkt);
-#endif
-
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
     void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt);
 #endif
@@ -471,9 +466,6 @@ private:
 #endif
 #if AP_COMPASS_RM3100_ENABLED
 		DRIVER_RM3100   =16,
-#endif
-#if AP_COMPASS_MSP_ENABLED
-        DRIVER_MSP      =17,
 #endif
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
         DRIVER_EXTERNALAHRS   =18,
@@ -651,9 +643,6 @@ private:
 
     bool _cal_thread_started;
 
-#if AP_COMPASS_MSP_ENABLED
-    uint8_t msp_instance_mask;
-#endif
     bool init_done;
 
     bool suppress_devid_save;

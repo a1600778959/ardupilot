@@ -20,13 +20,9 @@ bool ModeAuto::_enter()
     rover.mode_guided.limit_clear();
 
     // initialise submode to stop or loiter
-    if (rover.is_boat()) {
-        if (!start_loiter()) {
-            start_stop();
-        }
-    } else {
-        start_stop();
-    }
+
+    start_stop();
+  
 
     // set flag to start mission
     waiting_to_start = true;
@@ -82,11 +78,7 @@ void ModeAuto::update()
     switch (_submode) {
         case SubMode::WP:
         {
-            // boats loiter once the waypoint is reached
             bool keep_navigating = true;
-            if (rover.is_boat() && g2.wp_nav.reached_destination() && !g2.wp_nav.is_fast_waypoint()) {
-                keep_navigating = !start_loiter();
-            }
 
             // update navigation controller
             if (keep_navigating) {
@@ -105,24 +97,10 @@ void ModeAuto::update()
                 _reached_heading = (fabsf(_desired_yaw_cd - ahrs.yaw_sensor) < 500);
             } else {
                 // we have reached the destination so stay here
-                if (rover.is_boat()) {
-                    if (!start_loiter()) {
-                        stop_vehicle();
-                    }
-                } else {
                     stop_vehicle();
-                }
             }
             break;
         }
-
-        case SubMode::RTL:
-            rover.mode_rtl.update();
-            break;
-
-        case SubMode::Loiter:
-            rover.mode_loiter.update();
-            break;
 
         case SubMode::Guided:
         {
@@ -138,10 +116,6 @@ void ModeAuto::update()
 
         case SubMode::NavScriptTime:
             rover.mode_guided.update();
-            break;
-
-        case SubMode::Circle:
-            rover.g2.mode_circle.update();
             break;
     }
 }
@@ -165,15 +139,9 @@ float ModeAuto::wp_bearing() const
     case SubMode::HeadingAndSpeed:
     case SubMode::Stop:
         return 0.0f;
-    case SubMode::RTL:
-        return rover.mode_rtl.wp_bearing();
-    case SubMode::Loiter:
-        return rover.mode_loiter.wp_bearing();
     case SubMode::Guided:
     case SubMode::NavScriptTime:
         return rover.mode_guided.wp_bearing();
-    case SubMode::Circle:
-        return rover.g2.mode_circle.wp_bearing();
     }
 
     // this line should never be reached
@@ -189,15 +157,9 @@ float ModeAuto::nav_bearing() const
     case SubMode::HeadingAndSpeed:
     case SubMode::Stop:
         return 0.0f;
-    case SubMode::RTL:
-        return rover.mode_rtl.nav_bearing();
-    case SubMode::Loiter:
-        return rover.mode_loiter.nav_bearing();
     case SubMode::Guided:
     case SubMode::NavScriptTime:
         return rover.mode_guided.nav_bearing();
-    case SubMode::Circle:
-        return rover.g2.mode_circle.nav_bearing();
     }
 
     // this line should never be reached
@@ -213,15 +175,9 @@ float ModeAuto::crosstrack_error() const
     case SubMode::HeadingAndSpeed:
     case SubMode::Stop:
         return 0.0f;
-    case SubMode::RTL:
-        return rover.mode_rtl.crosstrack_error();
-    case SubMode::Loiter:
-        return rover.mode_loiter.crosstrack_error();
     case SubMode::Guided:
     case SubMode::NavScriptTime:
         return rover.mode_guided.crosstrack_error();
-    case SubMode::Circle:
-        return rover.g2.mode_circle.crosstrack_error();
     }
 
     // this line should never be reached
@@ -237,15 +193,9 @@ float ModeAuto::get_desired_lat_accel() const
     case SubMode::HeadingAndSpeed:
     case SubMode::Stop:
         return 0.0f;
-    case SubMode::RTL:
-        return rover.mode_rtl.get_desired_lat_accel();
-    case SubMode::Loiter:
-        return rover.mode_loiter.get_desired_lat_accel();
     case SubMode::Guided:
     case SubMode::NavScriptTime:
         return rover.mode_guided.get_desired_lat_accel();
-    case SubMode::Circle:
-        return rover.g2.mode_circle.get_desired_lat_accel();
     }
 
     // this line should never be reached
@@ -262,15 +212,9 @@ float ModeAuto::get_distance_to_destination() const
     case SubMode::Stop:
         // no valid distance so return zero
         return 0.0f;
-    case SubMode::RTL:
-        return rover.mode_rtl.get_distance_to_destination();
-    case SubMode::Loiter:
-        return rover.mode_loiter.get_distance_to_destination();
     case SubMode::Guided:
     case SubMode::NavScriptTime:
         return rover.mode_guided.get_distance_to_destination();
-    case SubMode::Circle:
-        return rover.g2.mode_circle.get_distance_to_destination();
     }
 
     // this line should never be reached
@@ -291,15 +235,9 @@ bool ModeAuto::get_desired_location(Location& destination) const
     case SubMode::Stop:
         // no desired location for this submode
         return false;
-    case SubMode::RTL:
-        return rover.mode_rtl.get_desired_location(destination);
-    case SubMode::Loiter:
-        return rover.mode_loiter.get_desired_location(destination);
     case SubMode::Guided:
     case SubMode::NavScriptTime:
         return rover.mode_guided.get_desired_location(destination);
-    case SubMode::Circle:
-        return rover.g2.mode_circle.get_desired_location(destination);
     }
 
     // we should never reach here but just in case
@@ -331,17 +269,9 @@ bool ModeAuto::reached_destination() const
         // always return true because this is the safer option to allow missions to continue
         return true;
         break;
-    case SubMode::RTL:
-        return rover.mode_rtl.reached_destination();
-        break;
-    case SubMode::Loiter:
-        return rover.mode_loiter.reached_destination();
-        break;
     case SubMode::Guided:
     case SubMode::NavScriptTime:
         return rover.mode_guided.reached_destination();
-    case SubMode::Circle:
-        return rover.g2.mode_circle.reached_destination();
     }
 
     // we should never reach here but just in case, return true to allow missions to continue
@@ -358,26 +288,13 @@ bool ModeAuto::set_desired_speed(float speed)
     case SubMode::HeadingAndSpeed:
         _desired_speed = speed;
         return true;
-    case SubMode::RTL:
-        return rover.mode_rtl.set_desired_speed(speed);
-    case SubMode::Loiter:
-        return rover.mode_loiter.set_desired_speed(speed);
     case SubMode::Guided:
     case SubMode::NavScriptTime:
         return rover.mode_guided.set_desired_speed(speed);
-    case SubMode::Circle:
-        return rover.g2.mode_circle.set_desired_speed(speed);
     }
     return false;
 }
 
-// start RTL (within auto)
-void ModeAuto::start_RTL()
-{
-    if (rover.mode_rtl.enter()) {
-        _submode = SubMode::RTL;
-    }
-}
 
 // lua scripts use this to retrieve the contents of the active command
 bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
@@ -449,15 +366,6 @@ bool ModeAuto::check_trigger(void)
     return false;
 }
 
-bool ModeAuto::start_loiter()
-{
-    if (rover.mode_loiter.enter()) {
-        _submode = SubMode::Loiter;
-        return true;
-    }
-    return false;
-}
-
 // hand over control to external navigation controller in AUTO mode
 void ModeAuto::start_guided(const Location& loc)
 {
@@ -523,16 +431,9 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
         return do_nav_wp(cmd, false);
 
-    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        do_RTL();
-        break;
-
     case MAV_CMD_NAV_LOITER_UNLIM:  // Loiter indefinitely
     case MAV_CMD_NAV_LOITER_TIME:   // Loiter for specified time
         return do_nav_wp(cmd, true);
-
-    case MAV_CMD_NAV_LOITER_TURNS:
-        return do_circle(cmd);
 
     case MAV_CMD_NAV_GUIDED_ENABLE: // accept navigation commands from external nav computer
         do_nav_guided_enable(cmd);
@@ -626,14 +527,6 @@ void ModeAuto::exit_mission()
     // send message
     gcs().send_text(MAV_SEVERITY_NOTICE, "Mission Complete");
 
-    if (g2.mis_done_behave == MIS_DONE_BEHAVE_LOITER && start_loiter()) {
-        return;
-    }
-
-    if (g2.mis_done_behave == MIS_DONE_BEHAVE_ACRO && rover.set_mode(rover.mode_acro, ModeReason::MISSION_END)) {
-        return;
-    }
-
     if (g2.mis_done_behave == MIS_DONE_BEHAVE_MANUAL && rover.set_mode(rover.mode_manual, ModeReason::MISSION_END)) {
         return;
     }
@@ -675,9 +568,6 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_LOITER_UNLIM:
         return verify_loiter_unlimited(cmd);
-
-    case MAV_CMD_NAV_LOITER_TURNS:
-        return verify_circle(cmd);
 
     case MAV_CMD_NAV_LOITER_TIME:
         return verify_loiter_time(cmd);
@@ -724,12 +614,6 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 //  Nav (Must) commands
 /********************************************************************************/
 
-void ModeAuto::do_RTL(void)
-{
-    // start rtl in auto mode
-    start_RTL();
-}
-
 bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination)
 {
     // retrieve and sanitize target location
@@ -770,14 +654,8 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
     nav_delay_time_start_ms = millis();
 
-    // boats loiter, cars and balancebots stop
-    if (rover.is_boat()) {
-        if (!start_loiter()) {
-            start_stop();
-        }
-    } else {
-        start_stop();
-    }
+
+    start_stop();
 
     if (cmd.content.nav_delay.seconds > 0) {
         // relative delay
@@ -919,35 +797,6 @@ bool ModeAuto::verify_nav_set_yaw_speed()
     }
     // we should never reach here but just in case, return true to allow missions to continue
     return true;
-}
-
-bool ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
-{
-    // retrieve and sanitize target location
-    Location circle_center = cmd.content.location;
-    circle_center.sanitize(rover.current_loc);
-
-    // calculate radius
-    uint16_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
-    if (cmd.id == MAV_CMD_NAV_LOITER_TURNS &&
-        cmd.type_specific_bits & (1U << 0)) {
-        // special storage handling allows for larger radii
-        circle_radius_m *= 10;
-    }
-
-    // initialise circle mode
-    if (g2.mode_circle.set_center(circle_center, circle_radius_m, cmd.content.location.loiter_ccw)) {
-        _submode = SubMode::Circle;
-        return true;
-    }
-    return false;
-}
-
-bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
-{
-    const float turns = cmd.get_loiter_turns();
-    // check if we have completed circling
-    return ((g2.mode_circle.get_angle_total_rad() / M_2PI) >= turns);
 }
 
 /********************************************************************************/

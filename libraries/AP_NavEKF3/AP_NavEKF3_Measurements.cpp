@@ -742,28 +742,6 @@ bool NavEKF3_core::readDeltaAngle(uint8_t ins_index, Vector3F &dAng, ftype &dAng
 // check for new pressure altitude measurement data and update stored measurement if available
 void NavEKF3_core::readBaroData()
 {
-    // check to see if baro measurement has changed so we know if a new measurement has arrived
-    // limit update rate to avoid overflowing the FIFO buffer
-    const auto &baro = dal.baro();
-    if (baro.get_last_update(selected_baro) - lastBaroReceived_ms > frontend->sensorIntervalMin_ms) {
-
-        baroDataNew.hgt = baro.get_altitude(selected_baro);
-
-        // time stamp used to check for new measurement
-        lastBaroReceived_ms = baro.get_last_update(selected_baro);
-
-        // estimate of time height measurement was taken, allowing for delays
-        baroDataNew.time_ms = lastBaroReceived_ms - frontend->_hgtDelay_ms;
-
-        // Correct for the average intersampling delay due to the filter updaterate
-        baroDataNew.time_ms -= localFilterTimeStep_ms/2;
-
-        // Prevent time delay exceeding age of oldest IMU data in the buffer
-        baroDataNew.time_ms = MAX(baroDataNew.time_ms,imuDataDelayed.time_ms);
-
-        // save baro measurement to buffer to be fused later
-        storedBaro.push(baroDataNew);
-    }
 }
 
 // calculate filtered offset between baro height measurement and EKF height estimate
@@ -782,11 +760,7 @@ void NavEKF3_core::correctEkfOriginHeight()
 
     // calculate the variance of our a-priori estimate of the ekf origin height
     ftype deltaTime = constrain_ftype(0.001f * (imuDataDelayed.time_ms - lastOriginHgtTime_ms), 0.0, 1.0);
-    if (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
-        // Use the baro drift rate
-        const ftype baroDriftRate = 0.05;
-        ekfOriginHgtVar += sq(baroDriftRate * deltaTime);
-    } else if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
+    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
         // use the worse case expected terrain gradient and vehicle horizontal speed
         const ftype maxTerrGrad = 0.25;
         ekfOriginHgtVar += sq(maxTerrGrad * stateStruct.velocity.xy().length() * deltaTime);
@@ -823,43 +797,6 @@ void NavEKF3_core::correctEkfOriginHeight()
 // check for new airspeed data and update stored measurements if available
 void NavEKF3_core::readAirSpdData()
 {
-    const float EAS2TAS = dal.get_EAS2TAS();
-    // if airspeed reading is valid and is set by the user to be used and has been updated then
-    // we take a new reading, convert from EAS to TAS and set the flag letting other functions
-    // know a new measurement is available
-
-    const auto *airspeed = dal.airspeed();
-    if (airspeed &&
-        (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
-        tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
-        timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
-        tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
-        tasDataNew.tasVariance = sq(MAX(frontend->_easNoise * EAS2TAS, 0.5f));
-        tasDataNew.allowFusion = airspeed->healthy(selected_airspeed) && airspeed->use(selected_airspeed);
-
-        // Correct for the average intersampling delay due to the filter update rate
-        tasDataNew.time_ms -= localFilterTimeStep_ms/2;
-
-        // Save data into the buffer to be fused when the fusion time horizon catches up with it
-        storedTAS.push(tasDataNew);
-    }
-
-    // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
-    tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
-
-    float easErrVar = sq(MAX(frontend->_easNoise, 0.5f));
-    // Allow use of a default value if enabled
-    if (!useAirspeed() &&
-        imuDataDelayed.time_ms - tasDataDelayed.time_ms > 200 &&
-        is_positive(defaultAirSpeed)) {
-        tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
-        tasDataDelayed.tasVariance = sq(MAX(defaultAirSpeedVariance, easErrVar));
-        tasDataDelayed.allowFusion = true;
-        tasDataDelayed.time_ms = 0;
-        usingDefaultAirspeed = true;
-    } else {
-        usingDefaultAirspeed = false;
-    }
 }
 
 #if EK3_FEATURE_BEACON_FUSION
@@ -1148,45 +1085,10 @@ void NavEKF3_core::update_mag_selection(void)
 }
 
 /*
-  update the baro selection
- */
-void NavEKF3_core::update_baro_selection(void)
-{
-    auto &baro = dal.baro();
-
-    // in normal operation use the primary baro
-    selected_baro = baro.get_primary();
-
-    if (frontend->_affinity & EKF_AFFINITY_BARO) {
-        if (core_index < baro.num_instances() &&
-            baro.healthy(core_index)) {
-            // use core_index baro if it is healthy
-            selected_baro = core_index;
-        }
-    }
-}
-
-/*
   update the airspeed selection
  */
 void NavEKF3_core::update_airspeed_selection(void)
 {
-    const auto *arsp = dal.airspeed();
-    if (arsp == nullptr) {
-        return;
-    }
-
-    // in normal operation use the primary airspeed sensor
-    selected_airspeed = arsp->get_primary();
-
-    if (frontend->_affinity & EKF_AFFINITY_ARSP) {
-        if (core_index < arsp->get_num_sensors() &&
-            arsp->healthy(core_index) &&
-            arsp->use(core_index)) {
-            // use core_index airspeed if it is healthy
-            selected_airspeed = core_index;
-        }
-    }
 }
 
 /*

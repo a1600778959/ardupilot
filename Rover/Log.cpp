@@ -18,22 +18,12 @@ void Rover::Log_Write_Attitude()
     logger.Write_PID(LOG_PIDS_MSG, g2.attitude_control.get_steering_rate_pid().get_pid_info());
     logger.Write_PID(LOG_PIDA_MSG, g2.attitude_control.get_throttle_speed_pid_info());
 
-    // log pitch control for balance bots
-    if (is_balancebot()) {
-        logger.Write_PID(LOG_PIDP_MSG, g2.attitude_control.get_pitch_to_throttle_pid().get_pid_info());
-    }
-
-    // log heel to sail control for sailboats
-    if (rover.g2.sailboat.sail_enabled()) {
-        logger.Write_PID(LOG_PIDR_MSG, g2.attitude_control.get_sailboat_heel_pid().get_pid_info());
-    }
 }
 
 // Write a range finder depth message
 void Rover::Log_Write_Depth()
 {
-    // only log depth on boats
-    if (!rover.is_boat() || !rangefinder.has_orientation(ROTATION_PITCH_270)) {
+    if (!rangefinder.has_orientation(ROTATION_PITCH_270)) {
         return;
     }
 
@@ -137,41 +127,6 @@ void Rover::Log_Write_Nav_Tuning()
         xtrack_error        : control_mode->crosstrack_error()
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
-}
-
-void Rover::Log_Write_Sail()
-{
-    // only log sail if present
-    if (!rover.g2.sailboat.sail_enabled()) {
-        return;
-    }
-
-    float wind_dir_tack = logger.quiet_nanf();
-    uint8_t current_tack = 0;
-    if (rover.g2.windvane.enabled()) {
-        wind_dir_tack = degrees(g2.windvane.get_tack_threshold_wind_dir_rad());
-        current_tack = uint8_t(g2.windvane.get_current_tack());
-    }
-
-// @LoggerMessage: SAIL
-// @Description: Sailboat information
-// @Field: TimeUS: Time since system startup
-// @Field: Tack: Current tack, 0 = port, 1 = starboard
-// @Field: TackThr: Apparent wind angle used for tack threshold
-// @Field: MainOut: Normalized mainsail output
-// @Field: WingOut: Normalized wingsail output
-// @Field: MastRotOut: Normalized direct-rotation mast output
-// @Field: VMG: Velocity made good (speed at which vehicle is making progress directly towards destination)
-
-    logger.Write("SAIL", "TimeUS,Tack,TackThr,MainOut,WingOut,MastRotOut,VMG",
-                        "s-d%%%n", "F000000", "QBfffff",
-                        AP_HAL::micros64(),
-                        current_tack,
-                        (double)wind_dir_tack,
-                        (double)g2.motors.get_mainsail(),
-                        (double)g2.motors.get_wingsail(),
-                        (double)g2.motors.get_mast_rotation(),
-                        (double)g2.sailboat.get_VMG());
 }
 
 struct PACKED log_Steering {
@@ -320,7 +275,6 @@ void Rover::Log_Write_Attitude() {}
 void Rover::Log_Write_Depth() {}
 void Rover::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 void Rover::Log_Write_Nav_Tuning() {}
-void Rover::Log_Write_Sail() {}
 void Rover::Log_Write_Throttle() {}
 void Rover::Log_Write_RC(void) {}
 void Rover::Log_Write_Steering() {}

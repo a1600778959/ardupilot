@@ -21,7 +21,6 @@
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_MSP/msp.h>
 #include "AP_RangeFinder_Params.h"
 
 // Maximum number of range finder instances available on this platform
@@ -144,9 +143,7 @@ public:
 #if AP_RANGEFINDER_GYUS42V2_ENABLED
         GYUS42v2 = 31,
 #endif
-#if HAL_MSP_RANGEFINDER_ENABLED
-        MSP = 32,
-#endif
+
 #if AP_RANGEFINDER_USD1_CAN_ENABLED
         USD1_CAN = 33,
 #endif
@@ -239,10 +236,6 @@ public:
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(const mavlink_message_t &msg);
 
-#if HAL_MSP_RANGEFINDER_ENABLED
-    // Handle an incoming DISTANCE_SENSOR message (from a MSP enabled range finder)
-    void handle_msp(const MSP::msp_rangefinder_data_message_t &pkt);
-#endif
     // return true if we have a range finder with the specified orientation
     bool has_orientation(enum Rotation orientation) const;
 

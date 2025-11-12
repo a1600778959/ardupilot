@@ -4,7 +4,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -73,9 +72,6 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.ahrs_airspeed_sensor_enabled = ahrs.airspeed_sensor_enabled(ahrs.get_active_airspeed_index());
     _RFRN.available_memory = hal.util->available_memory();
     _RFRN.ahrs_trim = ahrs.get_trim();
-#if AP_OPTICALFLOW_ENABLED
-    _RFRN.opticalflow_enabled = AP::opticalflow() && AP::opticalflow()->enabled();
-#endif
     _RFRN.wheelencoder_enabled = AP::wheelencoder() && (AP::wheelencoder()->num_sensors() > 0);
     _RFRN.ekf_type = ahrs.get_ekf_type();
     WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
@@ -84,23 +80,14 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _rotation_vehicle_body_to_autopilot_body = ahrs.get_rotation_vehicle_body_to_autopilot_body();
 
     _ins.start_frame();
-    _baro.start_frame();
     _gps.start_frame();
     _compass.start_frame();
-    if (_airspeed) {
-        _airspeed->start_frame();
-    }
     if (_rangefinder) {
         _rangefinder->start_frame();
     }
 #if AP_BEACON_ENABLED
     if (_beacon) {
         _beacon->start_frame();
-    }
-#endif
-#if HAL_VISUALODOM_ENABLED
-    if (_visualodom) {
-        _visualodom->start_frame();
     }
 #endif
 
@@ -139,24 +126,10 @@ void AP_DAL::init_sensors(void)
         alloc_failed |= (_rangefinder = new AP_DAL_RangeFinder) == nullptr;
     }
 
-#if AP_AIRSPEED_ENABLED
-    auto *aspeed = AP::airspeed();
-    if (aspeed != nullptr && aspeed->get_num_sensors() > 0) {
-        alloc_failed |= (_airspeed = new AP_DAL_Airspeed) == nullptr;
-    }
-#endif
-
 #if AP_BEACON_ENABLED
     auto *bcn = AP::beacon();
     if (bcn != nullptr && bcn->enabled()) {
         alloc_failed |= (_beacon = new AP_DAL_Beacon) == nullptr;
-    }
-#endif
-
-#if HAL_VISUALODOM_ENABLED
-    auto *vodom = AP::visualodom();
-    if (vodom != nullptr && vodom->enabled()) {
-        alloc_failed |= (_visualodom = new AP_DAL_VisualOdom) == nullptr;
     }
 #endif
 

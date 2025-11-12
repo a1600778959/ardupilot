@@ -18,7 +18,6 @@
 
 #if HAL_CRSF_TELEM_ENABLED
 
-#include <AP_OSD/AP_OSD.h>
 #include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
 #include "AP_RCTelemetry.h"
 #include <AP_HAL/utility/sparse-endian.h>

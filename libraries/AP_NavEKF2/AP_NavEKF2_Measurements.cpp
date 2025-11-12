@@ -684,34 +684,6 @@ bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3F &dAng, ftype &dAng
 // check for new pressure altitude measurement data and update stored measurement if available
 void NavEKF2_core::readBaroData()
 {
-    // check to see if baro measurement has changed so we know if a new measurement has arrived
-    // do not accept data at a faster rate than 14Hz to avoid overflowing the FIFO buffer
-    const auto &baro = dal.baro();
-    if (baro.get_last_update() - lastBaroReceived_ms > 70) {
-
-        baroDataNew.hgt = baro.get_altitude();
-
-        // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
-        // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
-        if (dal.get_takeoff_expected() && !assume_zero_sideslip()) {
-            baroDataNew.hgt = MAX(baroDataNew.hgt, meaHgtAtTakeOff);
-        }
-
-        // time stamp used to check for new measurement
-        lastBaroReceived_ms = baro.get_last_update();
-
-        // estimate of time height measurement was taken, allowing for delays
-        baroDataNew.time_ms = lastBaroReceived_ms - frontend->_hgtDelay_ms;
-
-        // Correct for the average intersampling delay due to the filter updaterate
-        baroDataNew.time_ms -= localFilterTimeStep_ms/2;
-
-        // Prevent time delay exceeding age of oldest IMU data in the buffer
-        baroDataNew.time_ms = MAX(baroDataNew.time_ms,imuDataDelayed.time_ms);
-
-        // save baro measurement to buffer to be fused later
-        storedBaro.push(baroDataNew);
-    }
 }
 
 // calculate filtered offset between baro height measurement and EKF height estimate
@@ -771,26 +743,7 @@ void NavEKF2_core::correctEkfOriginHeight()
 // check for new airspeed data and update stored measurements if available
 void NavEKF2_core::readAirSpdData()
 {
-    // if airspeed reading is valid and is set by the user to be used and has been updated then
-    // we take a new reading, convert from EAS to TAS and set the flag letting other functions
-    // know a new measurement is available
-    const auto *aspeed = dal.airspeed();
-    if (aspeed &&
-        aspeed->use() &&
-        aspeed->healthy() &&
-        aspeed->last_update_ms() != timeTasReceived_ms) {
-        tasDataNew.tas = aspeed->get_airspeed() * dal.get_EAS2TAS();
-        timeTasReceived_ms = aspeed->last_update_ms();
-        tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
 
-        // Correct for the average intersampling delay due to the filter update rate
-        tasDataNew.time_ms -= localFilterTimeStep_ms/2;
-
-        // Save data into the buffer to be fused when the fusion time horizon catches up with it
-        storedTAS.push(tasDataNew);
-    }
-    // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
-    tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
 }
 
 /********************************************************

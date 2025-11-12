@@ -40,7 +40,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
-#include <AP_ADSB/AP_ADSB.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_LandingGear/AP_LandingGear.h>
@@ -48,11 +47,8 @@ extern const AP_HAL::HAL& hal;
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Arming/AP_Arming.h>
-#include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AC_Fence/AC_Fence.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Notify/AP_Notify.h>
@@ -865,32 +861,6 @@ void RC_Channel::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
 
 void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
 {
-#if HAL_ADSB_ENABLED
-    AP_Avoidance *avoidance = AP::ap_avoidance();
-    if (avoidance == nullptr) {
-        return;
-    }
-    if (ch_flag == AuxSwitchPos::HIGH) {
-        AP_ADSB *adsb = AP::ADSB();
-        if (adsb == nullptr) {
-            return;
-        }
-        // try to enable AP_Avoidance
-        if (!adsb->enabled() || !adsb->healthy()) {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB not available");
-            return;
-        }
-        avoidance->enable();
-        LOGGER_WRITE_EVENT(LogEvent::AVOIDANCE_ADSB_ENABLE);
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Enabled");
-        return;
-    }
-
-    // disable AP_Avoidance
-    avoidance->disable();
-    LOGGER_WRITE_EVENT(LogEvent::AVOIDANCE_ADSB_DISABLE);
-    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Disabled");
-#endif
 }
 
 void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)
@@ -1390,26 +1360,6 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::GPS_DISABLE_YAW:
         AP::gps().set_force_disable_yaw(ch_flag == AuxSwitchPos::HIGH);
         break;
-
-#if AP_AIRSPEED_ENABLED
-    case AUX_FUNC::DISABLE_AIRSPEED_USE: {
-        AP_Airspeed *airspeed = AP::airspeed();
-        if (airspeed == nullptr) {
-            break;
-        }
-        switch (ch_flag) {
-        case AuxSwitchPos::HIGH:
-            airspeed->force_disable_use(true);
-            break;
-        case AuxSwitchPos::MIDDLE:
-            break;
-        case AuxSwitchPos::LOW:
-            airspeed->force_disable_use(false);
-            break;
-        }
-        break;
-    }
-#endif
 
     case AUX_FUNC::MOTOR_ESTOP:
         switch (ch_flag) {

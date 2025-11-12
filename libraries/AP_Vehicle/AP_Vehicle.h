@@ -27,7 +27,6 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_AccelCal/AP_AccelCal.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_CANManager/AP_CANManager.h>
@@ -51,9 +50,7 @@
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_Networking/AP_Networking.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_VideoTX/AP_VideoTX.h>
-#include <AP_MSP/AP_MSP.h>
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_VideoTX/AP_SmartAudio.h>
@@ -216,9 +213,6 @@ public:
         Throttle = 3,
         Yaw = 4,
         Lateral = 5,
-        MainSail = 6,
-        WingSail = 7,
-        Walking_Height = 8,
         Last_ControlOutput  // place new values before this
     };
 
@@ -343,20 +337,12 @@ protected:
     AP_Hott_Telem hott_telem;
 #endif
 
-#if HAL_VISUALODOM_ENABLED
-    AP_VisualOdom visual_odom;
-#endif
-
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
 #endif
 
 #if AP_OPENDRONEID_ENABLED
     AP_OpenDroneID opendroneid;
-#endif
-
-#if HAL_MSP_ENABLED
-    AP_MSP msp;
 #endif
 
 #if HAL_GENERATOR_ENABLED
@@ -384,10 +370,6 @@ protected:
     AP_EFI efi;
 #endif
 
-#if AP_AIRSPEED_ENABLED
-    AP_Airspeed airspeed;
-#endif
-
 #if AP_AIS_ENABLED
     // Automatic Identification System - for tracking sea-going vehicles
     AP_AIS ais;
@@ -411,10 +393,6 @@ protected:
 
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
-
-#if OSD_ENABLED
-    void publish_osd_info();
-#endif
 
 #if HAL_INS_ACCELCAL_ENABLED
     // update accel calibration

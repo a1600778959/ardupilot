@@ -235,7 +235,12 @@ void AP_MotorsUGV::set_throttle(float throttle)
     if (!hal.util->get_soft_armed()) {
         return;
     }
-
+    int distance = aoa_sensor.get_min_distance();
+    if (distance > 0 && distance < 0.3 * 1000) {
+        // if an obstacle is detected within 30cm, cut throttle
+        _throttle = 0.0f;
+        return;
+    }
     // check throttle is between -_throttle_max and  +_throttle_max
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
 }
@@ -256,24 +261,6 @@ void AP_MotorsUGV::set_roll(float roll)
 void AP_MotorsUGV::set_pitch(float pitch)
 {
     _pitch = constrain_float(pitch, -1.0f, 1.0f);
-}
-
-// set walking_height input as a value from -1 to +1
-void AP_MotorsUGV::set_walking_height(float walking_height)
-{
-    _walking_height = constrain_float(walking_height, -1.0f, 1.0f);
-}
-
-// set mainsail input as a value from 0 to 100
-void AP_MotorsUGV::set_mainsail(float mainsail)
-{
-    _mainsail = constrain_float(mainsail, 0.0f, 100.0f);
-}
-
-// set wingsail input as a value from -100 to 100
-void AP_MotorsUGV::set_wingsail(float wingsail)
-{
-    _wingsail = constrain_float(wingsail, -100.0f, 100.0f);
 }
 
 // set mast rotation input as a value from -100 to 100

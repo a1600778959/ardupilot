@@ -20,7 +20,6 @@ protected:
     uint8_t sysid_my_gcs() const override;
     bool sysid_enforce() const override;
 
-    MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_nav_set_yaw_speed(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
@@ -66,7 +65,5 @@ private:
     uint8_t high_latency_tgt_heading() const override;
     uint16_t high_latency_tgt_dist() const override;
     uint8_t high_latency_tgt_airspeed() const override;
-    uint8_t high_latency_wind_speed() const override;
-    uint8_t high_latency_wind_direction() const override;
 #endif // HAL_HIGH_LATENCY2_ENABLED
 };

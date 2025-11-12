@@ -24,7 +24,6 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_OSD/AP_OSD.h>
 #include <AP_Frsky_Telem/AP_Frsky_SPort_Passthrough.h>
 #include <math.h>
 #include <stdio.h>
@@ -991,11 +990,8 @@ void AP_CRSF_Telem::calc_device_info() {
     n += 4;
     put_be32_ptr(&_telem.ext.info.payload[n], fwver.os_sw_version);   // software id
     n += 4;
-#if OSD_PARAM_ENABLED
-    _telem.ext.info.payload[n++] = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; // param count
-#else
     _telem.ext.info.payload[n++] = 0; // param count
-#endif
+
     _telem.ext.info.payload[n++] = 0;   // param version
 
     _telem_size = n + 2;
@@ -1046,133 +1042,7 @@ void AP_CRSF_Telem::calc_command_response() {
 
 // return parameter information
 void AP_CRSF_Telem::calc_parameter() {
-#if OSD_PARAM_ENABLED
-    _telem.ext.param_entry.header.destination = _param_request.origin;
-    _telem.ext.param_entry.header.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
-    size_t idx = 0;
 
-    // root folder request
-    if (_param_request.param_num == 0) {
-        _telem.ext.param_entry.header.param_num = 0;
-        _telem.ext.param_entry.header.chunks_left = 0;
-        _telem.ext.param_entry.payload[idx++] = 0; // parent folder
-        _telem.ext.param_entry.payload[idx++] = ParameterType::FOLDER; // type
-        _telem.ext.param_entry.payload[idx++] = 'r'; // "root" name
-        _telem.ext.param_entry.payload[idx++] = 'o';
-        _telem.ext.param_entry.payload[idx++] = 'o';
-        _telem.ext.param_entry.payload[idx++] = 't';
-        _telem.ext.param_entry.payload[idx++] = 0; // null terminator
-
-        // write out all of the ids we are going to send
-        for (uint8_t i = 0; i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
-            _telem.ext.param_entry.payload[idx++] = i + 1;
-        }
-        _telem.ext.param_entry.payload[idx] = 0xFF; // terminator
-
-        _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
-        _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
-        _pending_request.frame_type = 0;
-        _telem_pending = true;
-        return;
-    }
-
-    AP_OSD* osd = AP::osd();
-
-    if (osd == nullptr) {
-        return;
-    }
-
-    AP_OSD_ParamSetting* param = osd->get_setting((_param_request.param_num - 1) / AP_OSD_ParamScreen::NUM_PARAMS,
-        (_param_request.param_num - 1) % AP_OSD_ParamScreen::NUM_PARAMS);
-
-    if (param == nullptr) {
-        return;
-    }
-
-    _telem.ext.param_entry.header.param_num = _param_request.param_num;
-#if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
-    if (param->get_custom_metadata() != nullptr) {
-        calc_text_selection(param, _param_request.param_chunk);
-        return;
-    }
-#endif
-    _telem.ext.param_entry.header.chunks_left = 0;
-    _telem.ext.param_entry.payload[idx++] = 0; // parent folder
-    idx++;  // leave a gap for the type
-    param->copy_name_camel_case((char*)&_telem.ext.param_entry.payload[idx], 17);
-    idx += strnlen((char*)&_telem.ext.param_entry.payload[idx], 16) + 1;
-
-    switch (param->_param_type) {
-    case AP_PARAM_INT8: {
-        AP_Int8* p = (AP_Int8*)param->_param;
-        _telem.ext.param_entry.payload[1] = ParameterType::INT8;
-        _telem.ext.param_entry.payload[idx] = p->get();  // value
-        _telem.ext.param_entry.payload[idx+1] = int8_t(param->_param_min);  // min
-        _telem.ext.param_entry.payload[idx+2] = int8_t(param->_param_max); // max
-        _telem.ext.param_entry.payload[idx+3] = int8_t(0);  // default
-        idx += 4;
-        break;
-    }
-    case AP_PARAM_INT16: {
-        AP_Int16* p = (AP_Int16*)param->_param;
-        _telem.ext.param_entry.payload[1] = ParameterType::INT16;
-        put_be16_ptr(&_telem.ext.param_entry.payload[idx], p->get());  // value
-        put_be16_ptr(&_telem.ext.param_entry.payload[idx+2], param->_param_min);  // min
-        put_be16_ptr(&_telem.ext.param_entry.payload[idx+4], param->_param_max); // max
-        put_be16_ptr(&_telem.ext.param_entry.payload[idx+6], 0);  // default
-        idx += 8;
-        break;
-    }
-    case AP_PARAM_INT32: {
-        AP_Int32* p = (AP_Int32*)param->_param;
-        _telem.ext.param_entry.payload[1] = ParameterType::FLOAT;
-#define FLOAT_ENCODE(f) (int32_t(roundf(f)))
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx], p->get());  // value
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+4], FLOAT_ENCODE(param->_param_min));  // min
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+8], FLOAT_ENCODE(param->_param_max)); // max
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+12], FLOAT_ENCODE(0.0f));  // default
-#undef FLOAT_ENCODE
-        _telem.ext.param_entry.payload[idx+16] = 0; // decimal point
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+17], 1);  // step size
-        idx += 21;
-        break;
-    }
-    case AP_PARAM_FLOAT: {
-        AP_Float* p = (AP_Float*)param->_param;
-        _telem.ext.param_entry.payload[1] = ParameterType::FLOAT;
-        uint8_t digits = 0;
-        const float incr = MAX(0.001f, param->_param_incr); // a bug in OpenTX prevents this going any smaller
-
-        for (float floatp = incr; floatp < 1.0f; floatp *= 10) {
-            digits++;
-        }
-        const float mult = powf(10, digits);
-#define FLOAT_ENCODE(f) (int32_t(roundf(mult * f)))
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx], FLOAT_ENCODE(p->get()));  // value
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+4], FLOAT_ENCODE(param->_param_min));  // min
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+8], FLOAT_ENCODE(param->_param_max)); // max
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+12], FLOAT_ENCODE(0.0f));  // default
-        _telem.ext.param_entry.payload[idx+16] = digits; // decimal point
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+17], FLOAT_ENCODE(incr));  // step size
-#undef FLOAT_ENCODE
-        //debug("Encoding param %f(%f -> %f, %f) as %d(%d) (%d -> %d, %d)", p->get(),
-        //    param->_param_min.get(), param->_param_max.get(), param->_param_incr.get(),
-        //    int(FLOAT_ENCODE(p->get())), digits, int(FLOAT_ENCODE(param->_param_min)),
-        //    int(FLOAT_ENCODE(param->_param_max)), int(FLOAT_ENCODE(param->_param_incr)));
-        idx += 21;
-        break;
-    }
-    default:
-        return;
-    }
-    _telem.ext.param_entry.payload[idx] = 0; // units
-
-    _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
-
-    _pending_request.frame_type = 0;
-    _telem_pending = true;
-#endif
 }
 
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
@@ -1331,68 +1201,6 @@ void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write
     if (write_frame->destination != AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
         return; // request was not for us
     }
-#if OSD_PARAM_ENABLED
-    AP_OSD* osd = AP::osd();
-
-    if (osd == nullptr) {
-        return;
-    }
-
-    AP_OSD_ParamSetting* param = osd->get_setting((write_frame->param_num - 1) / AP_OSD_ParamScreen::NUM_PARAMS,
-        (write_frame->param_num - 1) % AP_OSD_ParamScreen::NUM_PARAMS);
-
-    if (param == nullptr) {
-        return;
-    }
-
-#if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
-    bool text_selection = param->get_custom_metadata() != nullptr;
-#else
-    bool text_selection = false;
-#endif
-
-    switch (param->_param_type) {
-    case AP_PARAM_INT8: {
-        AP_Int8* p = (AP_Int8*)param->_param;
-        p->set_and_save(write_frame->payload[0]);
-        break;
-    }
-    case AP_PARAM_INT16: {
-        AP_Int16* p = (AP_Int16*)param->_param;
-        if (text_selection) {
-            // if we have custom metadata then the parameter is a text selection
-            p->set_and_save(write_frame->payload[0]);
-        } else {
-            p->set_and_save(be16toh_ptr(write_frame->payload));
-        }
-        break;
-    }
-    case AP_PARAM_INT32: {
-        AP_Int32* p = (AP_Int32*)param->_param;
-        if (text_selection) {
-            // if we have custom metadata then the parameter is a text selection
-            p->set_and_save(write_frame->payload[0]);
-        } else {
-            p->set_and_save(be32toh_ptr(write_frame->payload));
-        }
-        break;
-    }
-    case AP_PARAM_FLOAT: {
-        AP_Float* p = (AP_Float*)param->_param;
-        const int32_t val = be32toh_ptr(write_frame->payload);
-        uint8_t digits = 0;
-        const float incr = MAX(0.001f, param->_param_incr); // a bug in OpenTX prevents this going any smaller
-
-        for (float floatp = incr; floatp < 1.0f; floatp *= 10) {
-            digits++;
-        }
-        p->set_and_save(float(val) / powf(10, digits));
-        break;
-    }
-    default:
-        break;
-    }
-#endif
 }
 
 // get status text data

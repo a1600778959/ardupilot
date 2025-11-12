@@ -3440,3 +3440,10 @@ function visual_odom:healthy() end
 -- visual odometry quality as a percentage from 1 to 100 or 0 if unknown
 ---@return integer
 function visual_odom:quality() end
+
+aoa = {}
+---@return integer
+function aoa:get_distance(sensor_idx, dist) end
+
+---@return integer
+function aoa:get_min_distance() end

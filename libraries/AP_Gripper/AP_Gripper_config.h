@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_GRIPPER_ENABLED
-#define AP_GRIPPER_ENABLED 1
+#define AP_GRIPPER_ENABLED 0
 #endif
 
 #ifndef AP_GRIPPER_BACKEND_DEFAULT_ENABLED

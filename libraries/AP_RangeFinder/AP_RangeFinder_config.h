@@ -3,7 +3,6 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Scripting/AP_Scripting_config.h>
 #include <AP_CANManager/AP_CANManager_config.h>
-#include <AP_MSP/AP_MSP_config.h>
 #include <GCS_MAVLink/GCS_config.h>
 
 #ifndef AP_RANGEFINDER_ENABLED
@@ -107,10 +106,6 @@
 
 #ifndef AP_RANGEFINDER_MAXSONARI2CXL_ENABLED
 #define AP_RANGEFINDER_MAXSONARI2CXL_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
-#endif
-
-#ifndef HAL_MSP_RANGEFINDER_ENABLED
-#define HAL_MSP_RANGEFINDER_ENABLED HAL_MSP_ENABLED
 #endif
 
 #ifndef AP_RANGEFINDER_NMEA_ENABLED

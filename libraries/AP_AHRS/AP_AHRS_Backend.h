@@ -22,7 +22,6 @@
 
 #include <AP_Math/AP_Math.h>
 #include <inttypes.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Common/Location.h>
 
@@ -159,23 +158,13 @@ public:
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
     static bool airspeed_sensor_enabled(void) {
-    #if AP_AIRSPEED_ENABLED
-        const AP_Airspeed *_airspeed = AP::airspeed();
-        return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
-    #else
         return false;
-    #endif
     }
 
     // return true if airspeed comes from a specific airspeed sensor, as
     // opposed to an IMU estimate
     static bool airspeed_sensor_enabled(uint8_t airspeed_index) {
-    #if AP_AIRSPEED_ENABLED
-        const AP_Airspeed *_airspeed = AP::airspeed();
-        return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
-    #else
         return false;
-    #endif
     }
 
     // return a ground vector estimate in meters/second, in North/East order

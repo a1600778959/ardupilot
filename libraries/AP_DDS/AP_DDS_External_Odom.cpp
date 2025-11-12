@@ -5,7 +5,6 @@
 
 #if AP_DDS_VISUALODOM_ENABLED
 
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <GCS_MAVLink/GCS.h>
 
 void AP_DDS_External_Odom::handle_external_odom(const tf2_msgs_msg_TFMessage& msg)

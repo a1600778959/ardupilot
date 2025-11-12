@@ -44,13 +44,11 @@
 #include "AP_Baro_BMP388.h"
 #include "AP_Baro_Dummy.h"
 #include "AP_Baro_DroneCAN.h"
-#include "AP_Baro_MSP.h"
 #include "AP_Baro_ExternalAHRS.h"
 #include "AP_Baro_ICP101XX.h"
 #include "AP_Baro_ICP201XX.h"
 #include "AP_Baro_BMP581.h"
 
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Logger/AP_Logger.h>
@@ -170,7 +168,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("_FLTR_RNG", 13, AP_Baro, _filter_range, HAL_BARO_FILTER_DEFAULT),
 
-#if AP_BARO_PROBE_EXTERNAL_I2C_BUSES || AP_BARO_MSP_ENABLED
+#if AP_BARO_PROBE_EXTERNAL_I2C_BUSES
     // @Param: _PROBE_EXT
     // @DisplayName: External barometers to probe
     // @Description: This sets which types of external i2c barometer to look for. It is a bitmask of barometer types. The I2C buses to probe is based on BARO_EXT_BUS. If BARO_EXT_BUS is -1 then it will probe all external buses, otherwise it will probe just the bus number given in BARO_EXT_BUS.
@@ -510,17 +508,6 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
     }
     
 #ifndef HAL_BUILD_AP_PERIPH
-#if AP_AIRSPEED_ENABLED
-    // if we don't have an external temperature then try to use temperature
-    // from the airspeed sensor
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
-        float temperature;
-        if (airspeed->healthy() && airspeed->get_temperature(temperature)) {
-            return temperature;
-        }
-    }
-#endif
 #endif
     
     // if we don't have an external temperature and airspeed temperature
@@ -762,18 +749,6 @@ void AP_Baro::init(void)
 
 #if AP_BARO_PROBE_EXTERNAL_I2C_BUSES
     _probe_i2c_barometers();
-#endif
-
-#if AP_BARO_MSP_ENABLED
-    if ((_baro_probe_ext.get() & PROBE_MSP) && msp_instance_mask == 0) {
-        // allow for late addition of MSP sensor
-        msp_instance_mask |= 1;
-    }
-    for (uint8_t i=0; i<8; i++) {
-        if (msp_instance_mask & (1U<<i)) {
-            ADD_BACKEND(new AP_Baro_MSP(*this, i));
-        }
-    }
 #endif
 
 #if !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
@@ -1085,25 +1060,6 @@ void AP_Baro::set_pressure_correction(uint8_t instance, float p_correction)
         sensors[instance].p_correction = p_correction;
     }
 }
-
-#if AP_BARO_MSP_ENABLED
-/*
-  handle MSP barometer data
- */
-void AP_Baro::handle_msp(const MSP::msp_baro_data_message_t &pkt)
-{
-    if (pkt.instance > 7) {
-        return;
-    }
-    if (!init_done) {
-        msp_instance_mask |= 1U<<pkt.instance;
-    } else if (msp_instance_mask != 0) {
-        for (uint8_t i=0; i<_num_drivers; i++) {
-            drivers[i]->handle_msp(pkt);
-        }
-    }
-}
-#endif
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
 /*

@@ -38,7 +38,6 @@
 #include "AP_GPS_SIRF.h"
 #include "AP_GPS_UBLOX.h"
 #include "AP_GPS_MAV.h"
-#include "AP_GPS_MSP.h"
 #include "AP_GPS_ExternalAHRS.h"
 #include "GPS_Backend.h"
 #if HAL_SIM_GPS_ENABLED
@@ -460,7 +459,6 @@ bool AP_GPS::needs_uart(GPS_Type type) const
     case GPS_TYPE_UAVCAN_RTK_BASE:
     case GPS_TYPE_UAVCAN_RTK_ROVER:
     case GPS_TYPE_MAV:
-    case GPS_TYPE_MSP:
     case GPS_TYPE_EXTERNAL_AHRS:
         return false;
     default:
@@ -747,11 +745,6 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         return AP_GPS_DroneCAN::probe(*this, state[instance]);
 #endif
         return nullptr; // We don't do anything here if UAVCAN is not supported
-#if HAL_MSP_GPS_ENABLED
-    case GPS_TYPE_MSP:
-        dstate->auto_detected_baud = false; // specified, not detected
-        return new AP_GPS_MSP(*this, state[instance], nullptr);
-#endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     case GPS_TYPE_EXTERNAL_AHRS:
         dstate->auto_detected_baud = false; // specified, not detected
@@ -1363,17 +1356,6 @@ void AP_GPS::handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg)
     }
 }
 #endif
-
-#if HAL_MSP_GPS_ENABLED
-void AP_GPS::handle_msp(const MSP::msp_gps_data_message_t &pkt)
-{
-    for (uint8_t i=0; i<num_instances; i++) {
-        if (drivers[i] != nullptr && _type[i] == GPS_TYPE_MSP) {
-            drivers[i]->handle_msp(pkt);
-        }
-    }
-}
-#endif // HAL_MSP_GPS_ENABLED
 
 #if HAL_EXTERNAL_AHRS_ENABLED
 

@@ -3,13 +3,9 @@
 bool ModeGuided::_enter()
 {
     // initialise submode to stop or loiter
-    if (rover.is_boat()) {
-        if (!start_loiter()) {
-            start_stop();
-        }
-    } else {
-        start_stop();
-    }
+
+    start_stop();
+
 
     // initialise waypoint navigation library
     g2.wp_nav.init();
@@ -36,13 +32,9 @@ void ModeGuided::update()
                 }
 
                 // we have reached the destination so stay here
-                if (rover.is_boat()) {
-                    if (!start_loiter()) {
-                        stop_vehicle();
-                    }
-                } else {
-                    stop_vehicle();
-                }
+
+                stop_vehicle();
+
                 // update distance to destination
                 _distance_to_destination = rover.current_loc.get_distance(g2.wp_nav.get_destination());
             }
@@ -62,13 +54,8 @@ void ModeGuided::update()
                 calc_throttle(calc_speed_nudge(_desired_speed, is_negative(_desired_speed)), true);
             } else {
                 // we have reached the destination so stay here
-                if (rover.is_boat()) {
-                    if (!start_loiter()) {
-                        stop_vehicle();
-                    }
-                } else {
+
                     stop_vehicle();
-                }
             }
             break;
         }
@@ -90,20 +77,10 @@ void ModeGuided::update()
                 calc_throttle(calc_speed_nudge(_desired_speed, is_negative(_desired_speed)), true);
             } else {
                 // we have reached the destination so stay here
-                if (rover.is_boat()) {
-                    if (!start_loiter()) {
-                        stop_vehicle();
-                    }
-                } else {
-                    stop_vehicle();
-                }
-            }
-            break;
-        }
 
-        case SubMode::Loiter:
-        {
-            rover.mode_loiter.update();
+                    stop_vehicle();
+
+            }
             break;
         }
 
@@ -120,13 +97,9 @@ void ModeGuided::update()
                 g2.motors.set_throttle(_strthr_throttle * 100.0f);
             } else {
                 // loiter or stop vehicle
-                if (rover.is_boat()) {
-                    if (!start_loiter()) {
-                        stop_vehicle();
-                    }
-                } else {
+
                     stop_vehicle();
-                }
+
             }
             break;
         }
@@ -150,8 +123,6 @@ float ModeGuided::wp_bearing() const
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         return 0.0f;
-    case SubMode::Loiter:
-        return rover.mode_loiter.wp_bearing();
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         return 0.0f;
@@ -169,8 +140,6 @@ float ModeGuided::nav_bearing() const
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         return 0.0f;
-    case SubMode::Loiter:
-        return rover.mode_loiter.nav_bearing();
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         return 0.0f;
@@ -188,8 +157,6 @@ float ModeGuided::crosstrack_error() const
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         return 0.0f;
-    case SubMode::Loiter:
-        return rover.mode_loiter.crosstrack_error();
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         return 0.0f;
@@ -207,8 +174,6 @@ float ModeGuided::get_desired_lat_accel() const
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         return 0.0f;
-    case SubMode::Loiter:
-        return rover.mode_loiter.get_desired_lat_accel();
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         return 0.0f;
@@ -227,8 +192,6 @@ float ModeGuided::get_distance_to_destination() const
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         return 0.0f;
-    case SubMode::Loiter:
-        return rover.mode_loiter.get_distance_to_destination();
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         return 0.0f;
@@ -246,7 +209,6 @@ bool ModeGuided::reached_destination() const
         return g2.wp_nav.reached_destination();
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
-    case SubMode::Loiter:
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         return true;
@@ -266,8 +228,6 @@ bool ModeGuided::set_desired_speed(float speed)
     case SubMode::TurnRateAndSpeed:
         // speed is set from mavlink message
         return false;
-    case SubMode::Loiter:
-        return rover.mode_loiter.set_desired_speed(speed);
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         // no speed control
@@ -290,9 +250,6 @@ bool ModeGuided::get_desired_location(Location& destination) const
     case SubMode::TurnRateAndSpeed:
         // not supported in these submodes
         return false;
-    case SubMode::Loiter:
-        // get destination from loiter
-        return rover.mode_loiter.get_desired_location(destination);
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         // no desired location in this submode
@@ -377,16 +334,6 @@ void ModeGuided::set_steering_and_throttle(float steering, float throttle)
     _strthr_throttle = constrain_float(throttle, -1.0f, 1.0f);
     _have_strthr = true;
 }
-
-bool ModeGuided::start_loiter()
-{
-    if (rover.mode_loiter.enter()) {
-        _guided_mode = SubMode::Loiter;
-        return true;
-    }
-    return false;
-}
-
 
 // start stopping vehicle as quickly as possible
 void ModeGuided::start_stop()

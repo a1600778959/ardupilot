@@ -35,7 +35,6 @@
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
 
-#include "AP_Gripper/AP_Gripper.h"
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -75,11 +74,8 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_rangefinders,      50,    200,   9),
     SCHED_TASK(update_distance_sensor, 10,    200,   6),
 
-#if AP_OPTICALFLOW_ENABLED
-    SCHED_TASK_CLASS(AP_OpticalFlow,      &rover.optflow,          update,         200, 160,  11),
-#endif
     SCHED_TASK(update_current_mode,   400,    200,  12),
-        SCHED_TASK(FireFight_open,    2,    200,   13),
+    // SCHED_TASK(FireFight_open,    2,    200,   13),
     SCHED_TASK(set_servos,            400,    200,  15),
     SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300,  18),
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200,  21),
@@ -89,7 +85,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if HAL_PROXIMITY_ENABLED
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200,  27),
 #endif
-    SCHED_TASK_CLASS(AP_WindVane,         &rover.g2.windvane,      update,         20,  100,  30),
     SCHED_TASK(update_wheel_encoder,   50,    200,  36),
     SCHED_TASK(update_compass,         10,    200,  39),
 #if HAL_LOGGING_ENABLED
@@ -104,9 +99,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if AP_SERVORELAYEVENTS_ENABLED
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200,  66),
 #endif
-#if AP_GRIPPER_ENABLED
-    SCHED_TASK_CLASS(AP_Gripper,          &rover.g2.gripper,       update,         10,   75,  69),
-#endif
+
 #if AC_PRECLAND_ENABLED
     SCHED_TASK(update_precland,      400,     50,  70),
 #endif
@@ -122,7 +115,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(gcs_failsafe_check,     10,    200,  81),
     SCHED_TASK(fence_check,            10,    200,  84),
     SCHED_TASK(ekf_check,              10,    100,  87),
-    SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200,  90),
     SCHED_TASK(one_second_loop,         1,   1500,  96),
 #if HAL_SPRAYER_ENABLED
     SCHED_TASK_CLASS(AC_Sprayer,          &rover.g2.sprayer,       update,          3,  90,  99),
@@ -171,27 +163,27 @@ Rover::Rover(void) :
 {
 }
 
-void Rover::FireFight_open() // 每2毫秒执行一次
-{
+// void Rover::FireFight_open() // 每2毫秒执行一次
+// {
 
-    if (arming.is_armed()) //&& current_v > 40)
-    {
-        fire_led.launch_motor();
-        fire_led.Fire_Shache_on();
-        firefight_rover.function_fire_fight(40);
-        firefight_rover.write_two(0x01, 12, 1, 0); // 上下电机锁定
-        firefight_rover.write_two(0x01, 14, 1, 0); // 左右电机锁定
+//     // if (arming.is_armed()) //&& current_v > 40)
+//     // {
+//     //     fire_led.launch_motor();
+//     //     fire_led.Fire_Shache_on();
+//     //     firefight_rover.function_fire_fight(40);
+//     //     firefight_rover.write_two(0x01, 12, 1, 0); // 上下电机锁定
+//     //     firefight_rover.write_two(0x01, 14, 1, 0); // 左右电机锁定
 
-    }
-    else //&& current_v > 40)
-    {
-        fire_led.stop_motor();
-        fire_led.Fire_Shache_off();
-        firefight_rover.write_two(0x01, 12, 0, 1); // 上下电机锁定
-        firefight_rover.write_two(0x01, 14, 0, 1); // 左右电机锁定
-        // stop_button = 0;
-    }
-}
+//     // }
+//     // else //&& current_v > 40)
+//     // {
+//     //     fire_led.stop_motor();
+//     //     fire_led.Fire_Shache_off();
+//     //     firefight_rover.write_two(0x01, 12, 0, 1); // 上下电机锁定
+//     //     firefight_rover.write_two(0x01, 14, 0, 1); // 左右电机锁定
+//     //     // stop_button = 0;
+//     // }
+// }
 
 #if AP_SCRIPTING_ENABLED
 // set target location (for use by scripting)
@@ -276,9 +268,6 @@ bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &
     case AP_Vehicle::ControlOutput::Pitch:
         control_value = constrain_float(g2.motors.get_pitch(), -1.0f, 1.0f);
         return true;
-    case AP_Vehicle::ControlOutput::Walking_Height:
-        control_value = constrain_float(g2.motors.get_walking_height(), -1.0f, 1.0f);
-        return true;
     case AP_Vehicle::ControlOutput::Throttle:
         control_value = constrain_float(g2.motors.get_throttle() / 100.0f, -1.0f, 1.0f);
         return true;
@@ -287,12 +276,6 @@ bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &
         return true;
     case AP_Vehicle::ControlOutput::Lateral:
         control_value = constrain_float(g2.motors.get_lateral() / 100.0f, -1.0f, 1.0f);
-        return true;
-    case AP_Vehicle::ControlOutput::MainSail:
-        control_value = constrain_float(g2.motors.get_mainsail() / 100.0f, -1.0f, 1.0f);
-        return true;
-    case AP_Vehicle::ControlOutput::WingSail:
-        control_value = constrain_float(g2.motors.get_wingsail() / 100.0f, -1.0f, 1.0f);
         return true;
     default:
         return false;
@@ -370,7 +353,6 @@ void Rover::ahrs_update()
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        Log_Write_Sail();
     }
 
     if (should_log(MASK_LOG_IMU)) {
@@ -417,7 +399,6 @@ void Rover::update_logging1(void)
 {
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        Log_Write_Sail();
     }
 
     if (should_log(MASK_LOG_THR)) {

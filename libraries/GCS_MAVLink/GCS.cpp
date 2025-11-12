@@ -14,9 +14,7 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Arming/AP_Arming.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_GPS/AP_GPS.h>
 
 #include "MissionItemProtocol_Waypoints.h"
@@ -281,49 +279,6 @@ void GCS::update_sensor_status_flags()
         }
         if (!fence->sys_status_failed()) {
             control_sensors_health |= MAV_SYS_STATUS_GEOFENCE;
-        }
-    }
-#endif
-
-    // airspeed
-#if AP_AIRSPEED_ENABLED
-    const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed && airspeed->enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
-        const bool use = airspeed->use();
-#if AP_AHRS_ENABLED
-        const bool enabled = AP::ahrs().airspeed_sensor_enabled();
-#else
-        const AP_Airspeed *_airspeed = AP::airspeed();
-        const bool enabled = (_airspeed != nullptr && _airspeed->use());
-#endif
-        if (use) {
-            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
-        }
-        if (airspeed->all_healthy() && (!use || enabled)) {
-            control_sensors_health |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
-        }
-    }
-#endif
-
-#if AP_OPTICALFLOW_ENABLED
-    const AP_OpticalFlow *optflow = AP::opticalflow();
-    if (optflow && optflow->enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-    if (optflow && optflow->healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-
-#if HAL_VISUALODOM_ENABLED
-    const AP_VisualOdom *visual_odom = AP::visualodom();
-    if (visual_odom && visual_odom->enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-        if (visual_odom->healthy()) {
-            control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
         }
     }
 #endif

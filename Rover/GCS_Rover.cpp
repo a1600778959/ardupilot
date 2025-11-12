@@ -11,18 +11,14 @@ uint8_t GCS_Rover::sysid_this_mav() const
 
 bool GCS_Rover::simple_input_active() const
 {
-    if (rover.control_mode != &rover.mode_simple) {
         return false;
-    }
-    return (rover.g2.simple_type == ModeSimple::Simple_InitialHeading);
 }
 
 bool GCS_Rover::supersimple_input_active() const
 {
-    if (rover.control_mode != &rover.mode_simple) {
-        return false;
-    }
-    return (rover.g2.simple_type == ModeSimple::Simple_CardinalDirections);
+
+    return false;
+
 }
 
 void GCS_Rover::update_vehicle_sensor_status_flags(void)
@@ -57,18 +53,6 @@ void GCS_Rover::update_vehicle_sensor_status_flags(void)
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
     }
 #endif
-
-#if AP_OPTICALFLOW_ENABLED
-    const AP_OpticalFlow *optflow = AP::opticalflow();
-    if (optflow && optflow->enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-    if (optflow && optflow->healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-
     const RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (rangefinder && rangefinder->num_sensors() > 0) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;

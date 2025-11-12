@@ -23,7 +23,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
-#include <AP_MSP/AP_MSP.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include "AP_SerialManager.h"
 #include <GCS_MAVLink/GCS.h>
@@ -557,19 +556,6 @@ void AP_SerialManager::init()
 
                 case SerialProtocol_Generator:
                     break;
-#if HAL_MSP_ENABLED                    
-                case SerialProtocol_MSP:
-                case SerialProtocol_DJI_FPV:
-                case SerialProtocol_MSP_DisplayPort:
-                    // baudrate defaults to 115200
-                    state[i].baud.set_default(AP_SERIALMANAGER_MSP_BAUD/1000);
-                    uart->begin(state[i].baudrate(),
-                                         AP_SERIALMANAGER_MSP_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_MSP_BUFSIZE_TX);
-                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-                    // Note init is handled by AP_MSP
-                    break;
-#endif
 
 #if AP_SERIALMANAGER_IMUOUT_ENABLED
                 case SerialProtocol_IMUOUT:

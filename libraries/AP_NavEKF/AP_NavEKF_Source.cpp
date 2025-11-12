@@ -37,13 +37,6 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("1_VELXY", 2, AP_NavEKF_Source, _source_set[0].velxy, (int8_t)AP_NavEKF_Source::SourceXY::GPS),
 
-    // @Param: 1_POSZ
-    // @DisplayName: Position Vertical Source
-    // @Description: Position Vertical Source
-    // @Values: 0:None, 1:Baro, 2:RangeFinder, 3:GPS, 4:Beacon, 6:ExternalNav
-    // @User: Advanced
-    AP_GROUPINFO("1_POSZ", 3, AP_NavEKF_Source, _source_set[0].posz, (int8_t)AP_NavEKF_Source::SourceZ::BARO),
-
     // @Param: 1_VELZ
     // @DisplayName: Velocity Vertical Source
     // @Description: Velocity Vertical Source
@@ -72,13 +65,6 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Values: 0:None, 3:GPS, 4:Beacon, 5:OpticalFlow, 6:ExternalNav, 7:WheelEncoder
     // @User: Advanced
     AP_GROUPINFO("2_VELXY", 7, AP_NavEKF_Source, _source_set[1].velxy, (int8_t)AP_NavEKF_Source::SourceXY::NONE),
-
-    // @Param: 2_POSZ
-    // @DisplayName: Position Vertical Source (Secondary)
-    // @Description: Position Vertical Source (Secondary)
-    // @Values: 0:None, 1:Baro, 2:RangeFinder, 3:GPS, 4:Beacon, 6:ExternalNav
-    // @User: Advanced
-    AP_GROUPINFO("2_POSZ", 8, AP_NavEKF_Source, _source_set[1].posz, (int8_t)AP_NavEKF_Source::SourceZ::BARO),
 
     // @Param: 2_VELZ
     // @DisplayName: Velocity Vertical Source (Secondary)
@@ -109,13 +95,6 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Values: 0:None, 3:GPS, 4:Beacon, 5:OpticalFlow, 6:ExternalNav, 7:WheelEncoder
     // @User: Advanced
     AP_GROUPINFO("3_VELXY", 12, AP_NavEKF_Source, _source_set[2].velxy, (int8_t)AP_NavEKF_Source::SourceXY::NONE),
-
-    // @Param: 3_POSZ
-    // @DisplayName: Position Vertical Source (Tertiary)
-    // @Description: Position Vertical Source (Tertiary)
-    // @Values: 0:None, 1:Baro, 2:RangeFinder, 3:GPS, 4:Beacon, 6:ExternalNav
-    // @User: Advanced
-    AP_GROUPINFO("3_POSZ", 13, AP_NavEKF_Source, _source_set[2].posz, (int8_t)AP_NavEKF_Source::SourceZ::BARO),
 
     // @Param: 3_VELZ
     // @DisplayName: Velocity Vertical Source (Tertiary)
@@ -250,44 +229,6 @@ AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getPosZSource() const
 void AP_NavEKF_Source::align_inactive_sources()
 {
     // align visual odometry
-#if HAL_VISUALODOM_ENABLED
-
-    auto *visual_odom = AP::dal().visualodom();
-    if (!visual_odom || !visual_odom->enabled()) {
-        return;
-    }
-
-    // consider aligning XY position:
-    bool align_posxy = false;
-    if ((getPosXYSource() == SourceXY::GPS) ||
-        (getPosXYSource() == SourceXY::BEACON)) {
-        // only align position if active source is GPS or Beacon
-        for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if (_source_set[i].posxy == SourceXY::EXTNAV) {
-                // ExtNav could potentially be used, so align it
-                align_posxy = true;
-                break;
-            }
-        }
-    }
-
-    // consider aligning Z position:
-    bool align_posz = false;
-    if ((getPosZSource() == SourceZ::BARO) ||
-        (getPosZSource() == SourceZ::RANGEFINDER) ||
-        (getPosZSource() == SourceZ::GPS) ||
-        (getPosZSource() == SourceZ::BEACON)) {
-        // ExtNav is not the active source; we do not want to align active source!
-        for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if (_source_set[i].posz == SourceZ::EXTNAV) {
-                // ExtNav could potentially be used, so align it
-                align_posz = true;
-                break;
-            }
-        }
-    }
-    visual_odom->align_position_to_ahrs(align_posxy, align_posz);
-#endif
 }
 
 // sensor specific helper functions
@@ -325,7 +266,6 @@ void AP_NavEKF_Source::mark_configured()
 bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
     auto &dal = AP::dal();
-    bool baro_required = false;
     bool beacon_required = false;
     bool compass_required = false;
     bool gps_required = false;
@@ -384,8 +324,6 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
 
             // check posz
             switch ((SourceZ)_source_set[i].posz.get()) {
-            case SourceZ::BARO:
-                baro_required = true;
                 break;
             case SourceZ::RANGEFINDER:
                 rangefinder_required = true;
@@ -417,7 +355,6 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
             case SourceZ::EXTNAV:
                 visualodom_required = true;
                 break;
-            case SourceZ::BARO:
             case SourceZ::RANGEFINDER:
             case SourceZ::BEACON:
             default:
@@ -454,10 +391,6 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
 
     // check all required sensors are available
     const char* ekf_requires_msg = "EK3 sources require %s";
-    if (baro_required && (dal.baro().num_instances() == 0)) {
-        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "Baro");
-        return false;
-    }
 
     if (beacon_required) {
 #if AP_BEACON_ENABLED
@@ -493,10 +426,6 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
 
     if (visualodom_required) {
         bool visualodom_available = false;
-#if HAL_VISUALODOM_ENABLED
-        auto *vo = AP::dal().visualodom();
-        visualodom_available = vo && vo->enabled();
-#endif
         if (!visualodom_available) {
             hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "VisualOdom");
             return false;

@@ -363,10 +363,6 @@
 #define AP_SERIALLED_ENABLED 0
 #endif
 
-#ifndef AP_OPTICALFLOW_ENABLED
-#define AP_OPTICALFLOW_ENABLED 0
-#endif
-
 #ifndef HAL_BUTTON_ENABLED
 #define HAL_BUTTON_ENABLED 0
 #endif

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
-#include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 #ifndef HAL_BARO_WIND_COMP_ENABLED
@@ -71,10 +70,6 @@
 
 #ifndef AP_BARO_MS56XX_ENABLED
 #define AP_BARO_MS56XX_ENABLED AP_BARO_BACKEND_DEFAULT_ENABLED
-#endif
-
-#ifndef AP_BARO_MSP_ENABLED
-#define AP_BARO_MSP_ENABLED HAL_MSP_SENSORS_ENABLED
 #endif
 
 #ifndef AP_SIM_BARO_ENABLED

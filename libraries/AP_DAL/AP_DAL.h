@@ -1,13 +1,10 @@
 #pragma once
 
 #include "AP_DAL_InertialSensor.h"
-#include "AP_DAL_Baro.h"
 #include "AP_DAL_GPS.h"
 #include "AP_DAL_RangeFinder.h"
 #include "AP_DAL_Compass.h"
-#include "AP_DAL_Airspeed.h"
 #include "AP_DAL_Beacon.h"
-#include "AP_DAL_VisualOdom.h"
 
 #include "LogStructure.h"
 
@@ -128,23 +125,14 @@ public:
     void *malloc_type(size_t size, enum Memory_Type mem_type) const;
 
     AP_DAL_InertialSensor &ins() { return _ins; }
-    AP_DAL_Baro &baro() { return _baro; }
     AP_DAL_GPS &gps() { return _gps; }
 
     AP_DAL_RangeFinder *rangefinder() {
         return _rangefinder;
     }
-    AP_DAL_Airspeed *airspeed() {
-        return _airspeed;
-    }
 #if AP_BEACON_ENABLED
     AP_DAL_Beacon *beacon() {
         return _beacon;
-    }
-#endif
-#if HAL_VISUALODOM_ENABLED
-    AP_DAL_VisualOdom *visualodom() {
-        return _visualodom;
     }
 #endif
 
@@ -240,26 +228,6 @@ public:
         _ins.handle_message(msg);
     }
 
-    void handle_message(const log_RASH &msg) {
-        if (_airspeed == nullptr) {
-            _airspeed = new AP_DAL_Airspeed;
-        }
-        _airspeed->handle_message(msg);
-    }
-    void handle_message(const log_RASI &msg) {
-        if (_airspeed == nullptr) {
-            _airspeed = new AP_DAL_Airspeed;
-        }
-        _airspeed->handle_message(msg);
-    }
-
-    void handle_message(const log_RBRH &msg) {
-        _baro.handle_message(msg);
-    }
-    void handle_message(const log_RBRI &msg) {
-        _baro.handle_message(msg);
-    }
-
     void handle_message(const log_RRNH &msg) {
         if (_rangefinder == nullptr) {
             _rangefinder = new AP_DAL_RangeFinder;
@@ -307,12 +275,6 @@ public:
 #endif
     }
     void handle_message(const log_RVOH &msg) {
-#if HAL_VISUALODOM_ENABLED
-        if (_visualodom == nullptr) {
-            _visualodom = new AP_DAL_VisualOdom;
-        }
-        _visualodom->handle_message(msg);
-#endif
     }
     void handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_REPH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
@@ -356,16 +318,11 @@ private:
     uint32_t _last_imu_time_us;
 
     AP_DAL_InertialSensor _ins;
-    AP_DAL_Baro _baro;
     AP_DAL_GPS _gps;
     AP_DAL_RangeFinder *_rangefinder;
     AP_DAL_Compass _compass;
-    AP_DAL_Airspeed *_airspeed;
 #if AP_BEACON_ENABLED
     AP_DAL_Beacon *_beacon;
-#endif
-#if HAL_VISUALODOM_ENABLED
-    AP_DAL_VisualOdom *_visualodom;
 #endif
 
     static bool logging_started;

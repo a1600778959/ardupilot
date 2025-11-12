@@ -918,3 +918,7 @@ singleton AP_VisualOdom depends HAL_VISUALODOM_ENABLED
 singleton AP_VisualOdom rename visual_odom
 singleton AP_VisualOdom method healthy boolean
 singleton AP_VisualOdom method quality int8_t
+
+include AP_AOA/AP_AOA_Ultrasonic_ranging.h
+singleton AP_MultiDistanceSensor rename aoa
+singleton AP_MultiDistanceSensor method get_min_distance uint32_t

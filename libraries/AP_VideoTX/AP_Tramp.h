@@ -22,7 +22,6 @@
 #if AP_TRAMP_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_OSD/AP_OSD.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_VideoTX.h"

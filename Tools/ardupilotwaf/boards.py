@@ -656,7 +656,7 @@ class sitl(Board):
 
         env.BOARD_CLASS = "SITL"
 
-        cfg.define('AP_SIM_ENABLED', 1)
+        cfg.define('AP_SIM_ENABLED', 0)
         cfg.define('HAL_WITH_SPI', 1)
         cfg.define('HAL_WITH_RAMTRON', 1)
         cfg.define('AP_GENERATOR_RICHENPOWER_ENABLED', 1)

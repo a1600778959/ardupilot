@@ -26,7 +26,6 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include "SoftSerial.h"
-#include <AP_OSD/AP_OSD_config.h>
 
 #define CRSF_MAX_CHANNELS   24U      // Maximum number of channels from crsf datastream
 #define CRSF_FRAMELEN_MAX   64U      // maximum possible framelength
@@ -280,22 +279,10 @@ public:
         RF_MODE_UNKNOWN,
     };
 
-#if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
-    // These power levels are valid for both Crossfire and ELRS systems
-    static constexpr uint16_t tx_powers[] = { 0, 10, 25, 100, 500, 1000, 2000, 250, 50 };    
-#endif
-
     struct LinkStatus {
         int16_t rssi = -1;
         int16_t link_quality = -1;
         uint8_t rf_mode;
-#if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
-        // Add the extra data fields to be used by the OSD panels
-        int16_t tx_power = -1;
-        int8_t rssi_dbm = -1;
-        int8_t snr = INT8_MIN;
-        int8_t active_antenna = -1;
-#endif
     };
 
 

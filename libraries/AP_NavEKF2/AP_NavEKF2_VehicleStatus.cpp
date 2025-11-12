@@ -311,14 +311,6 @@ void NavEKF2_core::detectFlight()
         bool highAirSpd = false;
         bool largeHgtChange = false;
 
-        // trigger at 8 m/s airspeed
-        if (dal.airspeed_sensor_enabled()) {
-            const auto *airspeed = dal.airspeed();
-            if (airspeed->get_airspeed() * dal.get_EAS2TAS() > 10.0f) {
-                highAirSpd = true;
-            }
-        }
-
         // trigger at 10 m/s GPS velocity, but not if GPS is reporting bad velocity errors
         if (gndSpdSq > 100.0f && gpsSpdAccuracy < 1.0f) {
             highGndSpd = true;

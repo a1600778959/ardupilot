@@ -2,7 +2,6 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Frsky_Telem/AP_Frsky_config.h>
-#include <AP_OSD/AP_OSD_config.h>
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 
 #ifndef HAL_CRSF_TELEM_ENABLED
@@ -10,7 +9,7 @@
 #endif
 
 #ifndef HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
-#define HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED OSD_ENABLED && OSD_PARAM_ENABLED && HAL_CRSF_TELEM_ENABLED && BOARD_FLASH_SIZE > 1024
+#define HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED 0
 #endif
 
 #ifndef HAL_SPEKTRUM_TELEM_ENABLED

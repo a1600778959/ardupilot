@@ -43,10 +43,6 @@ public:
     virtual bool handle_script_msg(const RangeFinder::RangeFinder_State &state_arg) { return false; }
 #endif
 
-#if HAL_MSP_RANGEFINDER_ENABLED
-    virtual void handle_msp(const MSP::msp_rangefinder_data_message_t &pkt) { return; }
-#endif
-
     enum Rotation orientation() const { return (Rotation)params.orientation.get(); }
     float distance() const { return state.distance_m; }
     uint16_t distance_cm() const { return state.distance_m*100.0f; }

@@ -39,22 +39,17 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const AuxSw
     case AUX_FUNC::HOLD:
     case AUX_FUNC::LEARN_CRUISE:
     case AUX_FUNC::LOITER:
-    case AUX_FUNC::MAINSAIL:
     case AUX_FUNC::MANUAL:
     case AUX_FUNC::PITCH:
     case AUX_FUNC::ROLL:
     case AUX_FUNC::WALKING_HEIGHT:
     case AUX_FUNC::RTL:
-    case AUX_FUNC::SAILBOAT_TACK:
     case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
     case AUX_FUNC::SAVE_WP:
     case AUX_FUNC::SIMPLE:
     case AUX_FUNC::SMART_RTL:
     case AUX_FUNC::STEERING:
     case AUX_FUNC::WIND_VANE_DIR_OFSSET:
-        break;
-    case AUX_FUNC::SAILBOAT_MOTOR_3POS:
-        do_aux_function_sailboat_motor_3pos(ch_flag);
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -115,21 +110,6 @@ void RC_Channel_Rover::add_waypoint_for_current_loc()
     }
 }
 
-void RC_Channel_Rover::do_aux_function_sailboat_motor_3pos(const AuxSwitchPos ch_flag)
-{
-    switch (ch_flag) {
-    case AuxSwitchPos::HIGH:
-        rover.g2.sailboat.set_motor_state(Sailboat::UseMotor::USE_MOTOR_ALWAYS);
-        break;
-    case AuxSwitchPos::MIDDLE:
-        rover.g2.sailboat.set_motor_state(Sailboat::UseMotor::USE_MOTOR_ASSIST);
-        break;
-    case AuxSwitchPos::LOW:
-        rover.g2.sailboat.set_motor_state(Sailboat::UseMotor::USE_MOTOR_NEVER);
-        break;
-    }
-}
-
 bool RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch (ch_option) {
@@ -175,44 +155,14 @@ bool RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
         do_aux_function_change_mode(rover.mode_manual, ch_flag);
         break;
 
-    // set mode to Acro
-    case AUX_FUNC::ACRO:
-        do_aux_function_change_mode(rover.mode_acro, ch_flag);
-        break;
-
-    // set mode to Steering
-    case AUX_FUNC::STEERING:
-        do_aux_function_change_mode(rover.mode_steering, ch_flag);
-        break;
-
-    // set mode to Hold
-    case AUX_FUNC::HOLD:
-        do_aux_function_change_mode(rover.mode_hold, ch_flag);
-        break;
-
     // set mode to Auto
     case AUX_FUNC::AUTO:
         do_aux_function_change_mode(rover.mode_auto, ch_flag);
         break;
 
-    // set mode to RTL
-    case AUX_FUNC::RTL:
-        do_aux_function_change_mode(rover.mode_rtl, ch_flag);
-        break;
-
-    // set mode to SmartRTL
-    case AUX_FUNC::SMART_RTL:
-        do_aux_function_change_mode(rover.mode_smartrtl, ch_flag);
-        break;
-
     // set mode to Guided
     case AUX_FUNC::GUIDED:
         do_aux_function_change_mode(rover.mode_guided, ch_flag);
-        break;
-
-    // Set mode to LOITER
-    case AUX_FUNC::LOITER:
-        do_aux_function_change_mode(rover.mode_loiter, ch_flag);
         break;
 
 #if MODE_FOLLOW_ENABLED == ENABLED
@@ -222,38 +172,16 @@ bool RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
         break;
 #endif
 
-    // set mode to Simple
-    case AUX_FUNC::SIMPLE:
-        do_aux_function_change_mode(rover.mode_simple, ch_flag);
-        break;
-
-    case AUX_FUNC::CIRCLE:
-        do_aux_function_change_mode(rover.g2.mode_circle, ch_flag);
-        break;
-
-    // trigger sailboat tack
-    case AUX_FUNC::SAILBOAT_TACK:
-        // any switch movement interpreted as request to tack
-        rover.control_mode->handle_tack_request();
-        break;
-
-    // sailboat motor state 3pos
-    case AUX_FUNC::SAILBOAT_MOTOR_3POS:
-        do_aux_function_sailboat_motor_3pos(ch_flag);
-        break;
-
     // save steering trim
     case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
-        if (!rover.g2.motors.have_skid_steering() && rover.arming.is_armed() &&
-            (rover.control_mode != &rover.mode_loiter)
-            && (rover.control_mode != &rover.mode_hold) && ch_flag == AuxSwitchPos::HIGH) {
+        if (!rover.g2.motors.have_skid_steering() && rover.arming.is_armed()
+             && ch_flag == AuxSwitchPos::HIGH) {
             SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_steering);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Steering trim saved!");
         }
         break;
 
     // manual input, nothing to do
-    case AUX_FUNC::MAINSAIL:
     case AUX_FUNC::PITCH:
     case AUX_FUNC::ROLL:
     case AUX_FUNC::WALKING_HEIGHT:

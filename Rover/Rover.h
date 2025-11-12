@@ -36,17 +36,14 @@
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_OSD/AP_OSD.h>
 #include <AR_Motors/AP_MotorsUGV.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Mission/AP_Mission_ChangeDetector.h>
 #include <AR_WPNav/AR_WPNav_OA.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
-#include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_Follow/AP_Follow_config.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
-#include <FireFight/FireFight.h> //添加消防炮头文件
-#include <Fire_LED/Fire_LED.h>   //添加灯的头文件
+// #include <FireFight/FireFight.h> //添加消防炮头文件
+// #include <Fire_LED/Fire_LED.h>   //添加灯的头文件
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_ExternalControl_Rover.h"
@@ -62,7 +59,6 @@
 
 // Local modules
 #include "AP_Arming.h"
-#include "sailboat.h"
 #if ADVANCED_FAILSAFE == ENABLED
 #include "afs_rover.h"
 #endif
@@ -92,34 +88,20 @@ public:
 #endif
     friend class GCS_Rover;
     friend class Mode;
-    friend class ModeAcro;
     friend class ModeAuto;
-    friend class ModeCircle;
     friend class ModeGuided;
-    friend class ModeHold;
-    friend class ModeLoiter;
-    friend class ModeSteering;
     friend class ModeManual;
-    friend class ModeRTL;
-    friend class ModeSmartRTL;
 #if MODE_FOLLOW_ENABLED == ENABLED
     friend class ModeFollow;
-#endif
-    friend class ModeSimple;
-#if MODE_DOCK_ENABLED == ENABLED
-    friend class ModeDock;
 #endif
 
     friend class RC_Channel_Rover;
     friend class RC_Channels_Rover;
-
-    friend class Sailboat;
-
     Rover(void);
 
 private:
-    FireFight firefight_rover; // 添加消防炮对象
-    Fire_LED fire_led;   //添加灯对象
+    // FireFight firefight_rover; // 添加消防炮对象
+    // Fire_LED fire_led;   //添加灯对象
     // must be the first AP_Param variable declared to ensure its
     // constructor runs before the constructors of the other AP_Param
     // variables
@@ -162,13 +144,6 @@ private:
     AP_ExternalControl_Rover external_control;
 #endif
 
-#if AP_OPTICALFLOW_ENABLED
-    AP_OpticalFlow optflow;
-#endif
-
-#if OSD_ENABLED || OSD_PARAM_ENABLED
-    AP_OSD osd;
-#endif
 #if AC_PRECLAND_ENABLED
     AC_PrecLand precland;
 #endif
@@ -251,21 +226,11 @@ private:
     bool motor_test;
 
     ModeInitializing mode_initializing;
-    ModeHold mode_hold;
     ModeManual mode_manual;
-    ModeAcro mode_acro;
     ModeGuided mode_guided;
     ModeAuto mode_auto;
-    ModeLoiter mode_loiter;
-    ModeSteering mode_steering;
-    ModeRTL mode_rtl;
-    ModeSmartRTL mode_smartrtl;
 #if MODE_FOLLOW_ENABLED == ENABLED
     ModeFollow mode_follow;
-#endif
-    ModeSimple mode_simple;
-#if MODE_DOCK_ENABLED == ENABLED
-    ModeDock mode_dock;
 #endif
 
     // cruise throttle and speed learning
@@ -294,7 +259,7 @@ private:
     void nav_script_time_done(uint16_t id) override;
 #endif // AP_SCRIPTING_ENABLED
 
-    void FireFight_open(void);
+    // void FireFight_open(void);
 
     void stats_update();
     void ahrs_update();
@@ -304,9 +269,6 @@ private:
     void one_second_loop(void);
     void update_current_mode(void);
 
-    // balance_bot.cpp
-    void balancebot_pitch_control(float &throttle);
-    bool is_balancebot() const;
     // commands.cpp
     bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
@@ -346,7 +308,6 @@ private:
     void Log_Write_Depth();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Nav_Tuning();
-    void Log_Write_Sail();
     void Log_Write_Steering();
     void Log_Write_Throttle();
     void Log_Write_RC(void);
@@ -359,10 +320,6 @@ private:
 
     // Parameters.cpp
     void load_parameters(void) override;
-
-    // precision_landing.cpp
-    void init_precland();
-    void update_precland();
 
     // radio.cpp
     void set_control_channels(void) override;
@@ -403,7 +360,6 @@ private:
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
-    bool is_boat() const;
 
     // vehicle specific waypoint info helpers
     bool get_wp_distance_m(float &distance) const override;
@@ -447,9 +403,6 @@ public:
     // frame type
     uint8_t get_frame_type() const { return g2.frame_type.get(); }
     AP_WheelRateControl& get_wheel_rate_control() { return g2.wheel_rate_control; }
-
-    // Simple mode
-    float simple_sin_yaw;
 };
 
 extern Rover rover;

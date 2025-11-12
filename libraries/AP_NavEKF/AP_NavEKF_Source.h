@@ -27,7 +27,6 @@ public:
 
     enum class SourceZ : uint8_t {
         NONE = 0,
-        BARO = 1,
         RANGEFINDER = 2,
         GPS = 3,
         BEACON = 4,

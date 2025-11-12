@@ -32,7 +32,6 @@
 
 #include <AP_Param/AP_Param.h>
 #include <Filter/LowPassFilter.h>
-#include <AP_MSP/msp_protocol.h>
 #include "blheli_4way_protocol.h"
 
 #define AP_BLHELI_MAX_ESCS 8

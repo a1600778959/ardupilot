@@ -280,8 +280,7 @@ bool NavEKF2_core::resetHeightDatum(void)
     }
     // record the old height estimate
     ftype oldHgt = -stateStruct.position.z;
-    // reset the barometer so that it reads zero at the current height
-    dal.baro().update_calibration();
+
     // reset the height state
     stateStruct.position.z = 0.0f;
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
@@ -338,38 +337,11 @@ void NavEKF2_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
 // correct external navigation earth-frame position using sensor body-frame offset
 void NavEKF2_core::CorrectExtNavForSensorOffset(Vector3F &ext_position) const
 {
-#if HAL_VISUALODOM_ENABLED
-    const auto *visual_odom = dal.visualodom();
-    if (visual_odom == nullptr) {
-        return;
-    }
-    const Vector3F posOffsetBody = visual_odom->get_pos_offset().toftype() - accelPosOffset;
-    if (posOffsetBody.is_zero()) {
-        return;
-    }
-    Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
-    ext_position.x -= posOffsetEarth.x;
-    ext_position.y -= posOffsetEarth.y;
-    ext_position.z -= posOffsetEarth.z;
-#endif
 }
 
 // correct external navigation earth-frame velocity using sensor body-frame offset
 void NavEKF2_core::CorrectExtNavVelForSensorOffset(Vector3F &ext_velocity) const
 {
-#if HAL_VISUALODOM_ENABLED
-    const auto *visual_odom = dal.visualodom();
-    if (visual_odom == nullptr) {
-        return;
-    }
-    const Vector3F posOffsetBody = visual_odom->get_pos_offset().toftype() - accelPosOffset;
-    if (posOffsetBody.is_zero()) {
-        return;
-    }
-    // TODO use a filtered angular rate with a group delay that matches the sensor delay
-    const Vector3F angRate = imuDataDelayed.delAng * (1.0f/imuDataDelayed.delAngDT);
-    ext_velocity += get_vel_correction_for_sensor_offset(posOffsetBody, prevTnb, angRate);
-#endif
 }
 
 /********************************************************

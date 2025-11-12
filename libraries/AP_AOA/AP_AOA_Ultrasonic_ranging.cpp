@@ -4,6 +4,11 @@
 AP_MultiDistanceSensor::AP_MultiDistanceSensor()
 {
     current_sensor_idx = -1;
+    if (_singleton != nullptr)
+    {
+        AP_HAL::panic("Can only be one AC_AttitudeControl_Multi_6DoF");
+    }
+    _singleton = this;
 }
 
 void AP_MultiDistanceSensor::init()
@@ -59,7 +64,6 @@ void AP_MultiDistanceSensor::send_request()
     // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "start collect:%d", current_sensor_idx);
     // 发送请求
     _uart->write(request, 8);
-
 }
 
 void AP_MultiDistanceSensor::read_data(uint8_t *rep)
@@ -124,7 +128,8 @@ bool AP_MultiDistanceSensor::get_distance(uint8_t sensor_idx, float &dist) const
 }
 
 // 返回有效的超声波检测的距离最小值
-int AP_MultiDistanceSensor::get_min_distance(){
+int AP_MultiDistanceSensor::get_min_distance()
+{
     int min = 999;
     for (int i = 0; i < SENSOR_COUNT; i++)
     {
@@ -134,6 +139,14 @@ int AP_MultiDistanceSensor::get_min_distance(){
         }
     }
     return min;
+}
+
+AP_MultiDistanceSensor *AP_MultiDistanceSensor::_singleton;
+namespace AP {
+AP_MultiDistanceSensor *aoa()
+{
+    return AP_MultiDistanceSensor::get_singleton();
+}
 }
 
 // 任务调度注册

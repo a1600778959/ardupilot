@@ -164,7 +164,6 @@ public:
         ZIGZAG       =        60, // zigzag mode
         ZIGZAG_SaveWP =       61, // zigzag save waypoint
         COMPASS_LEARN =       62, // learn compass offsets
-        SAILBOAT_TACK =       63, // rover sailboat tack
         REVERSE_THROTTLE =    64, // reverse throttle input
         GPS_DISABLE  =        65, // disable GPS for testing
         RELAY5 =              66, // Relay5 pin on/off
@@ -175,7 +174,6 @@ public:
         FLOWHOLD  =           71, // flowhold mode
         CIRCLE    =           72, // circle mode
         DRIFT     =           73, // drift mode
-        SAILBOAT_MOTOR_3POS = 74, // Sailboat motoring 3pos
         SURFACE_TRACKING =    75, // Surface tracking upwards or downwards
         STANDBY  =            76, // Standby mode
         TAKEOFF   =           77, // takeoff
@@ -257,7 +255,6 @@ public:
         PITCH =              202, // pitch input
         THROTTLE =           203, // throttle pilot input
         YAW =                204, // yaw pilot input
-        MAINSAIL =           207, // mainsail input
         FLAP =               208, // flap input
         FWD_THR =            209, // VTOL manual forward throttle
         AIRBRAKE =           210, // manual airbrake control

@@ -10,7 +10,6 @@
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Mission/AP_Mission.h>
-#include <AP_OSD/AP_OSD.h>
 #include <AP_RPM/AP_RPM.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Motors/AP_Motors.h>
@@ -46,22 +45,10 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(gyro_fft, "FFT_",  2, AP_Vehicle, AP_GyroFFT),
 #endif
 
-#if HAL_VISUALODOM_ENABLED
-    // @Group: VISO
-    // @Path: ../AP_VisualOdom/AP_VisualOdom.cpp
-    AP_SUBGROUPINFO(visual_odom, "VISO",  3, AP_Vehicle, AP_VisualOdom),
-#endif
-
 #if AP_VIDEOTX_ENABLED
     // @Group: VTX_
     // @Path: ../AP_VideoTX/AP_VideoTX.cpp
     AP_SUBGROUPINFO(vtx, "VTX_",  4, AP_Vehicle, AP_VideoTX),
-#endif
-
-#if HAL_MSP_ENABLED
-    // @Group: MSP
-    // @Path: ../AP_MSP/AP_MSP.cpp
-    AP_SUBGROUPINFO(msp, "MSP",  5, AP_Vehicle, AP_MSP),
 #endif
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
@@ -86,12 +73,6 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Group: EFI
     // @Path: ../AP_EFI/AP_EFI.cpp
     AP_SUBGROUPINFO(efi, "EFI", 9, AP_Vehicle, AP_EFI),
-#endif
-
-#if AP_AIRSPEED_ENABLED
-    // @Group: ARSPD
-    // @Path: ../AP_Airspeed/AP_Airspeed.cpp
-    AP_SUBGROUPINFO(airspeed, "ARSPD", 10, AP_Vehicle, AP_Airspeed),
 #endif
 
     // @Group: CUST_ROT
@@ -332,11 +313,6 @@ void AP_Vehicle::setup()
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(scheduler_delay_callback, 5);
 
-#if HAL_MSP_ENABLED
-    // call MSP init before init_ardupilot to allow for MSP sensors
-    msp.init();
-#endif
-
 #if HAL_EXTERNAL_AHRS_ENABLED
     // call externalAHRS init before init_ardupilot to allow for external sensors
     externalAHRS.init();
@@ -348,18 +324,6 @@ void AP_Vehicle::setup()
 
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
-
-#if AP_AIRSPEED_ENABLED
-    airspeed.init();
-    if (airspeed.enabled()) {
-        airspeed.calibrate(true);
-    } 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    else {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No airspeed sensor");
-    }
-#endif
-#endif  // AP_AIRSPEED_ENABLED
 
 #if !APM_BUILD_TYPE(APM_BUILD_Replay)
     SRV_Channels::init();
@@ -374,10 +338,6 @@ void AP_Vehicle::setup()
 #endif
 #if HAL_HOTT_TELEM_ENABLED
     hott_telem.init();
-#endif
-#if HAL_VISUALODOM_ENABLED
-    // init library used for visual position estimation
-    visual_odom.init();
 #endif
 
 #if AP_VIDEOTX_ENABLED
@@ -512,9 +472,6 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_GYROFFT_ENABLED
     FAST_TASK_CLASS(AP_GyroFFT,    &vehicle.gyro_fft,       sample_gyros),
 #endif
-#if AP_AIRSPEED_ENABLED
-    SCHED_TASK_CLASS(AP_Airspeed,  &vehicle.airspeed,       update,                   10, 100, 41),    // NOTE: the priority number here should be right before Plane's calc_airspeed_errors
-#endif
 #if COMPASS_CAL_ENABLED
     SCHED_TASK_CLASS(Compass,      &vehicle.compass,        cal_update,     100, 200, 75),
 #endif
@@ -548,9 +505,6 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if AP_NETWORKING_ENABLED
     SCHED_TASK_CLASS(AP_Networking, &vehicle.networking,    update,                   10,  50, 238),
-#endif
-#if OSD_ENABLED
-    SCHED_TASK(publish_osd_info, 1, 10, 240),
 #endif
 #if AP_TEMPERATURE_SENSOR_ENABLED
     SCHED_TASK_CLASS(AP_TemperatureSensor, &vehicle.temperature_sensor, update,        5, 50, 242),
@@ -850,36 +804,6 @@ void AP_Vehicle::reboot(bool hold_in_bootloader)
 
     hal.scheduler->reboot(hold_in_bootloader);
 }
-
-#if OSD_ENABLED
-void AP_Vehicle::publish_osd_info()
-{
-#if AP_MISSION_ENABLED
-    AP_Mission *mission = AP::mission();
-    if (mission == nullptr) {
-        return;
-    }
-    AP_OSD *osd = AP::osd();
-    if (osd == nullptr) {
-        return;
-    }
-    AP_OSD::NavInfo nav_info;
-    if(!get_wp_distance_m(nav_info.wp_distance)) {
-        return;
-    }
-    float wp_bearing_deg;
-    if (!get_wp_bearing_deg(wp_bearing_deg)) {
-        return;
-    }
-    nav_info.wp_bearing = (int32_t)wp_bearing_deg * 100; // OSD expects cd
-    if (!get_wp_crosstrack_error_m(nav_info.wp_xtrack_error)) {
-        return;
-    }
-    nav_info.wp_number = mission->get_current_nav_index();
-    osd->set_nav_info(nav_info);
-#endif
-}
-#endif
 
 void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {

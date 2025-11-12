@@ -150,7 +150,6 @@ class GCS_MAVLINK_InProgress
 public:
     enum class Type {
         NONE,
-        AIRSPEED_CAL,
         SD_FORMAT,
     };
 

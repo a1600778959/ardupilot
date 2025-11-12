@@ -1,6 +1,7 @@
 // File: libraries/AP_Modbus/AP_MultiDistanceSensor.h
 #pragma once
 
+#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 #include <GCS_MAVLink/GCS.h>
@@ -10,11 +11,12 @@
 #define PROCESSED_REG 0x0001   // 处理值寄存器地址
 #define MODBUS_TIMEOUT_MS 100  // 单次通信超时
 #define MODBUS_RESPONSE_SIZE 7 // 响应帧长度
-#define MODBUS_REQUEST_SIZE 8 // 发送帧长度
+#define MODBUS_REQUEST_SIZE 8  // 发送帧长度
 
 class AP_MultiDistanceSensor
 {
 public:
+    CLASS_NO_COPY(AP_MultiDistanceSensor);
     AP_MultiDistanceSensor();
     void init();
     void update();
@@ -23,6 +25,8 @@ public:
     int get_min_distance();
     void send_request();
     void read_data(uint8_t *response);
+    // static *get_singleton();
+    static AP_MultiDistanceSensor *get_singleton() { return _singleton; }
 
 private:
     struct SensorData
@@ -38,5 +42,10 @@ private:
     bool is_init = false;
     uint8_t response[MODBUS_RESPONSE_SIZE] = {0};
     SensorData sensors[SENSOR_COUNT];
-     int current_sensor_idx;
+    int current_sensor_idx;
+    static AP_MultiDistanceSensor *_singleton;
+};
+
+namespace AP {
+    AP_MultiDistanceSensor *aoa();
 };

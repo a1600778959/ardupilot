@@ -33,7 +33,6 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_Arming/AP_Arming.h>
-#include <AP_OSD/AP_OSD.h>
 
 #define RUNCAM_MAX_PACKET_SIZE               64
 #define RUNCAM_DEFAULT_BUTTON_PRESS_DELAY   300
@@ -338,21 +337,9 @@ private:
 
     // disable the OSD display
     void disable_osd() {
-#if OSD_ENABLED
-        AP_OSD* osd = AP::osd();
-        if (osd != nullptr) {
-            osd->disable();
-        }
-#endif
     }
     // enable the OSD display
     void enable_osd() {
-#if OSD_ENABLED
-        AP_OSD* osd = AP::osd();
-        if (osd != nullptr) {
-            osd->enable();
-        }
-#endif
     }
 
     // OSD update loop

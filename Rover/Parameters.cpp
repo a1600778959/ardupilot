@@ -381,18 +381,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
 
-#if OSD_ENABLED || OSD_PARAM_ENABLED
-    // @Group: OSD
-    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
-    GOBJECT(osd, "OSD", AP_OSD),
-#endif
-
-#if AP_OPTICALFLOW_ENABLED
-    // @Group: FLOW
-    // @Path: ../libraries/AP_OpticalFlow/AP_OpticalFlow.cpp
-    GOBJECT(optflow,   "FLOW", AP_OpticalFlow),
-#endif
-
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
@@ -435,8 +423,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
     AP_SUBGROUPINFO(beacon, "BCN", 6, ParametersG2, AP_Beacon),
 #endif
-
-    // 7 was used by AP_VisualOdometry
 
     // @Group: MOT_
     // @Path: ../libraries/AR_Motors/AP_MotorsUGV.cpp
@@ -502,15 +488,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // 20 was PIVOT_TURN_RATE and should not be re-used
 
-    // @Param: BAL_PITCH_MAX
-    // @DisplayName: BalanceBot Maximum Pitch
-    // @Description: Pitch angle in degrees at 100% throttle
-    // @Units: deg
-    // @Range: 0 15
-    // @Increment: 0.1
-    // @User: Standard
-    AP_GROUPINFO("BAL_PITCH_MAX", 21, ParametersG2, bal_pitch_max, 10),
-
     // @Param: CRASH_ANGLE
     // @DisplayName: Crash Angle
     // @Description: Pitch/Roll angle limit in degrees for crash check. Zero disables check
@@ -574,10 +551,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LOIT_RADIUS", 30, ParametersG2, loit_radius, 2),
 
-    // @Group: WNDVN_
-    // @Path: ../libraries/AP_WindVane/AP_WindVane.cpp
-    AP_SUBGROUPINFO(windvane, "WNDVN_", 31, ParametersG2, AP_WindVane),
-
     // 32 to 36 were old sailboat params
 
     // 37 was airspeed
@@ -588,21 +561,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Values: 0:Hold in Auto Mode,1:Loiter in Auto Mode,2:Acro Mode,3:Manual Mode
     // @User: Standard
     AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
-
-#if AP_GRIPPER_ENABLED
-    // @Group: GRIP_
-    // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
-    AP_SUBGROUPINFO(gripper, "GRIP_", 39, ParametersG2, AP_Gripper),
-#endif
-
-    // @Param: BAL_PITCH_TRIM
-    // @DisplayName: Balance Bot pitch trim angle
-    // @Description: Balance Bot pitch trim for balancing. This offsets the tilt of the center of mass.
-    // @Units: deg
-    // @Range: -2 2
-    // @Increment: 0.1
-    // @User: Standard
-    AP_GROUPINFO("BAL_PITCH_TRIM", 40, ParametersG2, bal_pitch_trim, 0),
 
 #if AP_SCRIPTING_ENABLED
     // @Group: SCR_
@@ -620,10 +578,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: WP_
     // @Path: ../libraries/AR_WPNav/AR_WPNav.cpp
     AP_SUBGROUPINFO(wp_nav, "WP_", 43, ParametersG2, AR_WPNav_OA),
-
-    // @Group: SAIL_
-    // @Path: sailboat.cpp
-    AP_SUBGROUPINFO(sailboat, "SAIL_", 44, ParametersG2, Sailboat),
 
     // @Group: OA_
     // @Path: ../libraries/AC_Avoidance/AP_OAPathPlanner.cpp
@@ -678,12 +632,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MANUAL_OPTIONS", 53, ParametersG2, manual_options, 0),
 
-#if MODE_DOCK_ENABLED == ENABLED
-    // @Group: DOCK
-    // @Path: mode_dock.cpp
-    AP_SUBGROUPPTR(mode_dock_ptr, "DOCK", 54, ParametersG2, ModeDock),
-#endif
-
     // @Param: MANUAL_STR_EXPO
     // @DisplayName: Manual Steering Expo
     // @Description: Manual steering expo to allow faster steering when stick at edges
@@ -700,10 +648,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("FS_GCS_TIMEOUT", 56, ParametersG2, fs_gcs_timeout, 5),
-
-    // @Group: CIRC
-    // @Path: mode_circle.cpp
-    AP_SUBGROUPINFO(mode_circle, "CIRC", 57, ParametersG2, ModeCircle),
 
     AP_GROUPEND
 };
@@ -750,9 +694,6 @@ ParametersG2::ParametersG2(void)
     wheel_rate_control(wheel_encoder),
     attitude_control(),
     smart_rtl(),
-#if MODE_DOCK_ENABLED == ENABLED
-    mode_dock_ptr(&rover.mode_dock),
-#endif
 #if HAL_PROXIMITY_ENABLED
     proximity(),
 #endif
@@ -760,10 +701,8 @@ ParametersG2::ParametersG2(void)
 #if AP_FOLLOW_ENABLED
     follow(),
 #endif
-    windvane(),
     pos_control(attitude_control),
-    wp_nav(attitude_control, pos_control),
-    sailboat()
+    wp_nav(attitude_control, pos_control)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -799,11 +738,6 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_g2,               299,      AP_PARAM_INT16,  "WP_PIVOT_ANGLE" },
     { Parameters::k_param_g2,               363,      AP_PARAM_INT16,  "WP_PIVOT_RATE" },
     { Parameters::k_param_g2,               491,      AP_PARAM_FLOAT,  "WP_PIVOT_DELAY" },
-    { Parameters::k_param_g2,                32,      AP_PARAM_FLOAT,  "SAIL_ANGLE_MIN" },
-    { Parameters::k_param_g2,                33,      AP_PARAM_FLOAT,  "SAIL_ANGLE_MAX" },
-    { Parameters::k_param_g2,                34,      AP_PARAM_FLOAT,  "SAIL_ANGLE_IDEAL" },
-    { Parameters::k_param_g2,                35,      AP_PARAM_FLOAT,  "SAIL_HEEL_MAX" },
-    { Parameters::k_param_g2,                36,      AP_PARAM_FLOAT,  "SAIL_NO_GO_ANGLE" },
     { Parameters::k_param_arming,             2,     AP_PARAM_INT16,  "ARMING_CHECK" },
     { Parameters::k_param_turn_max_g_old,     0,     AP_PARAM_FLOAT,  "ATC_TURN_MAX_G" },
     { Parameters::k_param_g2,                82,     AP_PARAM_INT8 , "PRX1_TYPE" },
@@ -846,10 +780,6 @@ void Rover::load_parameters(void)
 
     SRV_Channels::set_default_function(CH_1, SRV_Channel::k_steering);
     SRV_Channels::set_default_function(CH_3, SRV_Channel::k_throttle);
-
-    if (is_balancebot()) {
-        g2.crash_angle.set_default(30);
-    }
 
     SRV_Channels::upgrade_parameters();
     hal.console->printf("load_all took %uus\n", unsigned(micros() - before));
@@ -897,19 +827,12 @@ void Rover::load_parameters(void)
                                                       AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED);
 #endif
 
-#if AP_AIRSPEED_ENABLED | AP_AIS_ENABLED | AP_FENCE_ENABLED
+#if AP_AIS_ENABLED | AP_FENCE_ENABLED
     // Find G2's Top Level Key
     AP_Param::ConversionInfo info;
     if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
         return;
     }
-#endif
-
-// PARAMETER_CONVERSION - Added: JAN-2022
-#if AP_AIRSPEED_ENABLED
-    const uint16_t old_index = 37;          // Old parameter index in the tree
-    const uint16_t old_top_element = 4069;  // Old group element in the tree for the first subgroup element
-    AP_Param::convert_class(info.old_key, &airspeed, airspeed.var_info, old_index, old_top_element, false);
 #endif
 
 // PARAMETER_CONVERSION - Added: MAR-2022

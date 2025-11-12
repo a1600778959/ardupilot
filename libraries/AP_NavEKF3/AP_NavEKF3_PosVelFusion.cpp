@@ -329,8 +329,7 @@ bool NavEKF3_core::resetHeightDatum(void)
     }
     // record the old height estimate
     ftype oldHgt = -stateStruct.position.z;
-    // reset the barometer so that it reads zero at the current height
-    dal.baro().update_calibration();
+
     // reset the height state
     stateStruct.position.z = 0.0f;
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
@@ -396,20 +395,6 @@ void NavEKF3_core::CorrectExtNavForSensorOffset(ext_nav_elements &ext_nav_data)
     // external nav data is against the public_origin, so convert to offset from EKF_origin
     ext_nav_data.pos.xy() += EKF_origin.get_distance_NE_ftype(public_origin);
 
-#if HAL_VISUALODOM_ENABLED
-    const auto *visual_odom = dal.visualodom();
-    if (visual_odom == nullptr) {
-        return;
-    }
-    const Vector3F posOffsetBody = visual_odom->get_pos_offset().toftype() - accelPosOffset;
-    if (posOffsetBody.is_zero()) {
-        return;
-    }
-    Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
-    ext_nav_data.pos.x -= posOffsetEarth.x;
-    ext_nav_data.pos.y -= posOffsetEarth.y;
-    ext_nav_data.pos.z -= posOffsetEarth.z;
-#endif
 }
 
 // correct external navigation earth-frame velocity using sensor body-frame offset
@@ -421,19 +406,6 @@ void NavEKF3_core::CorrectExtNavVelForSensorOffset(ext_nav_vel_elements &ext_nav
     }
     ext_nav_vel_data.corrected = true;
 
-#if HAL_VISUALODOM_ENABLED
-    const auto *visual_odom = dal.visualodom();
-    if (visual_odom == nullptr) {
-        return;
-    }
-    const Vector3F posOffsetBody = visual_odom->get_pos_offset().toftype() - accelPosOffset;
-    if (posOffsetBody.is_zero()) {
-        return;
-    }
-    // TODO use a filtered angular rate with a group delay that matches the sensor delay
-    const Vector3F angRate = imuDataDelayed.delAng * (1.0/imuDataDelayed.delAngDT);
-    ext_nav_vel_data.vel += get_vel_correction_for_sensor_offset(posOffsetBody, prevTnb, angRate);
-#endif
 }
 
 // calculate velocity variance helper function
@@ -964,7 +936,7 @@ void NavEKF3_core::FuseVelPosNED()
                     const ftype gndMaxBaroErr = MAX(frontend->_baroGndEffectDeadZone, 0.0);
                     const ftype gndBaroInnovFloor = -0.5;
 
-                    if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
+                    if ((dal.get_touchdown_expected() || dal.get_takeoff_expected())) {
                         // when baro positive pressure error due to ground effect is expected,
                         // floor the barometer innovation at gndBaroInnovFloor
                         // constrain the correction between 0 and gndBaroInnovFloor+gndMaxBaroErr
@@ -1157,7 +1129,7 @@ void NavEKF3_core::selectHeightForFusion()
     } else if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh) {
         // user has specified the range finder as a primary height source
         activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
-    } else if ((frontend->_useRngSwHgt > 0) && ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) || (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS)) && _rng && rangeFinderDataIsFresh) {
+    } else if ((frontend->_useRngSwHgt > 0) && ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS)) && _rng && rangeFinderDataIsFresh) {
         // determine if we are above or below the height switch region
         ftype rangeMaxUse = 1e-4 * (ftype)_rng->max_distance_cm_orient(ROTATION_PITCH_270) * (ftype)frontend->_useRngSwHgt;
         bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
@@ -1186,17 +1158,13 @@ void NavEKF3_core::selectHeightForFusion()
         */
         if ((aboveUpperSwHgt || dontTrustTerrain) && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
             // cannot trust terrain or range finder so stop using range finder height
-            if (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) {
-                activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
-            } else if (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) {
+            if (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) {
                 activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
             }
         } else if (belowLowerSwHgt && trustTerrain && (prevTnb.c.z >= 0.7f)) {
             // reliable terrain and range finder so start using range finder height
             activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
         }
-    } else if (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) {
-        activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
     } else if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {
         activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
 #if EK3_FEATURE_BEACON_FUSION
@@ -1226,16 +1194,13 @@ void NavEKF3_core::selectHeightForFusion()
     bool lostExtNavHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV) && !extNavDataIsFresh);
     fallback_to_baro |= lostExtNavHgt;
 #endif
-    if (fallback_to_baro) {
-        activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
-    }
 
     // if there is new baro data to fuse, calculate filtered baro data required by other processes
     if (baroDataToFuse) {
         // calculate offset to baro data that enables us to switch to Baro height use during operation
-        if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO) {
-            calcFiltBaroOffset();
-        }
+
+        calcFiltBaroOffset();
+        
         // filtered baro data used to provide a reference for takeoff
         // it is is reset to last height measurement on disarming in performArmingChecks()
         if (!dal.get_takeoff_expected()) {
@@ -1250,7 +1215,7 @@ void NavEKF3_core::selectHeightForFusion()
     // combined local NED position height and origin height remains consistent with the GPS altitude
     // This also enables the GPS height to be used as a backup height source
     if (gpsDataToFuse &&
-            (((frontend->_originHgtMode & (1 << 0)) && (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO)) ||
+            (((frontend->_originHgtMode & (1 << 0))) ||
             ((frontend->_originHgtMode & (1 << 1)) && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)))
             ) {
             correctEkfOriginHeight();
@@ -1301,7 +1266,7 @@ void NavEKF3_core::selectHeightForFusion()
         } else {
             posDownObsNoise = sq(constrain_ftype(1.5f * frontend->_gpsHorizPosNoise, 0.1f, 10.0f));
         }
-    } else if (baroDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO)) {
+    } else if (baroDataToFuse) {
         // using Baro data
         hgtMea = baroDataDelayed.hgt - baroHgtOffset;
         // correct sensor so that local position height adjusts to match GPS

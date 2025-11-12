@@ -30,20 +30,16 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Declination/AP_Declination.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Terrain/AP_Terrain.h>
-#include <AP_ADSB/AP_ADSB.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_Camera/AP_RunCam.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_RCMapper/AP_RCMapper.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Parachute/AP_Parachute.h>
-#include <AP_OSD/AP_OSD.h>
 #include <AP_Relay/AP_Relay.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Button/AP_Button.h>
@@ -331,27 +327,6 @@ bool AP_Arming::barometer_checks(bool report)
 
     return true;
 }
-
-#if AP_AIRSPEED_ENABLED
-bool AP_Arming::airspeed_checks(bool report)
-{
-    if (check_enabled(ARMING_CHECK_AIRSPEED)) {
-        const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-        if (airspeed == nullptr) {
-            // not an airspeed capable vehicle
-            return true;
-        }
-        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-            if (airspeed->enabled(i) && airspeed->use(i) && !airspeed->healthy(i)) {
-                check_failed(ARMING_CHECK_AIRSPEED, report, "Airspeed %d not healthy", i + 1);
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-#endif  // AP_AIRSPEED_ENABLED
 
 #if HAL_LOGGING_ENABLED
 bool AP_Arming::logging_checks(bool report)
@@ -1112,13 +1087,6 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
-#if HAL_ADSB_ENABLED
-        AP_ADSB *adsb = AP::ADSB();
-        if ((adsb != nullptr) && adsb->enabled() && adsb->init_failed()) {
-            check_failed(ARMING_CHECK_SYSTEM, report, "ADSB out of memory");
-            return false;
-        }
-#endif
     }
     if (AP::internalerror().errors() != 0) {
         AP::internalerror().errors_as_string((uint8_t*)buffer, ARRAY_SIZE(buffer));
@@ -1352,26 +1320,6 @@ bool AP_Arming::camera_checks(bool display_failure)
     return true;
 }
 #endif  // HAL_RUNCAM_ENABLED
-
-#if OSD_ENABLED
-bool AP_Arming::osd_checks(bool display_failure) const
-{
-    if (check_enabled(ARMING_CHECK_OSD)) {
-        // if no OSD then pass
-        const AP_OSD *osd = AP::osd();
-        if (osd == nullptr) {
-            return true;
-        }
-        // do osd checks for configuration
-        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-        if (!osd->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-            check_failed(ARMING_CHECK_OSD, display_failure, "%s", fail_msg);
-            return false;
-        }
-   }
-    return true;
-}
-#endif  // OSD_ENABLED
 
 #if HAL_MOUNT_ENABLED
 bool AP_Arming::mount_checks(bool display_failure) const
@@ -1648,18 +1596,14 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if HAL_RUNCAM_ENABLED
         &  camera_checks(report)
 #endif
-#if OSD_ENABLED
-        &  osd_checks(report)
-#endif
+
 #if HAL_MOUNT_ENABLED
         &  mount_checks(report)
 #endif
 #if AP_FETTEC_ONEWIRE_ENABLED
         &  fettec_checks(report)
 #endif
-#if HAL_VISUALODOM_ENABLED
-        &  visodom_checks(report)
-#endif
+
 #if AP_ARMING_AUX_AUTH_ENABLED
         &  aux_auth_checks(report)
 #endif
@@ -1933,27 +1877,6 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
     return ret;
 }
 #endif  // AP_RC_CHANNEL_ENABLED
-
-#if HAL_VISUALODOM_ENABLED
-// check visual odometry is working
-bool AP_Arming::visodom_checks(bool display_failure) const
-{
-    if (!check_enabled(ARMING_CHECK_VISION)) {
-        return true;
-    }
-
-    AP_VisualOdom *visual_odom = AP::visualodom();
-    if (visual_odom != nullptr) {
-        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-        if (!visual_odom->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-            check_failed(ARMING_CHECK_VISION, display_failure, "VisOdom: %s", fail_msg);
-            return false;
-        }
-    }
-
-    return true;
-}
-#endif
 
 #if AP_RC_CHANNEL_ENABLED
 // check disarm switch is asserted

@@ -65,8 +65,6 @@ public:
         SerialProtocol_CRSF = 29,
         SerialProtocol_Generator = 30,
         SerialProtocol_Winch = 31,
-        SerialProtocol_MSP = 32,
-        SerialProtocol_DJI_FPV = 33,
         SerialProtocol_AirSpeed = 34,
         SerialProtocol_ADSB = 35,
         SerialProtocol_AHRS = 36,

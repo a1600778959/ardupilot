@@ -884,28 +884,9 @@ bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
 // if we have an estimate
 bool AP_AHRS::_airspeed_estimate(float &airspeed_ret, AirspeedEstimateType &airspeed_estimate_type) const
 {
-#if AP_AHRS_DCM_ENABLED || (AP_AIRSPEED_ENABLED && AP_GPS_ENABLED)
+#if AP_AHRS_DCM_ENABLED ||  AP_GPS_ENABLED
     const uint8_t idx = get_active_airspeed_index();
 #endif
-#if AP_AIRSPEED_ENABLED && AP_GPS_ENABLED
-    if (_should_use_airspeed_sensor(idx)) {
-        airspeed_ret = AP::airspeed()->get_airspeed(idx);
-
-        if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-            // constrain the airspeed by the ground speed
-            // and AHRS_WIND_MAX
-            const float gnd_speed = AP::gps().ground_speed();
-            float true_airspeed = airspeed_ret * get_EAS2TAS();
-            true_airspeed = constrain_float(true_airspeed,
-                                            gnd_speed - _wind_max,
-                                            gnd_speed + _wind_max);
-            airspeed_ret = true_airspeed / get_EAS2TAS();
-        }
-        airspeed_estimate_type = AirspeedEstimateType::AIRSPEED_SENSOR;
-        return true;
-    }
-#endif
-
     if (!get_wind_estimation_enabled()) {
         airspeed_estimate_type = AirspeedEstimateType::NO_NEW_ESTIMATE;
         return false;
@@ -3151,28 +3132,7 @@ bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vecto
 //get the index of the active airspeed sensor, wrt the primary core
 uint8_t AP_AHRS::get_active_airspeed_index() const
 {
-#if AP_AIRSPEED_ENABLED
-    const auto *airspeed = AP::airspeed();
-    if (airspeed == nullptr) {
-        return 0;
-    }
-
-// we only have affinity for EKF3 as of now
-#if HAL_NAVEKF3_AVAILABLE
-    if (active_EKF_type() == EKFType::THREE) {
-        uint8_t ret = EKF3.getActiveAirspeed();
-        if (ret != 255 && airspeed->healthy(ret) && airspeed->use(ret)) {
-            return ret;
-        }
-    }
-#endif
-
-    // for the rest, let the primary airspeed sensor be used
-    return airspeed->get_primary();
-#else
-
     return 0;
-#endif // AP_AIRSPEED_ENABLED
 }
 
 // get the index of the current primary IMU

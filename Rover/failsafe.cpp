@@ -66,8 +66,8 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
     if ((failsafe.triggered == 0) &&
         (failsafe.bits != 0) &&
         (millis() - failsafe.start_time > g.fs_timeout * 1000) &&
-        (control_mode != &mode_rtl) &&
-        ((control_mode != &mode_hold || (g2.fs_options & (uint32_t)Failsafe_Options::Failsafe_Option_Active_In_Hold)))) {
+        (control_mode != &mode_manual) &&
+        ((g2.fs_options & (uint32_t)Failsafe_Options::Failsafe_Option_Active_In_Hold))) {
         failsafe.triggered = failsafe.bits;
         gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe", type_str);
 
@@ -84,21 +84,21 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
             case FailsafeAction::None:
                 break;
             case FailsafeAction::SmartRTL:
-                if (set_mode(mode_smartrtl, ModeReason::BATTERY_FAILSAFE)) {
+                if (set_mode(mode_manual, ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
                 FALLTHROUGH;
             case FailsafeAction::RTL:
-                if (set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE)) {
+                if (set_mode(mode_manual, ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
                 FALLTHROUGH;
             case FailsafeAction::Hold:
-                set_mode(mode_hold, ModeReason::BATTERY_FAILSAFE);
+                set_mode(mode_manual, ModeReason::BATTERY_FAILSAFE);
                 break;
             case FailsafeAction::SmartRTL_Hold:
-                if (!set_mode(mode_smartrtl, ModeReason::FAILSAFE)) {
-                    set_mode(mode_hold, ModeReason::FAILSAFE);
+                if (!set_mode(mode_manual, ModeReason::FAILSAFE)) {
+                    set_mode(mode_manual, ModeReason::FAILSAFE);
                 }
                 break;
             case FailsafeAction::Terminate:
@@ -115,21 +115,21 @@ void Rover::handle_battery_failsafe(const char* type_str, const int8_t action)
             case FailsafeAction::None:
                 break;
             case FailsafeAction::SmartRTL:
-                if (set_mode(mode_smartrtl, ModeReason::BATTERY_FAILSAFE)) {
+                if (set_mode(mode_manual, ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
                 FALLTHROUGH;
             case FailsafeAction::RTL:
-                if (set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE)) {
+                if (set_mode(mode_manual, ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
                 FALLTHROUGH;
             case FailsafeAction::Hold:
-                set_mode(mode_hold, ModeReason::BATTERY_FAILSAFE);
+                set_mode(mode_manual, ModeReason::BATTERY_FAILSAFE);
                 break;
             case FailsafeAction::SmartRTL_Hold:
-                if (!set_mode(mode_smartrtl, ModeReason::BATTERY_FAILSAFE)) {
-                    set_mode(mode_hold, ModeReason::BATTERY_FAILSAFE);
+                if (!set_mode(mode_manual, ModeReason::BATTERY_FAILSAFE)) {
+                    set_mode(mode_manual, ModeReason::BATTERY_FAILSAFE);
                 }
                 break;
             case FailsafeAction::Terminate:

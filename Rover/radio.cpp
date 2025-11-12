@@ -34,9 +34,6 @@ void Rover::set_control_channels(void)
         channel_walking_height->set_default_dead_zone(30);
     }    
 
-    // sailboat rc input init
-    g2.sailboat.init_rc_in();
-
     // Allow to reconfigure output when not armed
     if (!arming.is_armed()) {
         g2.motors.setup_servo_output();

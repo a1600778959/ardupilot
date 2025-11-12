@@ -336,14 +336,6 @@ void NavEKF3_core::detectFlight()
         bool highAirSpd = false;
         bool largeHgtChange = false;
 
-        // trigger at 8 m/s airspeed
-        const auto *arsp = dal.airspeed();
-        if (arsp && arsp->healthy(selected_airspeed) && arsp->use(selected_airspeed)) {
-            if (arsp->get_airspeed(selected_airspeed) * dal.get_EAS2TAS() > 10.0f) {
-                highAirSpd = true;
-            }
-        }
-
         // trigger on ground speed
         const ftype gndSpdThresholdSq = sq(5.0f);
         if (gndSpdSq > gndSpdThresholdSq + sq(gpsSpdAccuracy)) {

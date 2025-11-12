@@ -3,12 +3,13 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_AOA/AP_AOA_Ultrasonic_ranging.h>
 
 class AP_MotorsUGV {
 public:
     // Constructor
     AP_MotorsUGV(AP_WheelRateControl& rate_controller);
-
+    AP_MultiDistanceSensor aoa_sensor;
     // singleton support
     static AP_MotorsUGV    *get_singleton(void) { return _singleton; }
 
@@ -59,21 +60,9 @@ public:
     float get_pitch() const { return _pitch; }
     void set_pitch(float pitch);
 
-    // get or set walking_height as a value from -1 to 1
-    float get_walking_height() const { return _walking_height; }
-    void set_walking_height(float walking_height);
-
     // get or set lateral input as a value from -100 to +100
     float get_lateral() const { return _lateral; }
     void set_lateral(float lateral);
-
-    // set or get mainsail input as a value from 0 to 100
-    void set_mainsail(float mainsail);
-    float get_mainsail() const { return _mainsail; }
-
-    // set or get wingsail input as a value from -100 to 100
-    void set_wingsail(float wingsail);
-    float get_wingsail() const { return _wingsail; }
 
     // set or get mast rotation input as a value from -100 to 100
     void set_mast_rotation(float mast_rotation);

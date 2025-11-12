@@ -8,9 +8,6 @@
 
 MAV_TYPE GCS_Rover::frame_type() const
 {
-    if (rover.is_boat()) {
-        return MAV_TYPE_SURFACE_BOAT;
-    }
     return MAV_TYPE_GROUND_ROVER;
 }
 
@@ -64,7 +61,7 @@ MAV_STATE GCS_MAVLINK_Rover::vehicle_system_status() const
     if (rover.control_mode == &rover.mode_initializing) {
         return MAV_STATE_CALIBRATING;
     }
-    if (rover.control_mode == &rover.mode_hold) {
+    if (rover.control_mode == &rover.mode_manual) {
         return MAV_STATE_STANDBY;
     }
 
@@ -375,23 +372,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_wheel_encoder_distance(chan);
         break;
 
-    case MSG_WIND:
-        CHECK_PAYLOAD_SIZE(WIND);
-        rover.g2.windvane.send_wind(chan);
-        break;
-
-    case MSG_ADSB_VEHICLE: {
-        AP_OADatabase *oadb = AP::oadatabase();
-        if (oadb != nullptr) {
-            CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
-            uint16_t interval_ms = 0;
-            if (get_ap_message_interval(id, interval_ms)) {
-                oadb->send_adsb_vehicle(chan, interval_ms);
-            }
-        }
-        break;
-    }
-
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
@@ -567,7 +547,6 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
-    MSG_WIND,
 #if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
 #endif
@@ -578,9 +557,6 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 #endif
 #if HAL_MOUNT_ENABLED
     MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
-#endif
-#if AP_OPTICALFLOW_ENABLED
-    MSG_OPTICAL_FLOW,
 #endif
 #if COMPASS_CAL_ENABLED
     MSG_MAG_CAL_REPORT,
@@ -602,12 +578,6 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
 };
-static const ap_message STREAM_ADSB_msgs[] = {
-    MSG_ADSB_VEHICLE,
-#if AP_AIS_ENABLED
-    MSG_AIS_VESSEL,
-#endif
-};
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
@@ -618,7 +588,6 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_EXTRA1),
     MAV_STREAM_ENTRY(STREAM_EXTRA2),
     MAV_STREAM_ENTRY(STREAM_EXTRA3),
-    MAV_STREAM_ENTRY(STREAM_ADSB),
     MAV_STREAM_ENTRY(STREAM_PARAMS),
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
@@ -632,25 +601,6 @@ bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 
     // make any new wp uploaded instant (in case we are already in Guided mode)
     return rover.mode_guided.set_desired_location(cmd.content.location);
-}
-
-MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
-{
-    if (packet.y == 1) {
-        if (rover.g2.windvane.start_direction_calibration()) {
-            return MAV_RESULT_ACCEPTED;
-        } else {
-            return MAV_RESULT_FAILED;
-        }
-    } else if (packet.y == 2) {
-        if (rover.g2.windvane.start_speed_calibration()) {
-            return MAV_RESULT_ACCEPTED;
-        } else {
-            return MAV_RESULT_FAILED;
-        }
-    }
-
-    return GCS_MAVLINK::_handle_command_preflight_calibration(packet, msg);
 }
 
 bool GCS_MAVLINK_Rover::set_home_to_current_location(bool _lock) {
@@ -682,7 +632,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        if (rover.set_mode(rover.mode_rtl, ModeReason::GCS_COMMAND)) {
+        if (rover.set_mode(rover.mode_manual, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
@@ -1126,21 +1076,4 @@ uint8_t GCS_MAVLINK_Rover::high_latency_tgt_airspeed() const
     return 0;
 }
 
-uint8_t GCS_MAVLINK_Rover::high_latency_wind_speed() const
-{
-    if (rover.g2.windvane.enabled()) {
-        // return units are m/s*5
-        return MIN(rover.g2.windvane.get_true_wind_speed() * 5, UINT8_MAX);
-    }
-    return 0;
-}
-
-uint8_t GCS_MAVLINK_Rover::high_latency_wind_direction() const
-{
-    if (rover.g2.windvane.enabled()) {
-        // return units are deg/2
-        return wrap_360(degrees(rover.g2.windvane.get_true_wind_direction_rad())) / 2;
-    }
-    return 0;
-}
 #endif // HAL_HIGH_LATENCY2_ENABLED

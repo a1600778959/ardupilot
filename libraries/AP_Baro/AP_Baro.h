@@ -6,7 +6,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/DerivativeFilter.h>
-#include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 // maximum number of sensor instances
@@ -192,9 +191,6 @@ public:
         return _rsem;
     }
 
-#if AP_BARO_MSP_ENABLED
-    void handle_msp(const MSP::msp_baro_data_message_t &pkt);
-#endif
 #if AP_BARO_EXTERNALAHRS_ENABLED
     void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt);
 #endif
