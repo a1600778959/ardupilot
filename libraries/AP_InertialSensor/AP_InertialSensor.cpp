@@ -17,9 +17,6 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#if !APM_BUILD_TYPE(APM_BUILD_Rover)
-#include <AP_Motors/AP_Motors_Class.h>
-#endif
 #include <GCS_MAVLink/GCS.h>
 
 #include "AP_InertialSensor_BMI160.h"
@@ -1007,23 +1004,6 @@ AP_InertialSensor::init(uint16_t loop_rate)
         }
         notch.num_calculated_notch_frequencies = 1;
         notch.num_dynamic_notches = 1;
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-        if (notch.params.hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
-#if HAL_GYROFFT_ENABLED
-            if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
-                notch.num_dynamic_notches = AP_HAL::DSP::MAX_TRACKED_PEAKS; // only 3 peaks supported currently
-            } else
-#endif
-            {
-                AP_Motors *motors = AP::motors();
-                if (motors != nullptr) {
-                    notch.num_dynamic_notches = __builtin_popcount(motors->get_motor_mask());
-                }
-            }
-            // avoid harmonics unless actually configured by the user
-            notch.params.set_default_harmonics(1);
-        }
-#endif
     }
     // count number of used sensors
     uint8_t sensors_used = 0;

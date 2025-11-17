@@ -35,7 +35,6 @@
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AC_Sprayer/AC_Sprayer.h>
-#include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Relay/AP_Relay.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_RTC/AP_RTC.h>

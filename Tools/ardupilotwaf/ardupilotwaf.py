@@ -80,7 +80,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Radio',
     'AP_TempCalibration',
     #'AP_VisualOdom',
-    'AP_BLHeli',
+    #'AP_BLHeli',
     'AP_ROMFS',
     'AP_Proximity',
     #'AP_Gripper',
@@ -247,7 +247,7 @@ def ap_common_vehicle_libraries(bld):
     if bld.env.DEST_BINFMT == 'pe':
         libraries += [
             'AC_Fence',
-            'AC_AttitudeControl',
+            #'AC_AttitudeControl',
         ]
 
     return libraries

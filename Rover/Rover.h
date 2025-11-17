@@ -66,9 +66,6 @@
 #include "GCS_Mavlink.h"
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
-#if AC_PRECLAND_ENABLED
-#include <AC_PrecLand/AC_PrecLand.h>
-#endif
 #include "RC_Channel.h"                  // RC Channel Library
 #include "AP_AOA/AP_AOA_Ultrasonic_ranging.h"
 #include "mode.h"
@@ -144,9 +141,6 @@ private:
     AP_ExternalControl_Rover external_control;
 #endif
 
-#if AC_PRECLAND_ENABLED
-    AC_PrecLand precland;
-#endif
     // GCS handling
     GCS_Rover _gcs;  // avoid using this; use gcs()
     GCS_Rover &gcs() { return _gcs; }

@@ -8,7 +8,6 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <Filter/AverageFilter.h>
-#include <AP_Vehicle/AP_FixedWing.h>
 
 class Variometer {
 

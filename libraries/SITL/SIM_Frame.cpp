@@ -17,7 +17,6 @@
 */
 
 #include "SIM_Frame.h"
-#include <AP_Motors/AP_Motors.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "SIM_Aircraft.h"

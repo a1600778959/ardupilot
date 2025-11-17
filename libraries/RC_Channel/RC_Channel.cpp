@@ -739,13 +739,11 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::WINCH_CONTROL,"WinchControl"},
     { AUX_FUNC::CLEAR_WP,"ClearWaypoint"},
     { AUX_FUNC::COMPASS_LEARN,"CompassLearn"},
-    { AUX_FUNC::SAILBOAT_TACK,"SailboatTack"},
     { AUX_FUNC::GPS_DISABLE,"GPSDisable"},
     { AUX_FUNC::GPS_DISABLE_YAW,"GPSDisableYaw"},
     { AUX_FUNC::DISABLE_AIRSPEED_USE,"DisableAirspeedUse"},
     { AUX_FUNC::RELAY5,"Relay5"},
     { AUX_FUNC::RELAY6,"Relay6"},
-    { AUX_FUNC::SAILBOAT_MOTOR_3POS,"SailboatMotor"},
     { AUX_FUNC::SURFACE_TRACKING,"SurfaceTracking"},
     { AUX_FUNC::RUNCAM_CONTROL,"RunCamControl"},
     { AUX_FUNC::RUNCAM_OSD_CONTROL,"RunCamOSDControl"},
@@ -1377,17 +1375,6 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
 
-#if HAL_VISUALODOM_ENABLED
-    case AUX_FUNC::VISODOM_ALIGN:
-        if (ch_flag == AuxSwitchPos::HIGH) {
-            AP_VisualOdom *visual_odom = AP::visualodom();
-            if (visual_odom != nullptr) {
-                visual_odom->request_align_yaw_to_ahrs();
-            }
-        }
-        break;
-#endif
-
     case AUX_FUNC::EKF_POS_SOURCE:
         switch (ch_flag) {
         case AuxSwitchPos::LOW:
@@ -1404,23 +1391,6 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
             break;
         }
         break;
-
-#if AP_OPTICALFLOW_CALIBRATOR_ENABLED
-    case AUX_FUNC::OPTFLOW_CAL: {
-        AP_OpticalFlow *optflow = AP::opticalflow();
-        if (optflow == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "OptFlow Cal: failed sensor not enabled");
-            break;
-        }
-        if (ch_flag == AuxSwitchPos::HIGH) {
-            optflow->start_calibration();
-        } else {
-            optflow->stop_calibration();
-        }
-        break;
-    }
-#endif
-
 #if AP_INERTIALSENSOR_KILL_IMU_ENABLED
     case AUX_FUNC::KILL_IMU1:
         AP::ins().kill_imu(0, ch_flag == AuxSwitchPos::HIGH);

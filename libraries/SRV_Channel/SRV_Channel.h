@@ -19,7 +19,6 @@
 #include <AP_Common/Bitmask.h>
 #include <AP_Volz_Protocol/AP_Volz_Protocol.h>
 #include <AP_SBusOut/AP_SBusOut.h>
-#include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 
 #include "SRV_Channel_config.h"
@@ -609,12 +608,6 @@ private:
     // support for SBUS protocol
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
-#endif
-
-#if HAL_SUPPORT_RCOUT_SERIAL
-    // support for BLHeli protocol
-    AP_BLHeli blheli;
-    static AP_BLHeli *blheli_ptr;
 #endif
 
 #if AP_FETTEC_ONEWIRE_ENABLED

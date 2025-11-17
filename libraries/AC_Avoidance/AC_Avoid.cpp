@@ -26,13 +26,8 @@
 
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
  # define AP_AVOID_BEHAVE_DEFAULT AC_Avoid::BehaviourType::BEHAVIOR_STOP
-#else
- # define AP_AVOID_BEHAVE_DEFAULT AC_Avoid::BehaviourType::BEHAVIOR_SLIDE
 #endif
 
-#if APM_BUILD_COPTER_OR_HELI
-    # define AP_AVOID_ENABLE_Z          1
-#endif
 
 const AP_Param::GroupInfo AC_Avoid::var_info[] = {
 

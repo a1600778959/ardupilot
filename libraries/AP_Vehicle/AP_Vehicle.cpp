@@ -4,7 +4,6 @@
 
 #include "AP_Vehicle.h"
 
-#include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
@@ -12,7 +11,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_RPM/AP_RPM.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_Motors/AP_Motors.h>
 #include <AR_Motors/AP_MotorsUGV.h>
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include <GCS_MAVLink/GCS.h>
@@ -629,13 +627,9 @@ void AP_Vehicle::update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch)
     const float ref = notch.params.reference();
     const float min_ratio = notch.params.freq_min_ratio();
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-    const AP_Motors* motors = AP::motors();
-    const float motors_throttle = motors != nullptr ? MAX(0,motors->get_throttle_out()) : 0;
-#else  // APM_BUILD_Rover
+
     const AP_MotorsUGV *motors = AP::motors_ugv();
     const float motors_throttle = motors != nullptr ? abs(motors->get_throttle() / 100.0f) : 0;
-#endif
 
     float throttle_freq = ref_freq * MAX(min_ratio, sqrtf(motors_throttle / ref));
 
@@ -657,16 +651,8 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
         return;
     }
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-    const AP_Motors* motors = AP::motors();
-    if (motors != nullptr && motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN) {
-        notch.set_inactive(true);
-    } else {
-        notch.set_inactive(false);
-    }
-#else  // APM_BUILD_Rover: keep notch active
+ // APM_BUILD_Rover: keep notch active
     notch.set_inactive(false);
-#endif
 
     switch (notch.params.tracking_mode()) {
         case HarmonicNotchDynamicMode::UpdateThrottle: // throttle based tracking

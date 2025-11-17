@@ -25,9 +25,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#include <AP_Motors/AP_Motors.h>
-#endif
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -703,12 +700,6 @@ void AP_GyroFFT::start_notch_tune()
     }
     // throttle averaging for average fft calculation
     _avg_throttle_out = 0.0f;
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    AP_Motors* motors = AP::motors();
-    if (motors != nullptr) {
-        _avg_throttle_out = motors->get_throttle_hover();
-    }
-#endif
 }
 
 // calculate the frequency to be used for the harmonic notch
@@ -835,17 +826,6 @@ float AP_GyroFFT::get_weighted_noise_center_freq_hz() const
     }
 
     if (_health.is_zero()) {
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-        // if we are post-filter sampling then throttle estimate will be useless
-        if (using_post_filter_samples()) {
-            return 0.0f;
-        }
-        AP_Motors* motors = AP::motors();
-        if (motors != nullptr && !is_zero(_throttle_ref)) {
-            // FFT is not healthy, fallback to FFT's throttle-based estimate
-            return constrain_float(_fft_min_hz * MAX(1.0f, sqrtf(motors->get_throttle_out() / _throttle_ref)), _fft_min_hz, _fft_max_hz);
-        }
-#endif
     }
 
     const FrequencyPeak peak = get_tracked_noise_peak();
@@ -868,21 +848,6 @@ uint8_t AP_GyroFFT::get_weighted_noise_center_frequencies_hz(uint8_t num_freqs, 
     if (!analysis_enabled()) {
         freqs[0] = _fft_min_hz;
         return 1;
-    }
-
-    if (_health.is_zero()) {
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-        // if we are post-filter sampling then throttle estimate will be useless
-        if (using_post_filter_samples()) {
-            return 0;
-        }
-        AP_Motors* motors = AP::motors();
-        if (motors != nullptr) {
-            // FFT is not healthy, fallback to FFT's throttle-based estimate
-            freqs[0] = constrain_float(_fft_min_hz * MAX(1.0f, sqrtf(motors->get_throttle_out() / _throttle_ref)), _fft_min_hz, _fft_max_hz);
-            return 1;
-        }
-#endif
     }
 
     // pitch was good or required, roll was not, use pitch only

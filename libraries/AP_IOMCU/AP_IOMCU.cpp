@@ -117,13 +117,6 @@ void AP_IOMCU::thread_main(void)
     uart.begin(1500*1000, 128, 128);
     uart.set_unbuffered_writes(true);
 
-#if HAL_WITH_IO_MCU_BIDIR_DSHOT
-    AP_BLHeli* blh = AP_BLHeli::get_singleton();
-    uint16_t erpm_period_ms = 10; // default 100Hz
-    if (blh && blh->get_telemetry_rate() > 0) {
-        erpm_period_ms = constrain_int16(1000 / blh->get_telemetry_rate(), 1, 1000);
-    }
-#endif
     trigger_event(IOEVENT_INIT);
 
     while (!do_shutdown) {
@@ -409,10 +402,6 @@ void AP_IOMCU::read_erpm()
         return;
     }
     uint8_t motor_poles = 14;
-    AP_BLHeli* blh = AP_BLHeli::get_singleton();
-    if (blh) {
-        motor_poles = blh->get_motor_poles();
-    }
     for (uint8_t i = 0; i < IOMCU_MAX_TELEM_CHANNELS/4; i++) {
         for (uint8_t j = 0; j < 4; j++) {
             const uint8_t esc_id = (i * 4 + j);

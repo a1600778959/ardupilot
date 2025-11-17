@@ -1237,7 +1237,6 @@ LOG_STRUCTURE_FROM_GPS \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qff",     "TimeUS,RXRSSI,RXLQ", "s--", "F--", true  }, \
 LOG_STRUCTURE_FROM_BARO \
-LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---", true }, \
     { LOG_MCU_MSG, sizeof(log_MCU), \
@@ -1304,7 +1303,6 @@ LOG_STRUCTURE_FROM_FENCE \
       "RALY", "QBBLLhB", "TimeUS,Tot,Seq,Lat,Lng,Alt,Flags", "s--DUm-", "F--GGB-" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
       "MAV", "QBHHHBHH",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf", "s#----s-", "F-000-C-" },   \
-LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" , true }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \

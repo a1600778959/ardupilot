@@ -55,10 +55,6 @@ AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
 
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
 
-#if HAL_SUPPORT_RCOUT_SERIAL
-AP_BLHeli *SRV_Channels::blheli_ptr;
-#endif
-
 uint32_t SRV_Channels::disabled_mask;
 uint32_t SRV_Channels::digital_mask;
 uint32_t SRV_Channels::reversible_mask;
@@ -195,12 +191,6 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Group: _SBUS_
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
-#endif
-
-#if HAL_SUPPORT_RCOUT_SERIAL
-    // @Group: _BLH_
-    // @Path: ../AP_BLHeli/AP_BLHeli.cpp
-    AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
 #endif
 
 #if AP_FETTEC_ONEWIRE_ENABLED
@@ -382,18 +372,12 @@ SRV_Channels::SRV_Channels(void)
     sbus_ptr = &sbus;
 #endif
 
-#if HAL_SUPPORT_RCOUT_SERIAL
-    blheli_ptr = &blheli;
-#endif
 }
 
 // SRV_Channels initialization
 void SRV_Channels::init(uint32_t motor_mask, AP_HAL::RCOutput::output_mode mode)
 {
     // initialize BLHeli late so that all of the masks it might setup don't get trodden on by motor initialization
-#if HAL_SUPPORT_RCOUT_SERIAL
-    blheli_ptr->init(motor_mask, mode);
-#endif
 #ifndef HAL_BUILD_AP_PERIPH
     hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
 #endif
@@ -509,11 +493,6 @@ void SRV_Channels::push()
 #if AP_SBUSOUTPUT_ENABLED
     // give sbus library a chance to update
     sbus_ptr->update();
-#endif
-
-#if HAL_SUPPORT_RCOUT_SERIAL
-    // give blheli telemetry a chance to update
-    blheli_ptr->update_telemetry();
 #endif
 
 #if AP_FETTEC_ONEWIRE_ENABLED

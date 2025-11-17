@@ -19,7 +19,6 @@
 #pragma once
 
 #include "SIM_Aircraft.h"
-#include <AP_Motors/AP_Motors.h>
 
 namespace SITL {
 

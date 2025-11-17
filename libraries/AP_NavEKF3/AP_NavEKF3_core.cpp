@@ -479,9 +479,6 @@ after the tilt has stabilised.
 
 bool NavEKF3_core::InitialiseFilterBootstrap(void)
 {
-    // update sensor selection (for affinity)
-    update_sensor_selection();
-
     // If we are a plane and don't have GPS lock then don't initialise
     if (assume_zero_sideslip() && dal.gps().status(preferred_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
         dal.snprintf(prearm_fail_string,
@@ -643,9 +640,6 @@ void NavEKF3_core::UpdateFilter(bool predict)
     }
 
     fill_scratch_variables();
-
-    // update sensor selection (for affinity)
-    update_sensor_selection();
 
     // TODO - in-flight restart method
 
