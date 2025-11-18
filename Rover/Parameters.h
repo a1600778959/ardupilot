@@ -5,7 +5,6 @@
 #include "RC_Channel.h"
 #include <AC_Avoidance/AC_Avoid.h>
 #include "AC_Sprayer/AC_Sprayer.h"
-#include <AP_AIS/AP_AIS.h>
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Follow/AP_Follow.h>
 #include <AP_Proximity/AP_Proximity.h>

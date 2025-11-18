@@ -52,12 +52,10 @@
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_RPM/AP_RPM.h>
-#include <AP_AIS/AP_AIS.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_KDECAN/AP_KDECAN.h>
-#include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Landing/AP_Landing_config.h>
 
 #include "MissionItemProtocol_Waypoints.h"
@@ -1061,9 +1059,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
 #if HAL_HIGH_LATENCY2_ENABLED
         { MAVLINK_MSG_ID_HIGH_LATENCY2,         MSG_HIGH_LATENCY2},
-#endif
-#if AP_AIS_ENABLED
-        { MAVLINK_MSG_ID_AIS_VESSEL,            MSG_AIS_VESSEL},
 #endif
 
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
@@ -4387,31 +4382,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_int_t &p
 }
 #endif
 
-#if AP_LANDINGGEAR_ENABLED
-/*
-  handle MAV_CMD_AIRFRAME_CONFIGURATION for landing gear control
- */
-MAV_RESULT GCS_MAVLINK::handle_command_airframe_configuration(const mavlink_command_int_t &packet)
-{
-    // Param 1: Select which gear, not used in ArduPilot
-    // Param 2: 0 = Deploy, 1 = Retract
-    // For safety, anything other than 1 will deploy
-    AP_LandingGear *lg = AP_LandingGear::get_singleton();
-    if (lg == nullptr) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-    switch ((uint8_t)packet.param2) {
-    case 1:
-        lg->set_position(AP_LandingGear::LandingGear_Retract);
-        return MAV_RESULT_ACCEPTED;
-    default:
-        lg->set_position(AP_LandingGear::LandingGear_Deploy);
-        return MAV_RESULT_ACCEPTED;
-    }
-    return MAV_RESULT_FAILED;
-}
-#endif
-
 #if HAL_INS_ACCELCAL_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_int_t &packet)
 {
@@ -4776,10 +4746,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_accelcal_vehicle_pos(packet);
 #endif
 
-#if AP_LANDINGGEAR_ENABLED
-    case MAV_CMD_AIRFRAME_CONFIGURATION:
-        return handle_command_airframe_configuration(packet);
-#endif
 
 #if AP_BATTERY_ENABLED
     case MAV_CMD_BATTERY_RESET:
@@ -5817,16 +5783,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_high_latency2();
         break;
 #endif // HAL_HIGH_LATENCY2_ENABLED
-
-#if AP_AIS_ENABLED
-    case MSG_AIS_VESSEL: {
-        AP_AIS *ais = AP_AIS::get_singleton();
-        if (ais) {
-            ais->send(chan);
-        }
-        break;
-    }
-#endif
 
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
     case MSG_RELAY_STATUS:

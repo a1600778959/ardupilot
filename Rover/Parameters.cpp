@@ -821,17 +821,12 @@ void Rover::load_parameters(void)
                                                       AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED);
 #endif
 
-#if AP_AIS_ENABLED | AP_FENCE_ENABLED
+#if AP_FENCE_ENABLED
     // Find G2's Top Level Key
     AP_Param::ConversionInfo info;
     if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
         return;
     }
-#endif
-
-// PARAMETER_CONVERSION - Added: MAR-2022
-#if AP_AIS_ENABLED
-    AP_Param::convert_class(info.old_key, &ais, ais.var_info, 50, 114, false);
 #endif
 
 // PARAMETER_CONVERSION - Added: Mar-2022

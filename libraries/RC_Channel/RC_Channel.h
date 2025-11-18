@@ -130,7 +130,6 @@ public:
         ATTCON_ACCEL_LIM =    26, // enable/disable the roll, pitch and yaw accel limiting
         RETRACT_MOUNT1 =      27, // Retract Mount1
         RELAY =               28, // Relay pin on/off (only supports first relay)
-        LANDING_GEAR =        29, // Landing gear controller
         LOST_VEHICLE_SOUND =  30, // Play lost vehicle sound
         MOTOR_ESTOP =         31, // Emergency Stop Switch
         MOTOR_INTERLOCK =     32, // Motor On/Off switch

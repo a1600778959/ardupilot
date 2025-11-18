@@ -136,7 +136,6 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_Proximity/LogStructure.h>
 #include <AC_Avoidance/LogStructure.h>
 #include <AP_ESC_Telem/LogStructure.h>
-#include <AP_AIS/LogStructure.h>
 #include <AP_HAL_ChibiOS/LogStructure.h>
 #include <AP_RPM/LogStructure.h>
 #include <AC_Fence/LogStructure.h>
@@ -1327,7 +1326,6 @@ LOG_STRUCTURE_FROM_FENCE \
       "STAK", "QBBHHN", "TimeUS,Id,Pri,Total,Free,Name", "s#----", "F-----", true }, \
     { LOG_FILE_MSG, sizeof(log_File), \
       "FILE",   "NIBZ",       "FileName,Offset,Length,Data", "----", "----" }, \
-LOG_STRUCTURE_FROM_AIS \
     { LOG_SCRIPTING_MSG, sizeof(log_Scripting), \
       "SCR",   "QNIii", "TimeUS,Name,Runtime,Total_mem,Run_mem", "s#sbb", "F-F--", true }, \
     { LOG_VER_MSG, sizeof(log_VER), \

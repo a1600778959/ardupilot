@@ -104,7 +104,6 @@
 #define HAL_ADSB_ENABLED 0
 #define HAL_BUTTON_ENABLED 0 
 #define AP_GRIPPER_ENABLED 0
-#define AP_LANDINGGEAR_ENABLED 0
 
 // disable avoid-fence-follow in copter, these all kinda need each other, so its all or none.
 #define AC_AVOID_ENABLED 0

@@ -42,7 +42,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -626,7 +625,6 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::COMPASS_LEARN:
     case AUX_FUNC::DISARM:
     case AUX_FUNC::DO_NOTHING:
-    case AUX_FUNC::LANDING_GEAR:
     case AUX_FUNC::LOST_VEHICLE_SOUND:
     case AUX_FUNC::RELAY:
     case AUX_FUNC::RELAY2:
@@ -1326,27 +1324,6 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
             compass.set_learn_type(Compass::LEARN_INFLIGHT, false);
         }
         break;
-
-#if AP_LANDINGGEAR_ENABLED
-    case AUX_FUNC::LANDING_GEAR: {
-        AP_LandingGear *lg = AP_LandingGear::get_singleton();
-        if (lg == nullptr) {
-            break;
-        }
-        switch (ch_flag) {
-        case AuxSwitchPos::LOW:
-            lg->set_position(AP_LandingGear::LandingGear_Deploy);
-            break;
-        case AuxSwitchPos::MIDDLE:
-            // nothing
-            break;
-        case AuxSwitchPos::HIGH:
-            lg->set_position(AP_LandingGear::LandingGear_Retract);
-            break;
-        }
-        break;
-    }
-#endif
 
     case AUX_FUNC::GPS_DISABLE:
         AP::gps().force_disable(ch_flag == AuxSwitchPos::HIGH);
