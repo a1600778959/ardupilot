@@ -733,8 +733,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::RELAY4,"Relay4"},
     { AUX_FUNC::PRECISION_LOITER,"PrecisionLoiter"},
     { AUX_FUNC::AVOID_PROXIMITY,"AvoidProximity"},
-    { AUX_FUNC::WINCH_ENABLE,"WinchEnable"},
-    { AUX_FUNC::WINCH_CONTROL,"WinchControl"},
     { AUX_FUNC::CLEAR_WP,"ClearWaypoint"},
     { AUX_FUNC::COMPASS_LEARN,"CompassLearn"},
     { AUX_FUNC::GPS_DISABLE,"GPSDisable"},

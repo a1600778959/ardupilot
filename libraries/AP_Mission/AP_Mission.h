@@ -213,14 +213,6 @@ public:
         uint8_t relative_angle; // 0 = absolute angle, 1 = relative angle
     };
 
-    // winch command structure
-    struct PACKED Winch_Command {
-        uint8_t num;            // winch number
-        uint8_t action;         // action (0 = relax, 1 = length control, 2 = rate control)
-        float release_length;   // cable distance to unwind in meters, negative numbers to wind in cable
-        float release_rate;     // release rate in meters/second
-    };
-
     // Scripting command structure
     struct PACKED scripting_Command {
         float p1;
@@ -368,9 +360,6 @@ public:
 
         // NAV_SET_YAW_SPEED support
         Set_Yaw_Speed set_yaw_speed;
-
-        // do-winch
-        Winch_Command winch;
 
         // do scripting
         scripting_Command scripting;

@@ -127,7 +127,6 @@ public:
         k_motor12               = 85,
         k_dspoilerLeft2         = 86,           ///< differential spoiler 2 (left wing)
         k_dspoilerRight2        = 87,           ///< differential spoiler 2 (right wing)
-        k_winch                 = 88,
         k_mainsail_sheet        = 89,           ///< Main Sail control via sheet
         k_cam_iso               = 90,
         k_cam_aperture          = 91,
@@ -163,7 +162,6 @@ public:
         k_ProfiLED_2            = 130,
         k_ProfiLED_3            = 131,
         k_ProfiLED_Clock        = 132,
-        k_winch_clutch          = 133,
         k_min                   = 134,  // always outputs SERVOn_MIN
         k_trim                  = 135,  // always outputs SERVOn_TRIM
         k_max                   = 136,  // always outputs SERVOn_MAX

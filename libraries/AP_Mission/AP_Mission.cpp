@@ -1289,13 +1289,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.set_yaw_speed.relative_angle = packet.param3;   // 0 = absolute angle, 1 = relative angle
         break;
 
-    case MAV_CMD_DO_WINCH:                              // MAV ID: 42600
-        cmd.content.winch.num = packet.param1;          // winch number
-        cmd.content.winch.action = packet.param2;       // action (0 = relax, 1 = length control, 2 = rate control).  See WINCH_ACTION enum
-        cmd.content.winch.release_length = packet.param3;   // cable distance to unwind in meters, negative numbers to wind in cable
-        cmd.content.winch.release_rate = packet.param4; // release rate in meters/second
-        break;
-
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         cmd.p1 = packet.param1; // Resume repeat distance (m)
         break;
@@ -1807,13 +1800,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.content.set_yaw_speed.angle_deg;        // target angle in degrees
         packet.param2 = cmd.content.set_yaw_speed.speed;            // speed in meters/second
         packet.param3 = cmd.content.set_yaw_speed.relative_angle;   // 0 = absolute angle, 1 = relative angle
-        break;
-
-    case MAV_CMD_DO_WINCH:
-        packet.param1 = cmd.content.winch.num;              // winch number
-        packet.param2 = cmd.content.winch.action;           // action (0 = relax, 1 = length control, 2 = rate control).  See WINCH_ACTION enum
-        packet.param3 = cmd.content.winch.release_length;   // cable distance to unwind in meters, negative numbers to wind in cable
-        packet.param4 = cmd.content.winch.release_rate;     // release rate in meters/second
         break;
 
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
@@ -2675,8 +2661,6 @@ const char *AP_Mission::Mission_Command::type() const
         return "AuxFunction";
     case MAV_CMD_DO_MOUNT_CONTROL:
         return "MountControl";
-    case MAV_CMD_DO_WINCH:
-        return "Winch";
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
         return "Scripting";
     case MAV_CMD_DO_JUMP:

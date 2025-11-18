@@ -588,22 +588,6 @@ struct PACKED log_Arm_Disarm {
     uint8_t method;
 };
 
-struct PACKED log_Winch {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t healthy;
-    uint8_t thread_end;
-    uint8_t moving;
-    uint8_t clutch;
-    uint8_t mode;
-    float desired_length;
-    float length;
-    float desired_rate;
-    uint16_t tension;
-    float voltage;
-    int8_t temp;
-};
-
 // position controller per-axis logging
 struct PACKED log_PSCx {
     LOG_PACKET_HEADER;
@@ -1306,16 +1290,12 @@ LOG_STRUCTURE_FROM_FENCE \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" , true }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
       "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" , true }, \
-    { LOG_ADSB_MSG, sizeof(log_ADSB), \
-      "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }, \
     { LOG_EVENT_MSG, sizeof(log_Event), \
       "EV",   "QB",           "TimeUS,Id", "s-", "F-" }, \
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm), \
       "ARM", "QBIBB", "TimeUS,ArmState,ArmChecks,Forced,Method", "s----", "F----" }, \
     { LOG_ERROR_MSG, sizeof(log_Error), \
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }, \
-    { LOG_WINCH_MSG, sizeof(log_Winch), \
-      "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }, \
     { LOG_PSCN_MSG, sizeof(log_PSCx), \
       "PSCN", PIDx_FMT, "TimeUS,TPN,PN,DVN,TVN,VN,DAN,TAN,AN", PIDx_UNITS, PIDx_MULTS }, \
     { LOG_PSCE_MSG, sizeof(log_PSCx), \
@@ -1389,8 +1369,6 @@ enum LogMessages : uint8_t {
 
     LOG_IDS_FROM_DAL,
     LOG_IDS_FROM_INERTIALSENSOR,
-
-    LOG_IDS_FROM_VISUALODOM,
     LOG_IDS_FROM_AVOIDANCE,
     LOG_IDS_FROM_BEACON,
     LOG_IDS_FROM_PROXIMITY,
@@ -1402,9 +1380,7 @@ enum LogMessages : uint8_t {
     LOG_WHEELENCODER_MSG,
     LOG_MAV_MSG,
     LOG_ERROR_MSG,
-    LOG_ADSB_MSG,
     LOG_ARM_DISARM_MSG,
-    LOG_WINCH_MSG,
     LOG_PSCN_MSG,
     LOG_PSCE_MSG,
     LOG_PSCD_MSG,

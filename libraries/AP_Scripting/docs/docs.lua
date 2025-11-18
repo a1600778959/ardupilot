@@ -1182,29 +1182,6 @@ function RC_Channel_ud:norm_input() end
 function RC_Channel_ud:norm_input_dz() end
 
 -- desc
----@class winch
-winch = {}
-
--- desc
----@return number
-function winch:get_rate_max() end
-
--- desc
----@param param1 number
-function winch:set_desired_rate(param1) end
-
--- desc
----@param param1 number
-function winch:release_length(param1) end
-
--- desc
-function winch:relax() end
-
--- desc
----@return boolean
-function winch:healthy() end
-
--- desc
 ---@class iomcu
 iomcu = {}
 
@@ -2367,7 +2344,6 @@ function gcs:set_message_interval(port_num, msg_id, interval_us) end
 ---| '39' # MAV_TYPE_OSD=39, /* OSD | */
 ---| '40' # MAV_TYPE_IMU=40, /* IMU | */
 ---| '41' # MAV_TYPE_GPS=41, /* GPS | */
----| '42' # MAV_TYPE_WINCH=42, /* Winch | */
 ---| '43' # MAV_TYPE_ENUM_END=43, /*  | */
 function gcs:frame_type() end
 
