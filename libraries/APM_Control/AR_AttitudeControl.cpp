@@ -45,11 +45,6 @@
 #define AR_ATTCONTROL_PITCH_LIM_THR_THRESH  0.60    // pitch limiting starts if throttle exceeds 60%
 #define AR_ATTCONTROL_DT                0.02f
 #define AR_ATTCONTROL_TIMEOUT_MS        200
-#define AR_ATTCONTROL_HEEL_SAIL_P       1.0f
-#define AR_ATTCONTROL_HEEL_SAIL_I       0.1f
-#define AR_ATTCONTROL_HEEL_SAIL_D       0.0f
-#define AR_ATTCONTROL_HEEL_SAIL_IMAX    1.0f
-#define AR_ATTCONTROL_HEEL_SAIL_FILT    10.0f
 #define AR_ATTCONTROL_DT                0.02f
 
 // throttle/speed control maximum acceleration/deceleration (in m/s) (_ACCEL_MAX parameter default)
@@ -438,107 +433,6 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_BAL_PIT_FF", 11, AR_AttitudeControl, _pitch_to_throttle_ff, AR_ATTCONTROL_BAL_PITCH_FF),
 
-    // @Param: _SAIL_P
-    // @DisplayName: Sail Heel control P gain
-    // @Description: Sail Heel control P gain for sailboats.  Converts the error between the desired heel angle (in radians) and actual heel to a main sail output (in the range -1 to +1)
-    // @Range: 0.000 2.000
-    // @Increment: 0.01
-    // @User: Standard
-
-    // @Param: _SAIL_I
-    // @DisplayName: Sail Heel control I gain
-    // @Description: Sail Heel control I gain for sailboats.  Corrects long term error between the desired heel angle (in radians) and actual
-    // @Range: 0.000 2.000
-    // @Increment: 0.01
-    // @User: Standard
-
-    // @Param: _SAIL_IMAX
-    // @DisplayName: Sail Heel control I gain maximum
-    // @Description: Sail Heel control I gain maximum.  Constrains the maximum I term contribution to the main sail output (range -1 to +1)
-    // @Range: 0.000 1.000
-    // @Increment: 0.01
-    // @User: Standard
-
-    // @Param: _SAIL_D
-    // @DisplayName: Sail Heel control D gain
-    // @Description: Sail Heel control D gain.  Compensates for short-term change in desired heel angle vs actual
-    // @Range: 0.000 0.100
-    // @Increment: 0.001
-    // @User: Standard
-
-    // @Param: _SAIL_FF
-    // @DisplayName: Sail Heel control feed forward
-    // @Description: Sail Heel control feed forward
-    // @Range: 0.000 0.500
-    // @Increment: 0.001
-    // @User: Standard
-
-    // @Param: _SAIL_FILT
-    // @DisplayName: Sail Heel control filter frequency
-    // @Description: Sail Heel control input filter.  Lower values reduce noise but add delay.
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
-    // @User: Standard
-
-    // @Param: _SAIL_FLTT
-    // @DisplayName: Sail Heel Target filter frequency in Hz
-    // @Description: Target filter frequency in Hz
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
-    // @User: Standard
-
-    // @Param: _SAIL_FLTE
-    // @DisplayName: Sail Heel Error filter frequency in Hz
-    // @Description: Error filter frequency in Hz
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
-    // @User: Standard
-
-    // @Param: _SAIL_FLTD
-    // @DisplayName: Sail Heel Derivative term filter frequency in Hz
-    // @Description: Derivative filter frequency in Hz
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
-    // @User: Standard
-
-    // @Param: _SAIL_SMAX
-    // @DisplayName: Sail heel slew rate limit
-    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
-    // @Range: 0 200
-    // @Increment: 0.5
-    // @User: Advanced
-
-    // @Param: _SAIL_PDMX
-    // @DisplayName: Sail Heel control PD sum maximum
-    // @Description: Sail Heel control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
-    // @Range: 0.000 1.000
-    // @Increment: 0.01
-
-    // @Param: _SAIL_D_FF
-    // @DisplayName: Sail Heel Derivative FeedForward Gain
-    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
-    // @Range: 0 0.03
-    // @Increment: 0.001
-    // @User: Advanced
-
-    // @Param: _SAIL_NTF
-    // @DisplayName: Sail Heel Target notch filter index
-    // @Description: Sail Heel Target notch filter index
-    // @Range: 1 8
-    // @User: Advanced
-
-    // @Param: _SAIL_NEF
-    // @DisplayName: Sail Heel Error notch filter index
-    // @Description: Sail Heel Error notch filter index
-    // @Range: 1 8
-    // @User: Advanced
-
-    AP_SUBGROUPINFO(_sailboat_heel_pid, "_SAIL_", 12, AR_AttitudeControl, AC_PID),
-
     // @Param: _TURN_MAX_G
     // @DisplayName: Turning maximum G force
     // @Description: The maximum turning acceleration (in units of gravities) that the rover can handle while remaining stable. The navigation code will keep the lateral acceleration below this level to avoid rolling over or slipping the wheels in turns
@@ -571,8 +465,7 @@ AR_AttitudeControl::AR_AttitudeControl() :
     _steer_angle_p(AR_ATTCONTROL_STEER_ANG_P),
     _steer_rate_pid(AR_ATTCONTROL_STEER_RATE_P, AR_ATTCONTROL_STEER_RATE_I, AR_ATTCONTROL_STEER_RATE_D, AR_ATTCONTROL_STEER_RATE_FF, AR_ATTCONTROL_STEER_RATE_IMAX, 0.0f, AR_ATTCONTROL_STEER_RATE_FILT, 0.0f),
     _throttle_speed_pid(AR_ATTCONTROL_THR_SPEED_P, AR_ATTCONTROL_THR_SPEED_I, AR_ATTCONTROL_THR_SPEED_D, 0.0f, AR_ATTCONTROL_THR_SPEED_IMAX, 0.0f, AR_ATTCONTROL_THR_SPEED_FILT, 0.0f),
-    _pitch_to_throttle_pid(AR_ATTCONTROL_PITCH_THR_P, AR_ATTCONTROL_PITCH_THR_I, AR_ATTCONTROL_PITCH_THR_D, 0.0f, AR_ATTCONTROL_PITCH_THR_IMAX, 0.0f, AR_ATTCONTROL_PITCH_THR_FILT, 0.0f),
-    _sailboat_heel_pid(AR_ATTCONTROL_HEEL_SAIL_P, AR_ATTCONTROL_HEEL_SAIL_I, AR_ATTCONTROL_HEEL_SAIL_D, 0.0f, AR_ATTCONTROL_HEEL_SAIL_IMAX, 0.0f, AR_ATTCONTROL_HEEL_SAIL_FILT, 0.0f)
+    _pitch_to_throttle_pid(AR_ATTCONTROL_PITCH_THR_P, AR_ATTCONTROL_PITCH_THR_I, AR_ATTCONTROL_PITCH_THR_D, 0.0f, AR_ATTCONTROL_PITCH_THR_IMAX, 0.0f, AR_ATTCONTROL_PITCH_THR_FILT, 0.0f)
 {
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
@@ -923,46 +816,6 @@ float AR_AttitudeControl::get_desired_pitch() const
     }
 
     return _pitch_to_throttle_pid.get_pid_info().target;
-}
-
-// Sailboat heel(roll) angle controller releases sail to keep at maximum heel angle
-// but does not attempt to reach maximum heel angle, ie only lets sails out, does not pull them in
-float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
-{
-    // sanity check dt
-    dt = constrain_float(dt, 0.0f, 1.0f);
-
-    // if not called recently, reset input filter
-    const uint32_t now = AP_HAL::millis();
-    if ((_heel_controller_last_ms == 0) || ((now - _heel_controller_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
-        _sailboat_heel_pid.reset_filter();
-        _sailboat_heel_pid.reset_I();
-    }
-    _heel_controller_last_ms = now;
-
-    _sailboat_heel_pid.update_all(desired_heel, fabsf(AP::ahrs().get_roll()), dt);
-
-    // get feed-forward
-    const float ff = _sailboat_heel_pid.get_ff();
-
-    // get p, constrain to be zero or negative
-    float p = _sailboat_heel_pid.get_p();
-    if (is_positive(p)) {
-        p = 0.0f;
-    }
-
-    // get i, constrain to be zero or negative
-    float i = _sailboat_heel_pid.get_i();
-    if (is_positive(i)) {
-        i = 0.0f;
-        _sailboat_heel_pid.reset_I();
-    }
-
-    // get d
-    const float d = _sailboat_heel_pid.get_d();
-
-    // constrain and return final output
-    return (ff + p + i + d) * -1.0f;
 }
 
 // get the slew rate value for speed and steering for oscillation detection in lua scripts

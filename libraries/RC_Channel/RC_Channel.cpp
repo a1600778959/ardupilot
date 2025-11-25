@@ -159,7 +159,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 60:ZigZag Mode
     // @Values{Copter}: 61:ZigZag SaveWP
     // @Values{Copter, Rover, Plane}: 62:Compass Learn
-    // @Values{Rover}: 63:Sailboat Tack
     // @Values{Plane}: 64:Reverse Throttle
     // @Values{Copter, Rover, Plane, Blimp}: 65:GPS Disable
     // @Values{Copter, Rover, Plane}: 66:Relay5 On/Off, 67:Relay6 On/Off
@@ -169,7 +168,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 71:FLOWHOLD Mode
     // @Values{Copter,Rover,Plane}: 72:CIRCLE Mode
     // @Values{Copter}: 73:DRIFT Mode
-    // @Values{Rover}: 74:Sailboat motoring 3pos
     // @Values{Copter}: 75:SurfaceTrackingUpDown
     // @Values{Copter}: 76:STANDBY Mode
     // @Values{Plane}: 77:TAKEOFF Mode
@@ -234,7 +232,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp}: 177:Mount LRF enable
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
-    // @Values{Rover}: 207:MainSail
     // @Values{Rover, Plane}:  208:Flap
     // @Values{Plane}: 209:VTOL Forward Throttle
     // @Values{Plane}: 210:Airbrakes

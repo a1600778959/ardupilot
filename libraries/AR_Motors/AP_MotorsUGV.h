@@ -18,7 +18,6 @@ public:
         MOTOR_TEST_STEERING = 2,
         MOTOR_TEST_THROTTLE_LEFT = 3,
         MOTOR_TEST_THROTTLE_RIGHT = 4,
-        MOTOR_TEST_MAINSAIL = 5,
         MOTOR_TEST_LAST
     };
 
@@ -162,12 +161,6 @@ private:
     // dt is the main loop time interval and is required when rate control is required
     void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt = 0.0f);
 
-    // output for sailboat's mainsail in the range of 0 to 100 and wing sail in the range +- 100
-    void output_sail();
-
-    // true if the vehicle has a mainsail or wing sail
-    bool has_sail() const;
-
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
 
@@ -207,8 +200,6 @@ private:
     float   _roll;      // requested roll as a value from -1 to +1
     float   _pitch;     // requested pitch as a value from -1 to +1
     float   _walking_height; // requested height as a value from -1 to +1   
-    float   _mainsail;  // requested mainsail input as a value from 0 to 100
-    float   _wingsail;  // requested wing sail input as a value in the range +- 100
     float   _mast_rotation;  // requested mast rotation input as a value in the range +- 100
     uint32_t _motor_mask;   // mask of motors configured with pwm_type
     frame_type _frame_type; // frame type requested at initialisation

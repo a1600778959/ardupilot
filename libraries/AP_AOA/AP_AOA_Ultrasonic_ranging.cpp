@@ -6,7 +6,7 @@ AP_MultiDistanceSensor::AP_MultiDistanceSensor()
     current_sensor_idx = -1;
     if (_singleton != nullptr)
     {
-        AP_HAL::panic("Can only be one AC_AttitudeControl_Multi_6DoF");
+        AP_HAL::panic("Can only be one AP_MultiDistanceSensor");
     }
     _singleton = this;
 }

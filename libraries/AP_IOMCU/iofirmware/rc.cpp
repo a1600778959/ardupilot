@@ -86,9 +86,6 @@ void AP_IOMCU_FW::rcin_serial_init(void)
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
     AP::RC().disable_for_pulses(AP_RCProtocol::SBUS_NI);
 #endif
-#if AP_RCPROTOCOL_FPORT_ENABLED
-    AP::RC().disable_for_pulses(AP_RCProtocol::FPORT);
-#endif
 }
 
 static struct {

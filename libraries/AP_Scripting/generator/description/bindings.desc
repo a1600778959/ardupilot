@@ -523,25 +523,6 @@ singleton QuadPlane method in_assisted_flight boolean
 singleton QuadPlane method abort_landing boolean
 singleton QuadPlane method in_vtol_land_descent boolean
 
-include ../ArduSub/Sub.h depends APM_BUILD_TYPE(APM_BUILD_ArduSub)
-singleton Sub rename sub
-singleton Sub depends APM_BUILD_TYPE(APM_BUILD_ArduSub)
-singleton Sub method get_and_clear_button_count uint8_t uint8_t 1 4
-singleton Sub method is_button_pressed boolean uint8_t 1 4
-
-include AP_Frsky_Telem/AP_Frsky_SPort.h
-singleton AP_Frsky_SPort rename frsky_sport
-singleton AP_Frsky_SPort depends AP_FRSKY_SPORT_TELEM_ENABLED
-singleton AP_Frsky_SPort method sport_telemetry_push boolean uint8_t'skip_check uint8_t'skip_check uint16_t'skip_check int32_t'skip_check
-singleton AP_Frsky_SPort method prep_number uint16_t int32_t'skip_check uint8_t'skip_check uint8_t'skip_check
-
-include AC_AttitudeControl/AC_AttitudeControl_Multi_6DoF.h depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AC_AttitudeControl_Multi_6DoF depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AC_AttitudeControl_Multi_6DoF rename attitude_control
-singleton AC_AttitudeControl_Multi_6DoF method set_lateral_enable void boolean
-singleton AC_AttitudeControl_Multi_6DoF method set_forward_enable void boolean
-singleton AC_AttitudeControl_Multi_6DoF method set_offset_roll_pitch void float'skip_check float'skip_check
-
 include AP_HAL/I2CDevice.h
 ap_object AP_HAL::I2CDevice semaphore-pointer
 ap_object AP_HAL::I2CDevice method set_retries void uint8_t 0 20

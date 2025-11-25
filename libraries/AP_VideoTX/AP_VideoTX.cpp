@@ -17,7 +17,6 @@
 
 #if AP_VIDEOTX_ENABLED
 
-#include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include <AP_HAL/AP_HAL.h>
@@ -372,13 +371,6 @@ bool AP_VideoTX::update_options() const
         != (_current_options & uint8_t(VideoOptions::VTX_PITMODE))) {
         return true;
     }
-
-#if HAL_CRSF_TELEM_ENABLED
-    // using CRSF so unlock is not an option
-    if (AP::crsf_telem() != nullptr) {
-        return false;
-    }
-#endif
     // check unlock only
     if ((_options & uint8_t(VideoOptions::VTX_UNLOCKED)) != 0
         && (_current_options & uint8_t(VideoOptions::VTX_UNLOCKED)) == 0) {

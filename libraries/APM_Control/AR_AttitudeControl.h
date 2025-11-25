@@ -90,14 +90,10 @@ public:
     // get latest desired pitch in radians for reporting purposes
     float get_desired_pitch() const;
 
-    // Sailboat heel(roll) angle contorller, release sail to keep at maximum heel angle
-    float get_sail_out_from_heel(float desired_heel, float dt);
-
     // low level control accessors for reporting and logging
     AC_P& get_steering_angle_p() { return _steer_angle_p; }
     AC_PID& get_steering_rate_pid() { return _steer_rate_pid; }
     AC_PID& get_pitch_to_throttle_pid() { return _pitch_to_throttle_pid; }
-    AC_PID& get_sailboat_heel_pid() { return _sailboat_heel_pid; }
     const AP_PIDInfo& get_throttle_speed_pid_info() const { return _throttle_speed_pid_info; }
 
     // set the PID notch sample rates
@@ -179,7 +175,5 @@ private:
     float _pitch_limit_high = 0;    // max desired pitch (in radians) used to protect against falling over
     bool _pitch_limited = false;    // true if pitch was limited on last call to get_throttle_out_from_pitch
 
-    // Sailboat heel control
-    AC_PID   _sailboat_heel_pid;    // Sailboat heel angle pid controller
     uint32_t _heel_controller_last_ms = 0;
 };
