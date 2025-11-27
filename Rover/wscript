@@ -10,7 +10,7 @@ def build(bld):
             'APM_Control',
             'AP_Arming',
             'AP_Mount',
-            'AP_Navigation',
+            #'AP_Navigation',
             'AR_WPNav',
             'AP_RCMapper',
             'AP_Beacon',

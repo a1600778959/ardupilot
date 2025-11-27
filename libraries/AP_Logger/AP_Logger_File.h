@@ -7,7 +7,7 @@
 #pragma once
 
 #include <AP_Filesystem/AP_Filesystem.h>
-
+#include <AP_RTC/AP_RTC.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_Logger_Backend.h"
 

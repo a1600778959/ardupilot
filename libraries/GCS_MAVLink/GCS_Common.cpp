@@ -53,7 +53,6 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_KDECAN/AP_KDECAN.h>
-#include <AP_Landing/AP_Landing_config.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -1034,9 +1033,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_BATTERY_STATUS,        MSG_BATTERY_STATUS},
 #endif
         { MAVLINK_MSG_ID_AOA_SSA,               MSG_AOA_SSA},
-#if HAL_LANDING_DEEPSTALL_ENABLED
-        { MAVLINK_MSG_ID_DEEPSTALL,             MSG_LANDING},
-#endif
         { MAVLINK_MSG_ID_EXTENDED_SYS_STATE,    MSG_EXTENDED_SYS_STATE},
         { MAVLINK_MSG_ID_AUTOPILOT_VERSION,     MSG_AUTOPILOT_VERSION},
 #if HAL_EFI_ENABLED
