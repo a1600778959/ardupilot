@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
-#include <AP_Terrain/AP_Terrain.h>
 
 #ifndef HAL_MOUNT_ENABLED
 #define HAL_MOUNT_ENABLED 1
@@ -51,7 +50,7 @@
 #endif
 
 #ifndef AP_MOUNT_POI_TO_LATLONALT_ENABLED
-#define AP_MOUNT_POI_TO_LATLONALT_ENABLED HAL_MOUNT_ENABLED && AP_TERRAIN_AVAILABLE && BOARD_FLASH_SIZE > 1024
+#define AP_MOUNT_POI_TO_LATLONALT_ENABLED HAL_MOUNT_ENABLED && BOARD_FLASH_SIZE > 1024
 #endif
 
 // set camera source is supported on gimbals that may have more than one lens

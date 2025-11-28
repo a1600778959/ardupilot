@@ -10,9 +10,6 @@
 #define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 #endif
 
-#ifndef HAL_BOARD_TERRAIN_DIRECTORY
-#define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-#endif
-
 // enable terrain only if there's an SD card available:
-#define AP_TERRAIN_AVAILABLE HAL_OS_FATFS_IO
+// 对于车而言地形跟踪是无效的
+// #define AP_TERRAIN_AVAILABLE HAL_OS_FATFS_IO

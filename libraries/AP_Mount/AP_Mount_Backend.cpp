@@ -3,7 +3,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_Terrain/AP_Terrain.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -535,13 +534,6 @@ void AP_Mount_Backend::calculate_poi()
         // start testing at vehicle's location
         Location test_loc = curr_loc;
         Location prev_test_loc = curr_loc;
-
-        // get terrain altitude (AMSL) at test_loc
-        auto terrain = AP_Terrain::get_singleton();
-        float terrain_amsl_m;
-        if ((terrain == nullptr) || !terrain->height_amsl(test_loc, terrain_amsl_m, true)) {
-            continue;
-        }
 
         // retrieve gimbal attitude
         Quaternion quat;

@@ -1079,20 +1079,6 @@ struct PACKED log_VER {
 // @Field: E: point associated with most recent action (East component)
 // @Field: D: point associated with most recent action (Down component)
 
-// @LoggerMessage: TERR
-// @Description: Terrain database information
-// @Field: TimeUS: Time since system startup
-// @Field: Status: Terrain database status
-// @FieldValueEnum: Status: AP_Terrain::TerrainStatus
-// @Field: Lat: Current vehicle latitude
-// @Field: Lng: Current vehicle longitude
-// @Field: Spacing: terrain Tile spacing
-// @Field: TerrH: current Terrain height
-// @Field: CHeight: Vehicle height above terrain
-// @Field: Pending: Number of tile requests outstanding
-// @Field: Loaded: Number of tiles in memory
-// @Field: ROfs: terrain reference offset for arming altitude
-
 // @LoggerMessage: TSYN
 // @Description: Time synchronisation response information
 // @Field: TimeUS: Time since system startup

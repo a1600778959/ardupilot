@@ -28,8 +28,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace AP_HAL;
 
-#include <AP_Terrain/AP_Terrain.h>
-
 #ifndef AP_SIM_FRAME_CLASS
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 #define AP_SIM_FRAME_CLASS MultiCopter
@@ -382,25 +380,6 @@ void SIMState::set_height_agl(void)
         // remember home altitude as first non-zero altitude
         home_alt = _sitl->state.altitude;
     }
-
-#if AP_TERRAIN_AVAILABLE
-    if (_sitl != nullptr &&
-        _sitl->terrain_enable) {
-        // get height above terrain from AP_Terrain. This assumes
-        // AP_Terrain is working
-        float terrain_height_amsl;
-        Location location;
-        location.lat = _sitl->state.latitude*1.0e7;
-        location.lng = _sitl->state.longitude*1.0e7;
-
-        AP_Terrain *_terrain = AP_Terrain::get_singleton();
-        if (_terrain != nullptr &&
-            _terrain->height_amsl(location, terrain_height_amsl)) {
-            _sitl->state.height_agl = _sitl->state.altitude - terrain_height_amsl;
-            return;
-        }
-    }
-#endif
 
     if (_sitl != nullptr) {
         // fall back to flat earth model

@@ -9,7 +9,6 @@
 #if AP_MISSION_ENABLED
 
 #include "AP_Mission.h"
-#include <AP_Terrain/AP_Terrain.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Camera/AP_Camera.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -1407,18 +1406,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
             cmd.content.location.relative_alt = 1;
             break;
-
-#if AP_TERRAIN_AVAILABLE
-        case MAV_FRAME_GLOBAL_TERRAIN_ALT:
-        case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
-            // we mark it as a relative altitude, as it doesn't have
-            // home alt added
-            cmd.content.location.relative_alt = 1;
-            // mark altitude as above terrain, not above home
-            cmd.content.location.terrain_alt = 1;
-            break;
-#endif
-
         default:
             return MAV_MISSION_UNSUPPORTED_FRAME;
         }
@@ -1896,22 +1883,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         } else {
             packet.frame = MAV_FRAME_GLOBAL;
         }
-#if AP_TERRAIN_AVAILABLE
-        if (cmd.content.location.terrain_alt) {
-            // this is a above-terrain altitude
-            if (!cmd.content.location.relative_alt) {
-                // refuse to return non-relative terrain mission
-                // items. Internally we do have these, and they
-                // have home.alt added, but we should never be
-                // returning them to the GCS, as the GCS doesn't know
-                // our home.alt, so it would have no way to properly
-                // interpret it
-                return false;
-            }
-            packet.z = cmd.content.location.alt * 0.01f;
-            packet.frame = MAV_FRAME_GLOBAL_TERRAIN_ALT;
-        }
-#else
         // don't ever return terrain mission items if no terrain support
         if (cmd.content.location.terrain_alt) {
             return false;

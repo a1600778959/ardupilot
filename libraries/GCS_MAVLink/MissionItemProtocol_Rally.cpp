@@ -26,7 +26,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Rally/AP_Rally.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_Terrain/AP_Terrain.h>
 
 MAV_MISSION_RESULT MissionItemProtocol_Rally::append_item(const mavlink_mission_item_int_t &cmd)
 {
@@ -81,14 +80,6 @@ MAV_MISSION_RESULT MissionItemProtocol_Rally::convert_MISSION_ITEM_INT_to_RallyL
         case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
             ret.alt_frame = uint8_t(Location::AltFrame::ABOVE_HOME);
             break;
-
-#if AP_TERRAIN_AVAILABLE
-        case MAV_FRAME_GLOBAL_TERRAIN_ALT:
-        case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
-            ret.alt_frame = uint8_t(Location::AltFrame::ABOVE_TERRAIN);
-            break;
-#endif
-
         default:
             return MAV_MISSION_UNSUPPORTED_FRAME;
     }
