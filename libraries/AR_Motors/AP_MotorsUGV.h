@@ -3,12 +3,13 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_AOA/AP_AOA_Ultrasonic_ranging.h>
 
 class AP_MotorsUGV {
 public:
     // Constructor
     AP_MotorsUGV(AP_WheelRateControl& rate_controller);
-
+    AP_MultiDistanceSensor *dist;
     // singleton support
     static AP_MotorsUGV    *get_singleton(void) { return _singleton; }
 
@@ -173,7 +174,7 @@ private:
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
     // dt is the main loop time interval and is required when rate control is required
     void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt = 0.0f);
-
+    
     // output for sailboat's mainsail in the range of 0 to 100 and wing sail in the range +- 100
     void output_sail();
 
@@ -209,6 +210,7 @@ private:
     AP_Float _vector_angle_max;  // angle between steering's middle position and maximum position when using vectored thrust.  zero to disable vectored thrust
     AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles
+    AP_Float _stop_distance; // distance in meters to stop UGV when obstacle detected
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500

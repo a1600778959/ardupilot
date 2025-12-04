@@ -118,6 +118,8 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THST_ASYM", 14, AP_MotorsUGV, _thrust_asymmetry, 1.0f),
 
+    AP_GROUPINFO("STOP_DIST", 15, AP_MotorsUGV, _stop_distance, 1000.0f),
+
     AP_GROUPEND
 };
 
@@ -131,7 +133,7 @@ AP_MotorsUGV::AP_MotorsUGV(AP_WheelRateControl& rate_controller) :
 void AP_MotorsUGV::init(uint8_t frtype)
 {
     _frame_type = frame_type(frtype);
-
+    dist = AP_MultiDistanceSensor::get_singleton();
     // setup servo output
     setup_servo_output();
 
@@ -224,7 +226,13 @@ void AP_MotorsUGV::setup_servo_output()
 //   no scaling by speed or angle should be performed
 void AP_MotorsUGV::set_steering(float steering, bool apply_scaling)
 {
-    _steering = steering;
+    SensorData *data = dist->get_min_distance();
+    if (data->distance < _stop_distance)  // if an obstacle is closer than 0.5 meters
+    {
+        _steering = 0.0f;
+    } else {
+        _steering = steering;
+    }
     _scale_steering = apply_scaling;
 }
 
@@ -234,10 +242,14 @@ void AP_MotorsUGV::set_throttle(float throttle)
     // only allow setting throttle if armed
     if (!hal.util->get_soft_armed()) {
         return;
+    }    
+    SensorData *data = dist->get_min_distance();
+    if (data->distance < _stop_distance)  // if an obstacle is closer than 0.5 meters
+    {
+        _throttle = 0.0f;
+    } else {
+        _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
     }
-
-    // check throttle is between -_throttle_max and  +_throttle_max
-    _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
 }
 
 // set lateral input as a value from -100 to +100
@@ -1160,13 +1172,13 @@ bool AP_MotorsUGV::is_digital_pwm_type() const
     case PWMType::DSHOT300:
     case PWMType::DSHOT600:
     case PWMType::DSHOT1200:
-        return true;
+            return true;
     case PWMType::NORMAL:
     case PWMType::ONESHOT:
     case PWMType::ONESHOT125:
     case PWMType::BRUSHED_WITH_RELAY:
     case PWMType::BRUSHED_BIPOLAR:
-        break;
+            break;
     }
     return false;
 }

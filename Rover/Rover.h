@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 // Libraries
+#include <AP_AOA/AP_AOA_Ultrasonic_ranging.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>          // Battery monitor library
@@ -211,6 +212,8 @@ private:
     uint32_t rangefinder_last_reading_ms[RANGEFINDER_MAX_INSTANCES];
 #endif
 
+    AP_MultiDistanceSensor dist;
+
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
@@ -372,6 +375,7 @@ private:
 
     // sensors.cpp
     void update_compass(void);
+    void update_dist(void);
     void compass_save(void);
     void update_wheel_encoder();
 #if AP_RANGEFINDER_ENABLED
