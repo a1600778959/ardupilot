@@ -76,7 +76,7 @@ void ModeGuided::update()
         case SubMode::TurnRateAndSpeed:
         {
             // stop vehicle if target not updated within 3 seconds
-            if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
+            if (have_attitude_target && (millis() - _des_att_time_ms) > 500) {
                 gcs().send_text(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
                 have_attitude_target = false;
             }

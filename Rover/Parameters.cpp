@@ -393,7 +393,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
-
+    GOBJECT(mode_aoafollow, "AOA_", ModeAoafllow), // PID参数
     AP_VAREND
 };
 

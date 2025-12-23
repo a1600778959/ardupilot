@@ -22,7 +22,6 @@
 #include <stdint.h>
 
 // Libraries
-#include <AP_AOA/AP_AOA_Ultrasonic_ranging.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>          // Battery monitor library
@@ -46,6 +45,10 @@
 #include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_Follow/AP_Follow_config.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
+#include <AP_AOA/AP_AOAFilter.h>           //添加AOA头文件
+#include <AP_AOA/AP_AOAPID.h>              //添加AOAPID头文件
+#include <AP_AOA/AP_AOA_ALX.h>             //添加AOALAX头文件
+#include <AP_AOA/AP_AOA_Ultrasonic_ranging.h> //添加AOA超声波测距头文件
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_ExternalControl_Rover.h"
 #endif
@@ -100,6 +103,7 @@ public:
     friend class ModeManual;
     friend class ModeRTL;
     friend class ModeSmartRTL;
+    friend class ModeAoafllow;
 #if MODE_FOLLOW_ENABLED
     friend class ModeFollow;
 #endif
@@ -256,6 +260,7 @@ private:
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
+    ModeAoafllow mode_aoafollow; // <- 新增此行
 #if MODE_FOLLOW_ENABLED
     ModeFollow mode_follow;
 #endif

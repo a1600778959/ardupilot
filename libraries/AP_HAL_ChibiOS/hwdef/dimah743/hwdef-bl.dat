@@ -47,7 +47,7 @@ PD15 POWER_LED OUTPUT LOW
 PD12 Shache OUTPUT LOW
 PA5 C1 OUTPUT LOW
 PA6 C2 OUTPUT LOW
-define HAL_LED_ON 0		
+
 
 # Add CS pins to ensure they are high in bootloader
 PC15 IMU1_CS CS

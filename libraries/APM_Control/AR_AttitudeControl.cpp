@@ -754,12 +754,12 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     // sanity check dt
     dt = constrain_float(dt, 0.0f, 1.0f);
 
-    // get speed forward
+    // 如果不能获取到地速, 就给一个默认地速0.5
     float speed;
     if (!get_forward_speed(speed)) {
         // we expect caller will not try to control heading using rate control without a valid speed estimate
         // on failure to get speed we do not attempt to steer
-        return 0.0f;
+        speed = 0.0f;
     }
 
     // if not called recently, reset input filter and desired speed to actual speed (used for accel limiting)

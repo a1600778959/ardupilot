@@ -234,11 +234,13 @@ void AP_MotorsUGV::set_steering(float steering, bool apply_scaling)
         _steering = steering;
     }
     _scale_steering = apply_scaling;
+    gcs().send_named_float("steering", _steering);
 }
 
 // set throttle as a value from -100 to 100
 void AP_MotorsUGV::set_throttle(float throttle)
 {
+    gcs().send_named_float("throttle", throttle);
     // only allow setting throttle if armed
     if (!hal.util->get_soft_armed()) {
         return;

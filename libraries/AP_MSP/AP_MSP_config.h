@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef HAL_MSP_ENABLED
-#define HAL_MSP_ENABLED 1
+#define HAL_MSP_ENABLED 0
 #endif
 
 // define for enabling MSP sensor drivers

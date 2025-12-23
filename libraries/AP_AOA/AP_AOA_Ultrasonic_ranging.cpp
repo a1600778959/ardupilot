@@ -121,7 +121,7 @@ void AP_MultiDistanceSensor::update()
     }
     // 发送请求
     send_request();
-    gcs().send_named_float("aoa_distance", get_min_distance()->distance);
+    gcs().send_named_float("aoa_dist", get_min_distance()->distance);
 }
 
 bool AP_MultiDistanceSensor::get_distance(uint8_t sensor_idx, float &dist) const
