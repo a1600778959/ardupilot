@@ -63,7 +63,6 @@
 
 // Local modules
 #include "AP_Arming.h"
-#include "sailboat.h"
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
 #include "afs_rover.h"
 #endif
@@ -93,7 +92,6 @@ public:
 #endif
     friend class GCS_Rover;
     friend class Mode;
-    friend class ModeAcro;
     friend class ModeAuto;
     friend class ModeCircle;
     friend class ModeGuided;
@@ -114,8 +112,6 @@ public:
 
     friend class RC_Channel_Rover;
     friend class RC_Channels_Rover;
-
-    friend class Sailboat;
 
     Rover(void);
 
@@ -253,7 +249,6 @@ private:
     ModeInitializing mode_initializing;
     ModeHold mode_hold;
     ModeManual mode_manual;
-    ModeAcro mode_acro;
     ModeGuided mode_guided;
     ModeAuto mode_auto;
     ModeLoiter mode_loiter;
@@ -302,17 +297,10 @@ private:
     void one_second_loop(void);
     void update_current_mode(void);
 
-    // balance_bot.cpp
-    void balancebot_pitch_control(float &throttle);
-    bool is_balancebot() const;
-
     // commands.cpp
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
     void update_home();
-
-    // crash_check.cpp
-    void crash_check();
 
     // cruise_learn.cpp
     void cruise_learn_start();
@@ -350,10 +338,8 @@ private:
 
     // Log.cpp
     void Log_Write_Attitude();
-    void Log_Write_Depth();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Nav_Tuning();
-    void Log_Write_Sail();
     void Log_Write_Steering();
     void Log_Write_Throttle();
     void Log_Write_RC(void);
@@ -412,7 +398,6 @@ private:
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
-    bool is_boat() const;
 
     // vehicle specific waypoint info helpers
     bool get_wp_distance_m(float &distance) const override;

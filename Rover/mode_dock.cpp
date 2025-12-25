@@ -134,11 +134,6 @@ void ModeDock::update()
         // send a one time notification to GCS
         gcs().send_text(MAV_SEVERITY_INFO, "Dock: Docking complete");
 
-        // initialise mode loiter if it is a boat
-        if (rover.is_boat()) {
-            // if we fail to enter, we set _loitering to false
-            _loitering = rover.mode_loiter.enter();
-        }
         return;
     }
 

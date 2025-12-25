@@ -71,7 +71,6 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
     _RFRN.touchdown_expected = ahrs.get_touchdown_expected();
-    _RFRN.ahrs_airspeed_sensor_enabled = ahrs.airspeed_sensor_enabled(ahrs.get_active_airspeed_index());
     _RFRN.available_memory = hal.util->available_memory();
     _RFRN.ahrs_trim = ahrs.get_trim();
 #if AP_OPTICALFLOW_ENABLED
@@ -88,9 +87,6 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _baro.start_frame();
     _gps.start_frame();
     _compass.start_frame();
-    if (_airspeed) {
-        _airspeed->start_frame();
-    }
 #if AP_RANGEFINDER_ENABLED
     if (_rangefinder) {
         _rangefinder->start_frame();
@@ -141,13 +137,6 @@ void AP_DAL::init_sensors(void)
     auto *rng = AP::rangefinder();
     if (rng && rng->num_sensors() > 0) {
         alloc_failed |= (_rangefinder = NEW_NOTHROW AP_DAL_RangeFinder) == nullptr;
-    }
-#endif
-
-#if AP_AIRSPEED_ENABLED
-    auto *aspeed = AP::airspeed();
-    if (aspeed != nullptr && aspeed->get_num_sensors() > 0) {
-        alloc_failed |= (_airspeed = NEW_NOTHROW AP_DAL_Airspeed) == nullptr;
     }
 #endif
 

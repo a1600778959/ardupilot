@@ -194,16 +194,6 @@ const Location &AR_WPNav_OA::get_oa_destination() const
     return AR_WPNav::get_oa_destination();
 }
 
-// return the heading (in centi-degrees) to the next waypoint accounting for OA, (used by sailboats)
-float AR_WPNav_OA::oa_wp_bearing_cd() const
-{
-    if (_oa_active) {
-        return _oa_wp_bearing_cd;
-    }
-
-    return AR_WPNav::oa_wp_bearing_cd();
-}
-
 // update distance from vehicle's current position to destination
 void AR_WPNav_OA::update_oa_distance_and_bearing_to_destination()
 {

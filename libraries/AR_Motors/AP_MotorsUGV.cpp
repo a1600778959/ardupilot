@@ -317,12 +317,6 @@ bool AP_MotorsUGV::have_skid_steering() const
     return (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) && SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) || is_omni();
 }
 
-// true if the vehicle has a mainsail
-bool AP_MotorsUGV::has_sail() const
-{
-    return SRV_Channels::function_assigned(SRV_Channel::k_mainsail_sheet) || SRV_Channels::function_assigned(SRV_Channel::k_wingsail_elevator) || SRV_Channels::function_assigned(SRV_Channel::k_mast_rotation);
-}
-
 void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 {
     // soft-armed overrides passed in armed status
@@ -349,9 +343,6 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 
     // output for omni frames
     output_omni(armed, _steering, _throttle, _lateral);
-
-    // output to sails
-    output_sail();
 
     // send values to the PWM timers for output
     auto &srv = AP::srv();
@@ -511,7 +502,6 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
        !have_throttle &&
        !SRV_Channels::function_assigned(SRV_Channel::k_steering) &&
        !SRV_Channels::function_assigned(SRV_Channel::k_scripting1) &&
-       !has_sail() &&
        !is_omni()) {
         if (report) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: no motor, sail or scripting outputs defined");
@@ -526,7 +516,7 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         return false;
     }
     // check if only one of throttle or steering outputs has been configured, if has a sail allow no throttle
-    if ((has_sail() || have_throttle) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
+    if (have_throttle != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
         if (report) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: check steering and throttle config");
         }
@@ -1058,18 +1048,6 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
             // do nothing
             break;
     }
-}
-
-// output for sailboat's sails
-void AP_MotorsUGV::output_sail()
-{
-    if (!has_sail()) {
-        return;
-    }
-
-    SRV_Channels::set_output_scaled(SRV_Channel::k_mainsail_sheet, _mainsail);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_wingsail_elevator, _wingsail);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_mast_rotation, _mast_rotation);
 }
 
 // slew limit throttle for one iteration

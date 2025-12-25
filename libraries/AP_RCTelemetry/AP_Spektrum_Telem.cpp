@@ -22,7 +22,6 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_RPM/AP_RPM.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
@@ -450,16 +449,7 @@ void AP_Spektrum_Telem::calc_airspeed()
     WITH_SEMAPHORE(ahrs.get_semaphore());
 
     float speed = 0.0f;
-#if AP_AIRSPEED_ENABLED
-    const AP_Airspeed *airspeed = AP::airspeed();
-    if (airspeed && airspeed->healthy()) {
-        speed = roundf(airspeed->get_airspeed() * 3.6);
-    } else {
-        speed = roundf(AP::ahrs().groundspeed() * 3.6);
-    }
-#else
     speed = roundf(AP::ahrs().groundspeed() * 3.6);
-#endif
 
     _telem.speed.airspeed = htobe16(uint16_t(speed));           // 1 km/h increments
     _max_speed = MAX(speed, _max_speed);

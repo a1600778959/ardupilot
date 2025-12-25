@@ -24,9 +24,6 @@ public:
     // get object avoidance adjusted destination. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
     const Location &get_oa_destination() const override;
 
-    // return the heading (in centi-degrees) to the next waypoint accounting for OA, (used by sailboats)
-    float oa_wp_bearing_cd() const override;
-
 private:
 
     // update distance and bearing from vehicle's current position to destination

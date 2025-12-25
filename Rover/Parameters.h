@@ -5,7 +5,6 @@
 #include "RC_Channel.h"
 #include <AC_Avoidance/AC_Avoid.h>
 #include "AC_Sprayer/AC_Sprayer.h"
-#include <AP_AIS/AP_AIS.h>
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Follow/AP_Follow.h>
 #include <AP_Proximity/AP_Proximity.h>
@@ -13,7 +12,6 @@
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_Stats/AP_Stats.h>
 #include "AP_Torqeedo/AP_Torqeedo.h"
-#include <AP_WindVane/AP_WindVane.h>
 
 #define AP_PARAM_VEHICLE_NAME rover
 
@@ -382,9 +380,6 @@ public:
     // Simple mode types
     AP_Int8 simple_type;
 
-    // windvane
-    AP_WindVane windvane;
-
 #if AP_MISSION_ENABLED
     // mission behave
     AP_Enum<ModeAuto::DoneBehaviour> mis_done_behave;
@@ -398,9 +393,6 @@ public:
 
     // waypoint navigation
     AR_WPNav_OA wp_nav;
-
-    // Sailboat functions
-    Sailboat sailboat;
 
 #if AP_OAPATHPLANNER_ENABLED
     // object avoidance path planning

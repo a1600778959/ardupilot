@@ -84,11 +84,6 @@ public:
     // settor to allow vehicle code to provide turn related param values to this library (should be updated regularly)
     void set_turn_params(float turn_radius, bool pivot_possible);
 
-    // enable speeding up position target to catch-up with vehicles travelling faster than WP_SPEED
-    // designed to support sailboats that do not have precise speed control
-    // only supported when using SCurves and not when using position controller input shaping
-    void enable_overspeed(bool enable) { _overspeed_enabled = enable; }
-
     // accessors for parameter values
     float get_default_speed() const { return _speed_max; }
     float get_default_accel() const { return _accel_max; }

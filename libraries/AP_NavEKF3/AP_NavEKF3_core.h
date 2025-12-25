@@ -1611,7 +1611,6 @@ private:
     void update_gps_selection(void);
     void update_mag_selection(void);
     void update_baro_selection(void);
-    void update_airspeed_selection(void);
 
     // selected and preferred sensor instances. We separate selected
     // from preferred so that calcGpsGoodToAlign() can ensure the
@@ -1620,7 +1619,6 @@ private:
     uint8_t selected_gps;
     uint8_t preferred_gps;
     uint8_t selected_baro;
-    uint8_t selected_airspeed;
 
     // source reset handling
     AP_NavEKF_Source::SourceXY posxy_source_last;   // horizontal position source on previous iteration (used to detect a changes)

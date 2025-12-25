@@ -27,7 +27,6 @@
 #include <AP_Winch/AP_Winch_config.h>
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_Arming/AP_Arming_config.h>
-#include <AP_Airspeed/AP_Airspeed_config.h>
 
 #include "ap_message.h"
 
@@ -364,12 +363,6 @@ public:
     void send_scaled_pressure();
     void send_scaled_pressure2();
     virtual void send_scaled_pressure3(); // allow sub to override this
-#if AP_AIRSPEED_ENABLED
-    // Send per instance airspeed message
-    // last index is used to rotate through sensors
-    void send_airspeed();
-    uint8_t last_airspeed_idx;
-#endif
     void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();
@@ -571,8 +564,6 @@ protected:
     void handle_obstacle_distance(const mavlink_message_t &msg);
     void handle_obstacle_distance_3d(const mavlink_message_t &msg);
 
-    void handle_adsb_message(const mavlink_message_t &msg);
-
     void handle_osd_param_config(const mavlink_message_t &msg) const;
 
     void handle_common_param_message(const mavlink_message_t &msg);
@@ -733,8 +724,6 @@ protected:
     virtual uint8_t high_latency_tgt_heading() const { return 0; }
     virtual uint16_t high_latency_tgt_dist() const { return 0; }
     virtual uint8_t high_latency_tgt_airspeed() const { return 0; }
-    virtual uint8_t high_latency_wind_speed() const { return 0; }
-    virtual uint8_t high_latency_wind_direction() const { return 0; }
     int8_t high_latency_air_temperature() const;
 
     MAV_RESULT handle_control_high_latency(const mavlink_command_int_t &packet);

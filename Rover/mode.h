@@ -13,7 +13,6 @@ public:
     // ----------------
     enum class Number : uint8_t {
         MANUAL       = 0,
-        ACRO         = 1,
         STEERING     = 3,
         HOLD         = 4,
         LOITER       = 5,
@@ -128,9 +127,6 @@ public:
     // init reversed flag for autopilot mode
     virtual void init_reversed_flag() { if (is_autopilot_mode()) { set_reversed(false); } }
 
-    // handle tacking request (from auxiliary switch) in sailboats
-    virtual void handle_tack_request();
-
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -217,29 +213,6 @@ protected:
     float _desired_yaw_cd;      // desired yaw in centi-degrees.  used in Auto, Guided and Loiter
 };
 
-
-class ModeAcro : public Mode
-{
-public:
-
-    Number mode_number() const override { return Number::ACRO; }
-    const char *name4() const override { return "ACRO"; }
-
-    // methods that affect movement of the vehicle in this mode
-    void update() override;
-
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-
-    // acro mode requires a velocity estimate for non skid-steer rovers
-    bool requires_position() const override { return false; }
-    bool requires_velocity() const override;
-
-    // sailboats in acro mode support user manually initiating tacking from transmitter
-    void handle_tack_request() override;
-};
-
-
 class ModeAuto : public Mode
 {
 public:
@@ -296,7 +269,6 @@ public:
     enum class DoneBehaviour : uint8_t {
         HOLD      = 0,
         LOITER    = 1,
-        ACRO      = 2,
         MANUAL    = 3,
     };
 

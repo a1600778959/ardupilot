@@ -40,9 +40,6 @@ protected:
     uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
 #endif
 
-    // send WATER_DEPTH - metres and temperature
-    void send_water_depth() const;
-
 private:
 
     void handle_message(const mavlink_message_t &msg) override;
@@ -68,19 +65,14 @@ private:
 #if AP_RANGEFINDER_ENABLED
     void send_rangefinder() const override;
 
-    // send WATER_DEPTH - metres and temperature
-    void send_water_depth();
     // state variable for the last rangefinder we sent a WATER_DEPTH
     // message for.  We cycle through the rangefinder backends to
     // limit the amount of telemetry bandwidth we consume.
-    uint8_t last_WATER_DEPTH_index;
 #endif
 
 #if HAL_HIGH_LATENCY2_ENABLED
     uint8_t high_latency_tgt_heading() const override;
     uint16_t high_latency_tgt_dist() const override;
     uint8_t high_latency_tgt_airspeed() const override;
-    uint8_t high_latency_wind_speed() const override;
-    uint8_t high_latency_wind_direction() const override;
 #endif // HAL_HIGH_LATENCY2_ENABLED
 };

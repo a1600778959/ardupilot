@@ -14,14 +14,13 @@
  */
 
 #include "AR_PosControl.h"
-
+#include <AP_Logger/AP_Logger.h>
+#include "LogStructure.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AC_Avoidance/AC_Avoid.h>
-#include <AC_AttitudeControl/AC_PosControl.h>
 
 #define AR_POSCON_TIMEOUT_MS            100     // timeout after 0.1 sec
 #define AR_POSCON_POS_P                 0.2f    // default position P gain
@@ -388,8 +387,8 @@ void AR_PosControl::write_log()
     // convert position to required format
     Vector2f pos_target_2d_cm = get_pos_target().tofloat() * 100.0;
 
-    // reuse logging from AC_PosControl:
-    AC_PosControl::Write_PSCN(0.0,                  // position desired
+    // reuse logging from AR_PosControl:
+    Write_PSCN(0.0,                  // position desired
                             pos_target_2d_cm.x,     // position target
                             curr_pos_NED.x * 100.0, // position
                             _vel_desired.x * 100.0, // desired velocity
@@ -398,7 +397,7 @@ void AR_PosControl::write_log()
                             _accel_desired.x * 100.0,   // desired accel
                             _accel_target.x * 100.0,    // target accel
                             curr_accel_NED.x);      // accel
-    AC_PosControl::Write_PSCE(0.0,                  // position desired
+    Write_PSCE(0.0,                  // position desired
                             pos_target_2d_cm.y,     // position target
                             curr_pos_NED.y * 100.0, // position
                             _vel_desired.y * 100.0, // desired velocity
@@ -438,4 +437,33 @@ void AR_PosControl::handle_ekf_xy_reset()
 
         _ekf_xy_reset_ms = reset_ms;
     }
+}
+
+// a convenience function for writing out the position controller PIDs
+void AR_PosControl::Write_PSCx(LogMessages id, float pos_desired, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
+{
+    const struct log_PSCx pkt{
+        LOG_PACKET_HEADER_INIT(id),
+            time_us       : AP_HAL::micros64(),
+            pos_desired   : pos_desired * 0.01f,
+            pos_target    : pos_target * 0.01f,
+            pos           : pos * 0.01f,
+            vel_desired   : vel_desired * 0.01f,
+            vel_target    : vel_target * 0.01f,
+            vel           : vel * 0.01f,
+            accel_desired : accel_desired * 0.01f,
+            accel_target  : accel_target * 0.01f,
+            accel         : accel * 0.01f
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
+void AR_PosControl::Write_PSCN(float pos_desired, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
+{
+    Write_PSCx(LOG_PSCN_MSG, pos_desired, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
+}
+
+void AR_PosControl::Write_PSCE(float pos_desired, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
+{
+    Write_PSCx(LOG_PSCE_MSG, pos_desired, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
 }

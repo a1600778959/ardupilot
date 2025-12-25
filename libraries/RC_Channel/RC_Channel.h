@@ -145,7 +145,6 @@ public:
         RELAY3 =              35, // Relay3 pin on/off
         RELAY4 =              36, // Relay4 pin on/off
         THROW =               37, // change to THROW flight mode
-        AVOID_ADSB =          38, // enable AP_Avoidance library
         PRECISION_LOITER =    39, // enable precision loiter
         AVOID_PROXIMITY =     40, // enable object avoidance using proximity sensors (ie. horizontal lidar)
         ARMDISARM_UNUSED =    41, // UNUSED
@@ -159,7 +158,6 @@ public:
         USER_FUNC3 =          49, // user function #3
         LEARN_CRUISE =        50, // learn cruise throttle (Rover)
         MANUAL       =        51, // manual mode
-        ACRO         =        52, // acro mode
         STEERING     =        53, // steering mode
         HOLD         =        54, // hold mode
         GUIDED       =        55, // guided mode
@@ -170,7 +168,6 @@ public:
         ZIGZAG       =        60, // zigzag mode
         ZIGZAG_SaveWP =       61, // zigzag save waypoint
         COMPASS_LEARN =       62, // learn compass offsets
-        SAILBOAT_TACK =       63, // rover sailboat tack
         REVERSE_THROTTLE =    64, // reverse throttle input
         GPS_DISABLE  =        65, // disable GPS for testing
         RELAY5 =              66, // Relay5 pin on/off
@@ -181,7 +178,6 @@ public:
         FLOWHOLD  =           71, // flowhold mode
         CIRCLE    =           72, // circle mode
         DRIFT     =           73, // drift mode
-        SAILBOAT_MOTOR_3POS = 74, // Sailboat motoring 3pos
         SURFACE_TRACKING =    75, // Surface tracking upwards or downwards
         STANDBY  =            76, // Standby mode
         TAKEOFF   =           77, // takeoff
@@ -198,13 +194,11 @@ public:
         SOARING =             88, // three-position switch to set soaring mode
         LANDING_FLARE =       89, // force flare, throttle forced idle, pitch to LAND_PITCH_DEG, tilts up
         EKF_SOURCE_SET =      90, // change EKF data source set between primary, secondary and tertiary
-        ARSPD_CALIBRATE=      91, // calibrate airspeed ratio 
         FBWA =                92, // Fly-By-Wire-A
         RELOCATE_MISSION =    93, // used in separate branch MISSION_RELATIVE
         VTX_POWER =           94, // VTX power level
         FBWA_TAILDRAGGER =    95, // enables FBWA taildragger takeoff mode. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA.
         MODE_SWITCH_RESET =   96, // trigger re-reading of mode switch
-        WIND_VANE_DIR_OFSSET= 97, // flag for windvane direction offset input, used with windvane type 2
         TRAINING            = 98, // mode training
         AUTO_RTL =            99, // AUTO RTL via DO_LAND_START
 
@@ -357,7 +351,6 @@ protected:
     virtual bool do_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
 
     void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
-    void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag);
     void do_aux_function_camera_trigger(const AuxSwitchPos ch_flag);
     bool do_aux_function_record_video(const AuxSwitchPos ch_flag);

@@ -9,9 +9,6 @@
 
 MAV_TYPE GCS_Rover::frame_type() const
 {
-    if (rover.is_boat()) {
-        return MAV_TYPE_SURFACE_BOAT;
-    }
     return MAV_TYPE_GROUND_ROVER;
 }
 
@@ -186,72 +183,6 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
         voltage);
 }
 
-void GCS_MAVLINK_Rover::send_water_depth()
-{
-    if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
-        return;
-    }
-
-    // only send for boats:
-    if (!rover.is_boat()) {
-        return;
-    }
-
-    RangeFinder *rangefinder = RangeFinder::get_singleton();
-
-    if (rangefinder == nullptr) {
-        return;
-    }
-
-    // depth can only be measured by a downward-facing rangefinder:
-    if (!rangefinder->has_orientation(ROTATION_PITCH_270)) {
-        return;
-    }
-
-    // get position
-    const AP_AHRS &ahrs = AP::ahrs();
-    Location loc;
-    IGNORE_RETURN(ahrs.get_location(loc));
-
-    const auto num_sensors = rangefinder->num_sensors();
-    for (uint8_t i=0; i<num_sensors; i++) {
-        last_WATER_DEPTH_index += 1;
-        if (last_WATER_DEPTH_index >= num_sensors) {
-            last_WATER_DEPTH_index = 0;
-        }
-
-        const AP_RangeFinder_Backend *s = rangefinder->get_backend(last_WATER_DEPTH_index);
-
-        if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
-            continue;
-        }
-
-        // get temperature
-        float temp_C;
-        if (!s->get_temp(temp_C)) {
-            temp_C = 0.0f;
-        }
-
-        const bool sensor_healthy = (s->status() == RangeFinder::Status::Good);
-
-        mavlink_msg_water_depth_send(
-            chan,
-            AP_HAL::millis(),   // time since system boot TODO: take time of measurement
-            last_WATER_DEPTH_index, // rangefinder instance
-            sensor_healthy,     // sensor healthy
-            loc.lat,            // latitude of vehicle
-            loc.lng,            // longitude of vehicle
-            loc.alt * 0.01f,    // altitude of vehicle (MSL)
-            ahrs.get_roll(),    // roll in radians
-            ahrs.get_pitch(),   // pitch in radians
-            ahrs.get_yaw(),     // yaw in radians
-            s->distance(),    // distance in meters
-            temp_C);            // temperature in degC
-
-        break;  // only send one WATER_DEPTH message per loop
-    }
-
-}
 #endif  // AP_RANGEFINDER_ENABLED
 
 /*
@@ -349,23 +280,6 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
         }
     }
 
-    // sailboat heel to mainsail pid
-    if (g.gcs_pid_mask & 32) {
-        pid_info = &g2.attitude_control.get_sailboat_heel_pid().get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, 9,
-                                    pid_info->target,
-                                    pid_info->actual,
-                                    pid_info->FF,
-                                    pid_info->P,
-                                    pid_info->I,
-                                    pid_info->D,
-                                    pid_info->slew_rate,
-                                    pid_info->Dmod);
-        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
-            return;
-        }
-    }
-
     // Position Controller Velocity North PID
     if (g.gcs_pid_mask & 64) {
         pid_info = &g2.pos_control.get_vel_pid().get_pid_info_x();
@@ -447,32 +361,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(WHEEL_DISTANCE);
         rover.send_wheel_encoder_distance(chan);
         break;
-
-    case MSG_WIND:
-        CHECK_PAYLOAD_SIZE(WIND);
-        rover.g2.windvane.send_wind(chan);
-        break;
-
-#if AP_OADATABASE_ENABLED
-    case MSG_ADSB_VEHICLE: {
-        AP_OADatabase *oadb = AP::oadatabase();
-        if (oadb != nullptr) {
-            CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
-            uint16_t interval_ms = 0;
-            if (get_ap_message_interval(id, interval_ms)) {
-                oadb->send_adsb_vehicle(chan, interval_ms);
-            }
-        }
-        break;
-    }
-#endif
-
-#if AP_RANGEFINDER_ENABLED
-    case MSG_WATER_DEPTH:
-        CHECK_PAYLOAD_SIZE(WATER_DEPTH);
-        send_water_depth();
-        break;
-#endif  // AP_RANGEFINDER_ENABLED
 
     default:
         return GCS_MAVLINK::try_send_message(id);
@@ -603,9 +491,6 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
-#if AP_AIRSPEED_ENABLED
-    MSG_AIRSPEED,
-#endif
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
@@ -654,10 +539,8 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
-    MSG_WIND,
 #if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
-    MSG_WATER_DEPTH,
 #endif
     MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
@@ -690,12 +573,6 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
 };
-static const ap_message STREAM_ADSB_msgs[] = {
-    MSG_ADSB_VEHICLE,
-#if AP_AIS_ENABLED
-    MSG_AIS_VESSEL,
-#endif
-};
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
@@ -706,7 +583,6 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_EXTRA1),
     MAV_STREAM_ENTRY(STREAM_EXTRA2),
     MAV_STREAM_ENTRY(STREAM_EXTRA3),
-    MAV_STREAM_ENTRY(STREAM_ADSB),
     MAV_STREAM_ENTRY(STREAM_PARAMS),
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
@@ -724,18 +600,8 @@ bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 
 MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    if (packet.y == 1) {
-        if (rover.g2.windvane.start_direction_calibration()) {
-            return MAV_RESULT_ACCEPTED;
-        } else {
-            return MAV_RESULT_FAILED;
-        }
-    } else if (packet.y == 2) {
-        if (rover.g2.windvane.start_speed_calibration()) {
-            return MAV_RESULT_ACCEPTED;
-        } else {
-            return MAV_RESULT_FAILED;
-        }
+    if (packet.y == 1 || packet.y == 2) {
+        return MAV_RESULT_UNSUPPORTED;
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet, msg);
@@ -1201,24 +1067,6 @@ uint8_t GCS_MAVLINK_Rover::high_latency_tgt_airspeed() const
     if (rover.control_mode->is_autopilot_mode()) {
         // return units are m/s*5
         return MIN((vfr_hud_airspeed() - control_mode->speed_error()) * 5, UINT8_MAX);
-    }
-    return 0;
-}
-
-uint8_t GCS_MAVLINK_Rover::high_latency_wind_speed() const
-{
-    if (rover.g2.windvane.enabled()) {
-        // return units are m/s*5
-        return MIN(rover.g2.windvane.get_true_wind_speed() * 5, UINT8_MAX);
-    }
-    return 0;
-}
-
-uint8_t GCS_MAVLINK_Rover::high_latency_wind_direction() const
-{
-    if (rover.g2.windvane.enabled()) {
-        // return units are deg/2
-        return wrap_360(degrees(rover.g2.windvane.get_true_wind_direction_rad())) / 2;
     }
     return 0;
 }

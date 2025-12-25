@@ -23,7 +23,6 @@
 
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_ADSB/AP_ADSB.h>
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
@@ -34,7 +33,6 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AC_Sprayer/AC_Sprayer.h>
@@ -59,7 +57,6 @@
 #include <AP_OSD/AP_OSD.h>
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_RPM/AP_RPM.h>
-#include <AP_AIS/AP_AIS.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <RC_Channel/RC_Channel.h>
@@ -1058,7 +1055,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_VFR_HUD,               MSG_VFR_HUD},
 #endif
         { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
-        { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
 #if AP_RANGEFINDER_ENABLED
         { MAVLINK_MSG_ID_RANGEFINDER,           MSG_RANGEFINDER},
 #endif
@@ -1108,9 +1104,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_ATTITUDE_TARGET,       MSG_ATTITUDE_TARGET},
         { MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT,  MSG_POSITION_TARGET_GLOBAL_INT},
         { MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED,  MSG_POSITION_TARGET_LOCAL_NED},
-#if HAL_ADSB_ENABLED
-        { MAVLINK_MSG_ID_ADSB_VEHICLE,          MSG_ADSB_VEHICLE},
-#endif
 #if AP_BATTERY_ENABLED
         { MAVLINK_MSG_ID_BATTERY_STATUS,        MSG_BATTERY_STATUS},
 #endif
@@ -1132,23 +1125,11 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if HAL_WITH_ESC_TELEM
         { MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4,  MSG_ESC_TELEMETRY},
 #endif
-#if AP_RANGEFINDER_ENABLED && APM_BUILD_TYPE(APM_BUILD_Rover)
-        { MAVLINK_MSG_ID_WATER_DEPTH,           MSG_WATER_DEPTH},
-#endif
 #if HAL_HIGH_LATENCY2_ENABLED
         { MAVLINK_MSG_ID_HIGH_LATENCY2,         MSG_HIGH_LATENCY2},
 #endif
-#if AP_AIS_ENABLED
-        { MAVLINK_MSG_ID_AIS_VESSEL,            MSG_AIS_VESSEL},
-#endif
-#if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
-        { MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_STATUS, MSG_UAVIONIX_ADSB_OUT_STATUS},
-#endif
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
         { MAVLINK_MSG_ID_RELAY_STATUS, MSG_RELAY_STATUS},
-#endif
-#if AP_AIRSPEED_ENABLED
-        { MAVLINK_MSG_ID_AIRSPEED, MSG_AIRSPEED},
 #endif
             };
 
@@ -1459,24 +1440,6 @@ void GCS_MAVLINK_InProgress::check_tasks()
         case Type::NONE:
             break;
         case Type::AIRSPEED_CAL: {
-#if AP_AIRSPEED_ENABLED
-            const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-            switch (airspeed->get_calibration_state()) {
-            case AP_Airspeed::CalibrationState::NOT_STARTED:
-                // we shouldn't get here
-                task.conclude(MAV_RESULT_FAILED);
-                break;
-            case AP_Airspeed::CalibrationState::IN_PROGRESS:
-                task.send_in_progress();
-                break;
-            case AP_Airspeed::CalibrationState::FAILED:
-                task.conclude(MAV_RESULT_FAILED);
-                break;
-            case AP_Airspeed::CalibrationState::SUCCESS:
-                task.conclude(MAV_RESULT_ACCEPTED);
-                break;
-            }
-#endif
             }
             break;
         case Type::SD_FORMAT:
@@ -2315,22 +2278,6 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
     }
 
     float press_diff = 0; // pascal
-#if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr &&
-        airspeed->enabled(instance)) {
-        press_diff = airspeed->get_differential_pressure(instance) * 0.01f;
-        float temp;
-        if (airspeed->get_temperature(instance,temp)) {
-            temperature_press_diff = temp * 100;
-            if (temperature_press_diff == 0) {
-                // don't send zero as that is the value for 'no data'
-                temperature_press_diff = 1;
-            }
-        }
-        have_data = true;
-    }
-#endif
 
     if (!have_data) {
         return;
@@ -2359,60 +2306,6 @@ void GCS_MAVLINK::send_scaled_pressure3()
 {
     send_scaled_pressure_instance(2, mavlink_msg_scaled_pressure3_send);
 }
-
-#if AP_AIRSPEED_ENABLED
-void GCS_MAVLINK::send_airspeed()
-{
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed == nullptr) {
-        return;
-    }
-
-    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        // Try and send the next sensor
-        const uint8_t index = (last_airspeed_idx + 1 + i) % AIRSPEED_MAX_SENSORS;
-        if (!airspeed->enabled(index)) {
-            continue;
-        }
-
-        float temperature_float;
-        int16_t temperature = INT16_MAX;
-        if (airspeed->get_temperature(index, temperature_float)) {
-            temperature = int16_t(temperature_float * 100);
-        }
-
-        uint8_t flags = 0;
-        // Set unhealthy flag
-        if (!airspeed->healthy(index)) {
-            flags |= AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_UNHEALTHY;
-        }
-
-#if AP_AHRS_ENABLED
-        // Set using flag if the AHRS is using this sensor
-        const AP_AHRS &ahrs = AP::ahrs();
-        if (ahrs.using_airspeed_sensor() && (ahrs.get_active_airspeed_index() == index)) {
-            flags |= AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_USING;
-        }
-#endif
-
-        // Assemble message and send
-        const mavlink_airspeed_t msg {
-            airspeed    : airspeed->get_airspeed(index),
-            raw_press   : airspeed->get_differential_pressure(index),
-            temperature : temperature,
-            id          : index,
-            flags       : flags
-        };
-
-        mavlink_msg_airspeed_send_struct(chan, &msg);
-
-        // Only send one msg per call
-        last_airspeed_idx = index;
-        return;
-    }
-
-}
-#endif // AP_AIRSPEED_ENABLED
 
 #if AP_AHRS_ENABLED
 void GCS_MAVLINK::send_ahrs()
@@ -3346,12 +3239,6 @@ void GCS_MAVLINK::send_accelcal_vehicle_position(uint32_t position)
 
 float GCS_MAVLINK::vfr_hud_airspeed() const
 {
-#if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr && airspeed->healthy()) {
-        return airspeed->get_airspeed();
-    }
-#endif
 
 #if AP_GPS_ENABLED
     // because most vehicles don't have airspeed sensors, we return a
@@ -4126,16 +4013,6 @@ void GCS_MAVLINK::handle_obstacle_distance_3d(const mavlink_message_t &msg)
 }
 #endif
 
-#if HAL_ADSB_ENABLED
-void GCS_MAVLINK::handle_adsb_message(const mavlink_message_t &msg)
-{
-    AP_ADSB *adsb = AP::ADSB();
-    if (adsb != nullptr) {
-        adsb->handle_message(chan, msg);
-    }
-}
-#endif
-
 #if OSD_PARAM_ENABLED
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 {
@@ -4436,16 +4313,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
-#if HAL_ADSB_ENABLED
-    case MAVLINK_MSG_ID_ADSB_VEHICLE:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CONTROL:
-        handle_adsb_message(msg);
-        break;
-#endif
-
     case MAVLINK_MSG_ID_LANDING_TARGET:
         handle_landing_target(msg);
         break;
@@ -4672,19 +4539,6 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Updating barometer calibration");
     AP::baro().update_calibration();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer calibration complete");
-
-#if AP_AIRSPEED_ENABLED
-
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
-        GCS_MAVLINK_InProgress *task = GCS_MAVLINK_InProgress::get_task(MAV_CMD_PREFLIGHT_CALIBRATION, GCS_MAVLINK_InProgress::Type::AIRSPEED_CAL, msg.sysid, msg.compid, chan);
-        if (task == nullptr) {
-            return MAV_RESULT_TEMPORARILY_REJECTED;
-        }
-        airspeed->calibrate(false);
-        return MAV_RESULT_IN_PROGRESS;
-    }
-#endif
 
     return MAV_RESULT_ACCEPTED;
 }
@@ -5438,14 +5292,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DEBUG_TRAP:
         return handle_command_debug_trap(packet);
 
-#if HAL_ADSB_ENABLED
-    case MAV_CMD_DO_ADSB_OUT_IDENT:
-        if ((AP::ADSB() != nullptr) && AP::ADSB()->ident_start()) {
-            return MAV_RESULT_ACCEPTED;
-        }
-        return  MAV_RESULT_FAILED;
-#endif
-
 #if AP_RC_CHANNEL_ENABLED
     case MAV_CMD_DO_AUX_FUNCTION:
         return handle_command_do_aux_function(packet);
@@ -5957,16 +5803,6 @@ void GCS_MAVLINK::send_generator_status() const
 }
 #endif
 
-#if HAL_ADSB_ENABLED
-void GCS_MAVLINK::send_uavionix_adsb_out_status() const
-{
-    AP_ADSB *adsb = AP::ADSB();
-    if (adsb != nullptr) {
-        adsb->send_adsb_out_status(chan);
-    }
-}
-#endif
-
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
 bool GCS_MAVLINK::send_relay_status() const
 {
@@ -6332,13 +6168,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_scaled_pressure3();
         break;
 
-#if AP_AIRSPEED_ENABLED
-    case MSG_AIRSPEED:
-        CHECK_PAYLOAD_SIZE(AIRSPEED);
-        send_airspeed();
-        break;
-#endif
-
     case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         send_servo_output_raw();
@@ -6444,23 +6273,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_high_latency2();
         break;
 #endif // HAL_HIGH_LATENCY2_ENABLED
-
-#if AP_AIS_ENABLED
-    case MSG_AIS_VESSEL: {
-        AP_AIS *ais = AP_AIS::get_singleton();
-        if (ais) {
-            ais->send(chan);
-        }
-        break;
-    }
-#endif
-
-#if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
-    case MSG_UAVIONIX_ADSB_OUT_STATUS:
-        CHECK_PAYLOAD_SIZE(UAVIONIX_ADSB_OUT_STATUS);
-        send_uavionix_adsb_out_status();
-        break;
-#endif
 
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
     case MSG_RELAY_STATUS:
@@ -7143,8 +6955,8 @@ void GCS_MAVLINK::send_high_latency2() const
         MIN(vfr_hud_airspeed() * 5, UINT8_MAX), // [m/s*5] Airspeed
         high_latency_tgt_airspeed(), // [m/s*5] Airspeed setpoint
         MIN(ahrs.groundspeed() * 5, UINT8_MAX), // [m/s*5] Groundspeed
-        high_latency_wind_speed(), // [m/s*5] Windspeed
-        high_latency_wind_direction(), // [deg/2] Wind heading
+        0, // [m/s*5] Windspeed
+        0, // [deg/2] Wind heading
         0, // [dm] Maximum error horizontal position since last message
         0, // [dm] Maximum error vertical position since last message
         high_latency_air_temperature(), // [degC] Air temperature from airspeed sensor
@@ -7164,15 +6976,6 @@ void GCS_MAVLINK::send_high_latency2() const
 
 int8_t GCS_MAVLINK::high_latency_air_temperature() const
 {
-#if AP_AIRSPEED_ENABLED
-    // return units are degC
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    float air_temperature;
-    if (airspeed != nullptr && airspeed->enabled() && airspeed->get_temperature(air_temperature)) {
-        return air_temperature;
-    }
-#endif
-
     return INT8_MIN;
 }
 

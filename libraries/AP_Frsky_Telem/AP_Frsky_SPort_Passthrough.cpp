@@ -14,9 +14,6 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
-#include <AP_WindVane/AP_WindVane.h>
-#endif
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 #include "AP_Frsky_MAVlite.h"

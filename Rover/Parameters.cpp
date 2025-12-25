@@ -570,10 +570,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LOIT_RADIUS", 30, ParametersG2, loit_radius, 2),
 
-    // @Group: WNDVN_
-    // @Path: ../libraries/AP_WindVane/AP_WindVane.cpp
-    AP_SUBGROUPINFO(windvane, "WNDVN_", 31, ParametersG2, AP_WindVane),
-
     // 32 to 36 were old sailboat params
 
     // 37 was airspeed
@@ -608,10 +604,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: WP_
     // @Path: ../libraries/AR_WPNav/AR_WPNav.cpp
     AP_SUBGROUPINFO(wp_nav, "WP_", 43, ParametersG2, AR_WPNav_OA),
-
-    // @Group: SAIL_
-    // @Path: sailboat.cpp
-    AP_SUBGROUPINFO(sailboat, "SAIL_", 44, ParametersG2, Sailboat),
 
 #if AP_OAPATHPLANNER_ENABLED
     // @Group: OA_
@@ -751,9 +743,7 @@ ParametersG2::ParametersG2(void)
 #if AP_FOLLOW_ENABLED
     follow(),
 #endif
-    windvane(),
     wp_nav(attitude_control, pos_control),
-    sailboat(),
     pos_control(attitude_control)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -831,10 +821,6 @@ void Rover::load_parameters(void)
     SRV_Channels::set_default_function(CH_1, SRV_Channel::k_steering);
     SRV_Channels::set_default_function(CH_3, SRV_Channel::k_throttle);
 
-    if (is_balancebot()) {
-        g2.crash_angle.set_default(30);
-    }
-
     SRV_Channels::upgrade_parameters();
 
     // convert CH7_OPTION to RC7_OPTION for Rover-3.4 to 3.5 upgrade
@@ -880,7 +866,7 @@ void Rover::load_parameters(void)
                                                       AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED);
 #endif
 
-#if AP_AIRSPEED_ENABLED | AP_AIS_ENABLED | AP_FENCE_ENABLED
+#if  AP_FENCE_ENABLED
     // Find G2's Top Level Key
     AP_Param::ConversionInfo info;
     if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
@@ -889,14 +875,6 @@ void Rover::load_parameters(void)
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
-#if AP_AIRSPEED_ENABLED
-// PARAMETER_CONVERSION - Added: JAN-2022
-        { &airspeed, airspeed.var_info, 37 },
-#endif
-#if AP_AIS_ENABLED
-// PARAMETER_CONVERSION - Added: MAR-2022
-        { &ais, ais.var_info, 50 },
-#endif
 #if AP_FENCE_ENABLED
 // PARAMETER_CONVERSION - Added: Mar-2022
         { &fence, fence.var_info, 17 },

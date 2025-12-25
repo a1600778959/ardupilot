@@ -87,7 +87,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if HAL_PROXIMITY_ENABLED
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200,  27),
 #endif
-    SCHED_TASK_CLASS(AP_WindVane,         &rover.g2.windvane,      update,         20,  100,  30),
     SCHED_TASK(update_wheel_encoder,   50,    200,  36),
     SCHED_TASK(update_compass,         10,    200,  39),
 #if HAL_LOGGING_ENABLED
@@ -133,7 +132,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200, 117),
 #endif
-    SCHED_TASK(crash_check,            10,    200, 123),
     SCHED_TASK(cruise_learn_update,    50,    200, 126),
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
@@ -327,7 +325,6 @@ void Rover::ahrs_update()
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        Log_Write_Sail();
     }
 
     if (should_log(MASK_LOG_IMU)) {
@@ -374,7 +371,6 @@ void Rover::update_logging1(void)
 {
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        Log_Write_Sail();
     }
 
     if (should_log(MASK_LOG_THR)) {

@@ -15,7 +15,6 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>

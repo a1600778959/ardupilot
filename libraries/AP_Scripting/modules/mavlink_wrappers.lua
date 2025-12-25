@@ -38,10 +38,10 @@ MAVLink.CMD_INT = { DO_SET_MODE = 176, DO_CHANGE_SPEED = 178, DO_REPOSITION = 19
 MAVLink.SPEED_TYPE = { AIRSPEED = 0, GROUNDSPEED = 1, CLIMB_SPEED = 2, DESCENT_SPEED = 3 }
 MAVLink.HEADING_TYPE = { COG = 0, HEADING = 1} -- COG = Course over Ground, i.e. where you want to go, HEADING = which way the vehicle points 
 
-MAVLink.PLANE_FLIGHT_MODE = {MANUAL=0, CIRCLE=1, STABILIZE=2, TRAINING=3, ACRO=4,
+MAVLink.PLANE_FLIGHT_MODE = {MANUAL=0, CIRCLE=1, STABILIZE=2, TRAINING=3,
                                 FLY_BY_WIRE_A = 5, FLY_BY_WIRE_B = 6, CRUISE        = 7, AUTOTUNE      = 8,
                                 AUTO          = 10,RTL           = 11,LOITER        = 12,TAKEOFF       = 13,
-                                AVOID_ADSB    = 14,GUIDED        = 15,INITIALISING  = 16,
+                                GUIDED        = 15,INITIALISING  = 16, AOAFOLLOW     = 27,
                                 QSTABILIZE    = 17,QHOVER        = 18,QLOITER       = 19,QLAND         = 20,
                                 QRTL          = 21,QAUTOTUNE     = 22,QACRO         = 23,
                                 THERMAL       = 24,LOITER_ALT_QLAND = 25,AUTOLAND      = 26}

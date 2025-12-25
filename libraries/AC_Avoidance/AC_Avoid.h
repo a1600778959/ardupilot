@@ -7,7 +7,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude controller library for sqrt controller
 
 #define AC_AVOID_ACCEL_CMSS_MAX         100.0f  // maximum acceleration/deceleration in cm/s/s used to avoid hitting fence
 
@@ -69,11 +68,6 @@ public:
     // adjust vertical climb rate so vehicle does not break the vertical fence
     void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float& backup_speed, float dt);
     void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt);
-
-    // adjust roll-pitch to push vehicle away from objects
-    // roll and pitch value are in centi-degrees
-    // angle_max is the user defined maximum lean angle for the vehicle in centi-degrees
-    void adjust_roll_pitch(float &roll, float &pitch, float angle_max);
 
     // enable/disable proximity based avoidance
     void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
@@ -192,12 +186,6 @@ private:
     /*
      * methods for avoidance in non-GPS flight modes
      */
-
-    // convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
-    float distance_to_lean_pct(float dist_m);
-
-    // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
-    void get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
 
     // Logging function
     void Write_SimpleAvoidance(const uint8_t state, const Vector3f& desired_vel, const Vector3f& modified_vel, const bool back_up) const;

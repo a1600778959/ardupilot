@@ -26,7 +26,6 @@
 #include "GCS.h"
 #include "MAVLink_routing.h"
 
-#include <AP_ADSB/AP_ADSB.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -131,17 +130,6 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
         }
         return true;
     }
-
-#if HAL_ADSB_ENABLED
-    if (msg.msgid == MAVLINK_MSG_ID_ADSB_VEHICLE) {
-        // if enabled ADSB packets are not forwarded, they have their own stream rate
-        const AP_ADSB *adsb = AP::ADSB();
-        if ((adsb != nullptr) && (adsb->enabled())) {
-            return true;
-        }
-    }
-#endif
-
     // extract the targets for this packet
     int16_t target_system = -1;
     int16_t target_component = -1;

@@ -86,19 +86,7 @@ void ModeSmartRTL::update()
             _reached_destination = true;
             // we have reached the destination
             // boats loiters, rovers stop
-            if (!rover.is_boat()) {
                stop_vehicle();
-            } else {
-                // if not loitering yet, start loitering
-                if (!_loitering) {
-                    _loitering = rover.mode_loiter.enter();
-                }
-                if (_loitering) {
-                    rover.mode_loiter.update();
-                } else {
-                    stop_vehicle();
-               }
-            }
             break;
     }
 }

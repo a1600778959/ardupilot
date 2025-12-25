@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_Logger/LogStructure.h>
+#include "LogStructure.h"
 #include <AP_Common/AP_Common.h>
 #include <APM_Control/AR_AttitudeControl.h>
 #include <AC_PID/AC_P_2D.h>            // P library (2-axis)
@@ -82,6 +84,9 @@ public:
     void get_srate(float &velocity_srate);
 
     // write PSC logs
+    static void Write_PSCx(LogMessages id, float pos_desired, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    static void Write_PSCN(float pos_desired, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    static void Write_PSCE(float pos_desired, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
     void write_log();
 
     // parameter var table

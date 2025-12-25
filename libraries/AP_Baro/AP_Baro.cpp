@@ -50,7 +50,6 @@
 #include "AP_Baro_ICP101XX.h"
 #include "AP_Baro_ICP201XX.h"
 
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Logger/AP_Logger.h>
@@ -450,17 +449,6 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
     }
     
 #ifndef HAL_BUILD_AP_PERIPH
-#if AP_AIRSPEED_ENABLED
-    // if we don't have an external temperature then try to use temperature
-    // from the airspeed sensor
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
-        float temperature;
-        if (airspeed->healthy() && airspeed->get_temperature(temperature)) {
-            return temperature;
-        }
-    }
-#endif
 #endif
     
     // if we don't have an external temperature and airspeed temperature

@@ -2,14 +2,9 @@
 
 bool ModeGuided::_enter()
 {
-    // initialise submode to stop or loiter
-    if (rover.is_boat()) {
-        if (!start_loiter()) {
-            start_stop();
-        }
-    } else {
-        start_stop();
-    }
+
+    start_stop();
+
 
     // initialise waypoint navigation library
     g2.wp_nav.init();
@@ -35,14 +30,7 @@ void ModeGuided::update()
                     rover.gcs().send_mission_item_reached_message(0);
                 }
 
-                // we have reached the destination so stay here
-                if (rover.is_boat()) {
-                    if (!start_loiter()) {
-                        stop_vehicle();
-                    }
-                } else {
-                    stop_vehicle();
-                }
+                stop_vehicle();
                 // update distance to destination
                 _distance_to_destination = rover.current_loc.get_distance(g2.wp_nav.get_destination());
             }
@@ -61,14 +49,7 @@ void ModeGuided::update()
                 calc_steering_to_heading(_desired_yaw_cd);
                 calc_throttle(calc_speed_nudge(_desired_speed, is_negative(_desired_speed)), true);
             } else {
-                // we have reached the destination so stay here
-                if (rover.is_boat()) {
-                    if (!start_loiter()) {
-                        stop_vehicle();
-                    }
-                } else {
-                    stop_vehicle();
-                }
+                stop_vehicle();
             }
             break;
         }
@@ -89,14 +70,9 @@ void ModeGuided::update()
                 set_steering(steering_out * 4500.0f);
                 calc_throttle(calc_speed_nudge(_desired_speed, is_negative(_desired_speed)), true);
             } else {
-                // we have reached the destination so stay here
-                if (rover.is_boat()) {
-                    if (!start_loiter()) {
-                        stop_vehicle();
-                    }
-                } else {
-                    stop_vehicle();
-                }
+
+                stop_vehicle();
+
             }
             break;
         }
@@ -119,14 +95,7 @@ void ModeGuided::update()
                 g2.motors.set_steering(_strthr_steering * 4500.0f, false);
                 g2.motors.set_throttle(_strthr_throttle * 100.0f);
             } else {
-                // loiter or stop vehicle
-                if (rover.is_boat()) {
-                    if (!start_loiter()) {
-                        stop_vehicle();
-                    }
-                } else {
-                    stop_vehicle();
-                }
+                stop_vehicle();
             }
             break;
         }

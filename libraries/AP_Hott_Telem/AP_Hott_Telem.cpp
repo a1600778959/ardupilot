@@ -28,7 +28,6 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RPM/AP_RPM.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Stats/AP_Stats.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_RTC/AP_RTC.h>

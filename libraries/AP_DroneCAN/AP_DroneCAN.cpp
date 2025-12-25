@@ -31,7 +31,6 @@
 #include <AP_Baro/AP_Baro_DroneCAN.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BattMonitor/AP_BattMonitor_DroneCAN.h>
-#include <AP_Airspeed/AP_Airspeed_DroneCAN.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_HereFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder_DroneCAN.h>
 #include <AP_RCProtocol/AP_RCProtocol_DroneCAN.h>
@@ -40,10 +39,8 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor_DroneCAN.h>
 #include <AP_Compass/AP_Compass_DroneCAN.h>
-#include <AP_Airspeed/AP_Airspeed_DroneCAN.h>
 #include <AP_Proximity/AP_Proximity_DroneCAN.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_ADSB/AP_ADSB.h>
 #include "AP_DroneCAN_DNA_Server.h"
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>
@@ -378,9 +375,6 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     AP_Baro_DroneCAN::subscribe_msgs(this);
 #endif
     AP_BattMonitor_DroneCAN::subscribe_msgs(this);
-#if AP_AIRSPEED_DRONECAN_ENABLED
-    AP_Airspeed_DroneCAN::subscribe_msgs(this);
-#endif
 #if AP_OPTICALFLOW_HEREFLOW_ENABLED
     AP_OpticalFlow_HereFlow::subscribe_msgs(this);
 #endif
@@ -1308,73 +1302,6 @@ void AP_DroneCAN::handle_button(const CanardRxTransfer& transfer, const ardupilo
         break;
     }
     }
-}
-
-/*
-  handle traffic report
- */
-void AP_DroneCAN::handle_traffic_report(const CanardRxTransfer& transfer, const ardupilot_equipment_trafficmonitor_TrafficReport& msg)
-{
-#if HAL_ADSB_ENABLED
-    AP_ADSB *adsb = AP::ADSB();
-    if (!adsb || !adsb->enabled()) {
-        // ADSB not enabled
-        return;
-    }
-
-    AP_ADSB::adsb_vehicle_t vehicle;
-    mavlink_adsb_vehicle_t &pkt = vehicle.info;
-
-    pkt.ICAO_address = msg.icao_address;
-    pkt.tslc = msg.tslc;
-    pkt.lat = msg.latitude_deg_1e7;
-    pkt.lon = msg.longitude_deg_1e7;
-    pkt.altitude = msg.alt_m * 1000;
-    pkt.heading = degrees(msg.heading) * 100;
-    pkt.hor_velocity = norm(msg.velocity[0], msg.velocity[1]) * 100;
-    pkt.ver_velocity = -msg.velocity[2] * 100;
-    pkt.squawk = msg.squawk;
-    for (uint8_t i=0; i<9; i++) {
-        pkt.callsign[i] = msg.callsign[i];
-    }
-    pkt.emitter_type = msg.traffic_type;
-
-    if (msg.alt_type == ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_ALT_TYPE_PRESSURE_AMSL) {
-        pkt.flags |= ADSB_FLAGS_VALID_ALTITUDE;
-        pkt.altitude_type = ADSB_ALTITUDE_TYPE_PRESSURE_QNH;
-    } else if (msg.alt_type == ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_ALT_TYPE_WGS84) {
-        pkt.flags |= ADSB_FLAGS_VALID_ALTITUDE;
-        pkt.altitude_type = ADSB_ALTITUDE_TYPE_GEOMETRIC;
-    }
-
-    if (msg.lat_lon_valid) {
-        pkt.flags |= ADSB_FLAGS_VALID_COORDS;
-    }
-    if (msg.heading_valid) {
-        pkt.flags |= ADSB_FLAGS_VALID_HEADING;
-    }
-    if (msg.velocity_valid) {
-        pkt.flags |= ADSB_FLAGS_VALID_VELOCITY;
-    }
-    if (msg.callsign_valid) {
-        pkt.flags |= ADSB_FLAGS_VALID_CALLSIGN;
-    }
-    if (msg.ident_valid) {
-        pkt.flags |= ADSB_FLAGS_VALID_SQUAWK;
-    }
-    if (msg.simulated_report) {
-        pkt.flags |= ADSB_FLAGS_SIMULATED;
-    }
-    if (msg.vertical_velocity_valid) {
-        pkt.flags |= ADSB_FLAGS_VERTICAL_VELOCITY_VALID;
-    }
-    if (msg.baro_valid) {
-        pkt.flags |= ADSB_FLAGS_BARO_VALID;
-    }
-
-    vehicle.last_update_ms = AP_HAL::millis() - (vehicle.info.tslc * 1000);
-    adsb->handle_adsb_vehicle(vehicle);
-#endif
 }
 
 /*

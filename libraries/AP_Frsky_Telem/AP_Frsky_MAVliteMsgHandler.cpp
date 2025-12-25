@@ -133,13 +133,6 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_calibration_baro
     AP::baro().update_calibration();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer calibration complete");
 
-#if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
-        airspeed->calibrate(false);
-    }
-#endif
-
     return MAV_RESULT_ACCEPTED;
 }
 

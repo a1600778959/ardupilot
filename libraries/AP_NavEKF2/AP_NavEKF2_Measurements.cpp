@@ -773,24 +773,6 @@ void NavEKF2_core::correctEkfOriginHeight()
 // check for new airspeed data and update stored measurements if available
 void NavEKF2_core::readAirSpdData()
 {
-    // if airspeed reading is valid and is set by the user to be used and has been updated then
-    // we take a new reading, convert from EAS to TAS and set the flag letting other functions
-    // know a new measurement is available
-    const auto *aspeed = dal.airspeed();
-    if (aspeed &&
-        aspeed->use() &&
-        aspeed->healthy() &&
-        aspeed->last_update_ms() != timeTasReceived_ms) {
-        tasDataNew.tas = aspeed->get_airspeed() * dal.get_EAS2TAS();
-        timeTasReceived_ms = aspeed->last_update_ms();
-        tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
-
-        // Correct for the average intersampling delay due to the filter update rate
-        tasDataNew.time_ms -= localFilterTimeStep_ms/2;
-
-        // Save data into the buffer to be fused when the fusion time horizon catches up with it
-        storedTAS.push(tasDataNew);
-    }
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
     tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
 }

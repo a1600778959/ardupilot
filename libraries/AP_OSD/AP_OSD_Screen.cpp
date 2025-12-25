@@ -45,9 +45,6 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_MSP/AP_MSP.h>
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
-#include <AP_WindVane/AP_WindVane.h>
-#endif
 #include <AP_Filesystem/AP_Filesystem.h>
 
 #include <ctype.h>

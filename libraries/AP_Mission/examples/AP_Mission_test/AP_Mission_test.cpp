@@ -10,7 +10,6 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_AHRS/AP_AHRS_DCM.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();

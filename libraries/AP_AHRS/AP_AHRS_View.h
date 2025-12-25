@@ -22,10 +22,6 @@
 
 #include "AP_AHRS.h"
 
-// fwd declarations to avoid include errors
-class AC_AttitudeControl;
-class AC_PosControl;
-
 class AP_AHRS_View
 {
 public:

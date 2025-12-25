@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_FRSKY_TELEM_ENABLED
-#define AP_FRSKY_TELEM_ENABLED 1
+#define AP_FRSKY_TELEM_ENABLED 0
 #endif
 
 #ifndef AP_FRSKY_D_TELEM_ENABLED

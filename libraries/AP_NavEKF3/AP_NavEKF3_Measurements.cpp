@@ -847,25 +847,7 @@ void NavEKF3_core::readAirSpdData()
     // we take a new reading, convert from EAS to TAS and set the flag letting other functions
     // know a new measurement is available
 
-    if (useAirspeed()) {
-        const auto *airspeed = dal.airspeed();
-        if (airspeed &&
-            (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
-            tasDataNew.allowFusion = airspeed->healthy(selected_airspeed) && airspeed->use(selected_airspeed);
-            if (tasDataNew.allowFusion) {
-                tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
-                timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
-                tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
-                tasDataNew.tasVariance = sq(MAX(frontend->_easNoise * EAS2TAS, 0.5f));
-                // Correct for the average intersampling delay due to the filter update rate
-                tasDataNew.time_ms -= localFilterTimeStep_ms/2;
-                // Save data into the buffer to be fused when the fusion time horizon catches up with it
-                storedTAS.push(tasDataNew);
-            }
-        }
-        // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
-        tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
-    } else {
+
         if (is_positive(defaultAirSpeed)) {
             // this is the preferred method with the autopilot providing a model based airspeed estimate
             if (imuDataDelayed.time_ms - prevTasStep_ms > 200 ) {
@@ -893,7 +875,7 @@ void NavEKF3_core::readAirSpdData()
                 tasDataDelayed.allowFusion = false;
             }
         }
-    }
+    
 }
 
 #if EK3_FEATURE_BEACON_FUSION
@@ -1201,29 +1183,6 @@ void NavEKF3_core::update_baro_selection(void)
 }
 
 /*
-  update the airspeed selection
- */
-void NavEKF3_core::update_airspeed_selection(void)
-{
-    const auto *arsp = dal.airspeed();
-    if (arsp == nullptr) {
-        return;
-    }
-
-    // in normal operation use the primary airspeed sensor
-    selected_airspeed = arsp->get_primary();
-
-    if (frontend->_affinity & EKF_AFFINITY_ARSP) {
-        if (core_index < arsp->get_num_sensors() &&
-            arsp->healthy(core_index) &&
-            arsp->use(core_index)) {
-            // use core_index airspeed if it is healthy
-            selected_airspeed = core_index;
-        }
-    }
-}
-
-/*
   update sensor selections
  */
 void NavEKF3_core::update_sensor_selection(void)
@@ -1231,7 +1190,6 @@ void NavEKF3_core::update_sensor_selection(void)
     update_gps_selection();
     update_mag_selection();
     update_baro_selection();
-    update_airspeed_selection();
 }
 
 /*

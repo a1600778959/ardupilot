@@ -183,18 +183,6 @@ public:
     // returns false if the data is unavailable
     bool airspeed_health_data(float &innovation, float &innovationVariance, uint32_t &age_ms) const;
 
-    // return true if a airspeed sensor is enabled
-    bool airspeed_sensor_enabled(void) const {
-        // FIXME: make this a method on the active backend
-        return AP_AHRS_Backend::airspeed_sensor_enabled();
-    }
-
-    // return true if a airspeed from a specific airspeed sensor is enabled
-    bool airspeed_sensor_enabled(uint8_t airspeed_index) const {
-        // FIXME: make this a method on the active backend
-        return AP_AHRS_Backend::airspeed_sensor_enabled(airspeed_index);
-    }
-
     // return a synthetic airspeed estimate (one derived from sensors
     // other than an actual airspeed sensor), if available. return
     // true if we have a synthetic airspeed.  ret will not be modified
@@ -393,13 +381,6 @@ public:
 
     // returns the estimated magnetic field offsets in body frame
     bool get_mag_field_correction(Vector3f &ret) const;
-
-    // return the index of the airspeed we should use for airspeed measurements
-    // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
-    // over to a lane not using the primary airspeed sensor, so AHRS should know which airspeed sensor
-    // to use, i.e, the one being used by the primary lane. A lane switch could have happened due to an 
-    // airspeed sensor fault, which makes this even more necessary
-    uint8_t get_active_airspeed_index() const;
 
     // return the index of the primary core or -1 if no primary core selected
     int8_t get_primary_core_index() const { return state.primary_core; }

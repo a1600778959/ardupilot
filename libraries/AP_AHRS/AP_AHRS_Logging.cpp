@@ -3,10 +3,10 @@
 #if HAL_LOGGING_ENABLED
 
 #include "AP_AHRS.h"
+#include "AP_AHRS_View.h"
 #include <AP_Logger/AP_Logger.h>
 
-#include <AC_AttitudeControl/AC_AttitudeControl.h>
-#include <AC_AttitudeControl/AC_PosControl.h>
+#include <APM_Control/AR_PosControl.h>
 
 
 // Write an AHRS2 packet

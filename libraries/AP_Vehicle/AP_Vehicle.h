@@ -27,7 +27,6 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_AccelCal/AP_AccelCal.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_CANManager/AP_CANManager.h>
@@ -63,7 +62,6 @@
 #include <AP_TemperatureSensor/AP_TemperatureSensor.h>
 #include <SITL/SITL.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
-#include <AP_AIS/AP_AIS.h>
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
@@ -442,18 +440,9 @@ protected:
     AP_EFI efi;
 #endif
 
-#if AP_AIRSPEED_ENABLED
-    AP_Airspeed airspeed;
-#endif
-
 #if AP_STATS_ENABLED
     // vehicle statistics
     AP_Stats stats;
-#endif
-
-#if AP_AIS_ENABLED
-    // Automatic Identification System - for tracking sea-going vehicles
-    AP_AIS ais;
 #endif
 
 #if HAL_NMEA_OUTPUT_ENABLED

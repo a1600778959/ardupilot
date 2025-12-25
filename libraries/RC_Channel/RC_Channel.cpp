@@ -40,7 +40,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
-#include <AP_ADSB/AP_ADSB.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_LandingGear/AP_LandingGear.h>
@@ -48,7 +47,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Arming/AP_Arming.h>
-#include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
@@ -120,7 +118,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 10:RangeFinder Enable
     // @Values{Copter, Rover, Plane}: 11:Fence Enable
     // @Values{Copter}: 13:Super Simple Mode
-    // @Values{Copter}: 14:Acro Trainer
     // @Values{Copter}: 15:Sprayer Enable
     // @Values{Copter, Rover, Plane}: 16:AUTO Mode
     // @Values{Copter}: 17:AUTOTUNE Mode
@@ -154,7 +151,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 47:User Function 1, 48:User Function 2, 49:User Function 3
     // @Values{Rover}: 50:LearnCruise Speed
     // @Values{Rover, Plane}: 51:MANUAL Mode
-    // @Values{Copter, Rover, Plane}: 52:ACRO Mode
     // @Values{Rover}: 53:STEERING Mode
     // @Values{Rover}: 54:HOLD Mode
     // @Values{Copter, Rover, Plane}: 55:GUIDED Mode
@@ -165,7 +161,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 60:ZigZag Mode
     // @Values{Copter}: 61:ZigZag SaveWP
     // @Values{Copter, Rover, Plane}: 62:Compass Learn
-    // @Values{Rover}: 63:Sailboat Tack
     // @Values{Plane}: 64:Reverse Throttle
     // @Values{Copter, Rover, Plane, Blimp}: 65:GPS Disable
     // @Values{Copter, Rover, Plane}: 66:Relay5 On/Off, 67:Relay6 On/Off
@@ -175,7 +170,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 71:FLOWHOLD Mode
     // @Values{Copter,Rover,Plane}: 72:CIRCLE Mode
     // @Values{Copter}: 73:DRIFT Mode
-    // @Values{Rover}: 74:Sailboat motoring 3pos
     // @Values{Copter}: 75:SurfaceTrackingUpDown
     // @Values{Copter}: 76:STANDBY Mode
     // @Values{Plane}: 77:TAKEOFF Mode
@@ -718,10 +712,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::LOWEHEISER_THROTTLE:
 #endif
         break;
-
-#if HAL_ADSB_ENABLED
-    case AUX_FUNC::AVOID_ADSB:
-#endif
     case AUX_FUNC::AVOID_PROXIMITY:
 #if AP_FENCE_ENABLED
     case AUX_FUNC::FENCE:
@@ -749,9 +739,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
 #if HAL_SPRAYER_ENABLED
     case AUX_FUNC::SPRAYER:
-#endif
-#if AP_AIRSPEED_ENABLED
-    case AUX_FUNC::DISABLE_AIRSPEED_USE:
 #endif
     case AUX_FUNC::FFT_NOTCH_TUNE:
 #if HAL_MOUNT_ENABLED
@@ -836,19 +823,14 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CLEAR_WP,"ClearWaypoint"},
 #endif
     { AUX_FUNC::COMPASS_LEARN,"CompassLearn"},
-    { AUX_FUNC::SAILBOAT_TACK,"SailboatTack"},
 #if AP_GPS_ENABLED
     { AUX_FUNC::GPS_DISABLE,"GPSDisable"},
     { AUX_FUNC::GPS_DISABLE_YAW,"GPSDisableYaw"},
-#endif
-#if AP_AIRSPEED_ENABLED
-    { AUX_FUNC::DISABLE_AIRSPEED_USE,"DisableAirspeedUse"},
 #endif
 #if AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
     { AUX_FUNC::RELAY5,"Relay5"},
     { AUX_FUNC::RELAY6,"Relay6"},
 #endif
-    { AUX_FUNC::SAILBOAT_MOTOR_3POS,"SailboatMotor"},
     { AUX_FUNC::SURFACE_TRACKING,"SurfaceTracking"},
 #if HAL_RUNCAM_ENABLED
     { AUX_FUNC::RUNCAM_CONTROL,"RunCamControl"},
@@ -866,9 +848,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #endif
 #if AP_BATTERY_ENABLED
     { AUX_FUNC::BATTERY_MPPT_ENABLE,"Battery MPPT Enable"},
-#endif
-#if AP_AIRSPEED_AUTOCAL_ENABLE
-    { AUX_FUNC::ARSPD_CALIBRATE,"Calibrate Airspeed"},
 #endif
 #if HAL_TORQEEDO_ENABLED
     { AUX_FUNC::TORQEEDO_CLEAR_ERR, "Torqeedo Clear Err"},
@@ -1013,36 +992,6 @@ void RC_Channel::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
         AP::arming().disarm(AP_Arming::Method::AUXSWITCH);
         break;
     }
-}
-
-void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
-{
-#if HAL_ADSB_ENABLED
-    AP_Avoidance *avoidance = AP::ap_avoidance();
-    if (avoidance == nullptr) {
-        return;
-    }
-    if (ch_flag == AuxSwitchPos::HIGH) {
-        AP_ADSB *adsb = AP::ADSB();
-        if (adsb == nullptr) {
-            return;
-        }
-        // try to enable AP_Avoidance
-        if (!adsb->enabled() || !adsb->healthy()) {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB not available");
-            return;
-        }
-        avoidance->enable();
-        LOGGER_WRITE_EVENT(LogEvent::AVOIDANCE_ADSB_ENABLE);
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Enabled");
-        return;
-    }
-
-    // disable AP_Avoidance
-    avoidance->disable();
-    LOGGER_WRITE_EVENT(LogEvent::AVOIDANCE_ADSB_DISABLE);
-    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Disabled");
-#endif
 }
 
 void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)
@@ -1494,12 +1443,6 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         break;
 #endif
 
-#if HAL_ADSB_ENABLED
-    case AUX_FUNC::AVOID_ADSB:
-        do_aux_function_avoid_adsb(ch_flag);
-        break;
-#endif
-
     case AUX_FUNC::FFT_NOTCH_TUNE:
         do_aux_function_fft_notch_tune(ch_flag);
         break;
@@ -1580,26 +1523,6 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         AP::gps().set_force_disable_yaw(ch_flag == AuxSwitchPos::HIGH);
         break;
 #endif  // AP_GPS_ENABLED
-
-#if AP_AIRSPEED_ENABLED
-    case AUX_FUNC::DISABLE_AIRSPEED_USE: {
-        AP_Airspeed *airspeed = AP::airspeed();
-        if (airspeed == nullptr) {
-            break;
-        }
-        switch (ch_flag) {
-        case AuxSwitchPos::HIGH:
-            airspeed->force_disable_use(true);
-            break;
-        case AuxSwitchPos::MIDDLE:
-            break;
-        case AuxSwitchPos::LOW:
-            airspeed->force_disable_use(false);
-            break;
-        }
-        break;
-    }
-#endif
 
     case AUX_FUNC::MOTOR_ESTOP:
         switch (ch_flag) {

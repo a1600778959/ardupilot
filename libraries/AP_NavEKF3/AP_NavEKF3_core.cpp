@@ -71,11 +71,6 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , MIN((uint16_t)(gps_delay_sec * 1000.0f),250));
     }
 
-    // airspeed sensing can have large delays and should not be included if disabled
-    if (dal.airspeed_sensor_enabled()) {
-        maxTimeDelay_ms = MAX(maxTimeDelay_ms , frontend->tasDelay_ms);
-    }
-
 #if HAL_VISUALODOM_ENABLED
     // include delay from visual odometry if enabled
     const auto *visual_odom = dal.visualodom();
@@ -111,9 +106,6 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
     if(!storedBaro.init(obs_buffer_length)) {
-        return false;
-    }
-    if(dal.airspeed() && !storedTAS.init(obs_buffer_length)) {
         return false;
     }
     if(dal.opticalflow_enabled() && !storedOF.init(flow_buffer_length)) {

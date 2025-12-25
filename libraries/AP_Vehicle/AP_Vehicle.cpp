@@ -13,7 +13,6 @@
 #include <AP_OSD/AP_OSD.h>
 #include <AP_RPM/AP_RPM.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_Motors/AP_Motors.h>
 #include <AR_Motors/AP_MotorsUGV.h>
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include <GCS_MAVLink/GCS.h>
@@ -88,12 +87,6 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(efi, "EFI", 9, AP_Vehicle, AP_EFI),
 #endif
 
-#if AP_AIRSPEED_ENABLED
-    // @Group: ARSPD
-    // @Path: ../AP_Airspeed/AP_Airspeed.cpp
-    AP_SUBGROUPINFO(airspeed, "ARSPD", 10, AP_Vehicle, AP_Airspeed),
-#endif
-
 #if AP_CUSTOMROTATIONS_ENABLED
     // @Group: CUST_ROT
     // @Path: ../AP_CustomRotations/AP_CustomRotations.cpp
@@ -104,12 +97,6 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Group: ESC_TLM
     // @Path: ../AP_ESC_Telem/AP_ESC_Telem.cpp
     AP_SUBGROUPINFO(esc_telem, "ESC_TLM", 12, AP_Vehicle, AP_ESC_Telem),
-#endif
-
-#if AP_AIS_ENABLED
-    // @Group: AIS_
-    // @Path: ../AP_AIS/AP_AIS.cpp
-    AP_SUBGROUPINFO(ais, "AIS_",  13, AP_Vehicle, AP_AIS),
 #endif
 
 #if AP_FENCE_ENABLED
@@ -424,19 +411,6 @@ void AP_Vehicle::setup()
     scripting.init();
 #endif // AP_SCRIPTING_ENABLED
 
-#if AP_AIRSPEED_ENABLED
-    airspeed.init();
-    if (airspeed.enabled()) {
-        airspeed.calibrate(true);
-    } 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    else {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No airspeed sensor");
-    }
-#endif
-#endif  // AP_AIRSPEED_ENABLED
-
-
 #if AP_SRV_CHANNELS_ENABLED
     AP::srv().init();
 #endif
@@ -493,10 +467,6 @@ void AP_Vehicle::setup()
 
 #if AP_KDECAN_ENABLED
     kdecan.init();
-#endif
-
-#if AP_AIS_ENABLED
-    ais.init();
 #endif
 
 #if HAL_NMEA_OUTPUT_ENABLED
@@ -604,9 +574,6 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_GYROFFT_ENABLED
     FAST_TASK_CLASS(AP_GyroFFT,    &vehicle.gyro_fft,       sample_gyros),
 #endif
-#if AP_AIRSPEED_ENABLED
-    SCHED_TASK_CLASS(AP_Airspeed,  &vehicle.airspeed,       update,                   10, 100, 41),    // NOTE: the priority number here should be right before Plane's calc_airspeed_errors
-#endif
 #if COMPASS_CAL_ENABLED
     SCHED_TASK_CLASS(Compass,      &vehicle.compass,        cal_update,     100, 200, 75),
 #endif
@@ -654,9 +621,6 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if AP_FENCE_ENABLED
     SCHED_TASK_CLASS(AC_Fence,     &vehicle.fence,          update,                   10, 100, 248),
-#endif
-#if AP_AIS_ENABLED
-    SCHED_TASK_CLASS(AP_AIS,       &vehicle.ais,            update,                    5, 100, 249),
 #endif
 #if HAL_EFI_ENABLED
     SCHED_TASK_CLASS(AP_EFI,       &vehicle.efi,            update,                   50, 200, 250),

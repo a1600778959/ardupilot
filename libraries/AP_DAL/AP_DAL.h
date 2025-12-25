@@ -5,7 +5,6 @@
 #include "AP_DAL_GPS.h"
 #include "AP_DAL_RangeFinder.h"
 #include "AP_DAL_Compass.h"
-#include "AP_DAL_Airspeed.h"
 #include "AP_DAL_Beacon.h"
 #include "AP_DAL_VisualOdom.h"
 
@@ -138,9 +137,6 @@ public:
     }
 #endif
 
-    AP_DAL_Airspeed *airspeed() {
-        return _airspeed;
-    }
 #if AP_BEACON_ENABLED
     AP_DAL_Beacon *beacon() {
         return _beacon;
@@ -153,11 +149,6 @@ public:
 #endif
 
     AP_DAL_Compass &compass() { return _compass; }
-
-    // random methods that AP_NavEKF3 wants to call on AHRS:
-    bool airspeed_sensor_enabled(void) const {
-        return _RFRN.ahrs_airspeed_sensor_enabled;
-    }
 
     // this replaces AP::ahrs()->EAS2TAS(), which should probably go
     // away in favour of just using the Baro method.
@@ -243,20 +234,6 @@ public:
     void handle_message(const log_RISI &msg) {
         _ins.handle_message(msg);
     }
-
-    void handle_message(const log_RASH &msg) {
-        if (_airspeed == nullptr) {
-            _airspeed = NEW_NOTHROW AP_DAL_Airspeed;
-        }
-        _airspeed->handle_message(msg);
-    }
-    void handle_message(const log_RASI &msg) {
-        if (_airspeed == nullptr) {
-            _airspeed = NEW_NOTHROW AP_DAL_Airspeed;
-        }
-        _airspeed->handle_message(msg);
-    }
-
     void handle_message(const log_RBRH &msg) {
         _baro.handle_message(msg);
     }
@@ -370,7 +347,6 @@ private:
     AP_DAL_RangeFinder *_rangefinder;
 #endif
     AP_DAL_Compass _compass;
-    AP_DAL_Airspeed *_airspeed;
 #if AP_BEACON_ENABLED
     AP_DAL_Beacon *_beacon;
 #endif

@@ -26,11 +26,11 @@ COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES = [
 ]
 
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
-    'AP_Airspeed',
+    #'AP_Airspeed',
     'AP_AccelCal',
     'AP_ADC',
     'AP_AHRS',
-    'AP_Airspeed',
+    #'AP_Airspeed',
     'AP_Baro',
     'AP_BattMonitor',
     'AP_BoardConfig',
@@ -100,8 +100,8 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_NMEA_Output',
     'AP_OSD',
     'AP_Filesystem',
-    'AP_ADSB',
-    'AP_ADSB/sagetech-sdk',
+    #'AP_ADSB',
+    #'AP_ADSB/sagetech-sdk',
     'AC_PID',
     'AP_SerialLED',
     'AP_EFI',
@@ -120,7 +120,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_TemperatureSensor',
     'AP_Torqeedo',
     'AP_CustomRotations',
-    'AP_AIS',
+    #'AP_AIS',
     'AP_OpenDroneID',
     'AP_CheckFirmware',
     'AP_ExternalControl',

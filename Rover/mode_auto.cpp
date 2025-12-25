@@ -18,15 +18,8 @@ bool ModeAuto::_enter()
 
     // clear guided limits
     rover.mode_guided.limit_clear();
-
-    // initialise submode to stop or loiter
-    if (rover.is_boat()) {
-        if (!start_loiter()) {
-            start_stop();
-        }
-    } else {
-        start_stop();
-    }
+    start_stop();
+    
 
     // set flag to start mission
     waiting_to_start = true;
@@ -84,9 +77,6 @@ void ModeAuto::update()
         {
             // boats loiter once the waypoint is reached
             bool keep_navigating = true;
-            if (rover.is_boat() && g2.wp_nav.reached_destination() && !g2.wp_nav.is_fast_waypoint()) {
-                keep_navigating = !start_loiter();
-            }
 
             // update navigation controller
             if (keep_navigating) {
@@ -104,14 +94,7 @@ void ModeAuto::update()
                 // check if we have reached within 5 degrees of target
                 _reached_heading = (fabsf(_desired_yaw_cd - ahrs.yaw_sensor) < 500);
             } else {
-                // we have reached the destination so stay here
-                if (rover.is_boat()) {
-                    if (!start_loiter()) {
-                        stop_vehicle();
-                    }
-                } else {
-                    stop_vehicle();
-                }
+                stop_vehicle();
             }
             break;
         }
@@ -619,11 +602,6 @@ void ModeAuto::exit_mission()
             return;
         }
         break;
-    case DoneBehaviour::ACRO:
-        if (rover.set_mode(rover.mode_acro, ModeReason::MISSION_END)) {
-            return;
-        }
-        break;
     case DoneBehaviour::MANUAL:
         if (rover.set_mode(rover.mode_manual, ModeReason::MISSION_END)) {
             return;
@@ -765,14 +743,8 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
     nav_delay_time_start_ms = millis();
 
-    // boats loiter, cars and balancebots stop
-    if (rover.is_boat()) {
-        if (!start_loiter()) {
-            start_stop();
-        }
-    } else {
-        start_stop();
-    }
+    start_stop();
+    
 
     if (cmd.content.nav_delay.seconds > 0) {
         // relative delay
