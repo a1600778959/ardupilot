@@ -33,7 +33,6 @@ void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwit
     // the following functions do not need initialising:
     case AUX_FUNC::AUTO:
     case AUX_FUNC::CIRCLE:
-    case AUX_FUNC::FOLLOW:
     case AUX_FUNC::GUIDED:
     case AUX_FUNC::HOLD:
     case AUX_FUNC::LEARN_CRUISE:
@@ -188,13 +187,6 @@ bool RC_Channel_Rover::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
     case AUX_FUNC::LOITER:
         do_aux_function_change_mode(rover.mode_loiter, ch_flag);
         break;
-
-#if MODE_FOLLOW_ENABLED
-    // Set mode to Follow
-    case AUX_FUNC::FOLLOW:
-        do_aux_function_change_mode(rover.mode_follow, ch_flag);
-        break;
-#endif
 
     // set mode to Simple
     case AUX_FUNC::SIMPLE:

@@ -42,7 +42,6 @@
 #include <AR_WPNav/AR_WPNav_OA.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AC_PrecLand/AC_PrecLand_config.h>
-#include <AP_Follow/AP_Follow_config.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #include <AP_AOA/AP_AOAFilter.h>           //添加AOA头文件
 #include <AP_AOA/AP_AOAPID.h>              //添加AOAPID头文件
@@ -101,9 +100,6 @@ public:
     friend class ModeRTL;
     friend class ModeSmartRTL;
     friend class ModeAoafllow;
-#if MODE_FOLLOW_ENABLED
-    friend class ModeFollow;
-#endif
     friend class ModeSimple;
 #if MODE_DOCK_ENABLED
     friend class ModeDock;
@@ -252,9 +248,6 @@ private:
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
     ModeAoafllow mode_aoafollow; // <- 新增此行
-#if MODE_FOLLOW_ENABLED
-    ModeFollow mode_follow;
-#endif
     ModeSimple mode_simple;
 #if MODE_DOCK_ENABLED
     ModeDock mode_dock;

@@ -182,7 +182,6 @@ bool Rover::gcs_mode_enabled(const Mode::Number mode_num) const
         (uint8_t)Mode::Number::MANUAL,
         (uint8_t)Mode::Number::STEERING,
         (uint8_t)Mode::Number::LOITER,
-        (uint8_t)Mode::Number::FOLLOW,
         (uint8_t)Mode::Number::SIMPLE,
         (uint8_t)Mode::Number::CIRCLE,
         (uint8_t)Mode::Number::AUTO,

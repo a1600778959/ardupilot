@@ -6,7 +6,6 @@
 #include <AC_Avoidance/AC_Avoid.h>
 #include "AC_Sprayer/AC_Sprayer.h"
 #include <AP_Beacon/AP_Beacon.h>
-#include <AP_Follow/AP_Follow.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include "AP_Rally.h"
 #include <AP_SmartRTL/AP_SmartRTL.h>
@@ -354,11 +353,6 @@ public:
 
     // pitch/roll angle for crash check
     AP_Int8 crash_angle;
-
-#if AP_FOLLOW_ENABLED
-    // follow mode library
-    AP_Follow follow;
-#endif
 
     // frame type for vehicle (used for vectored motor vehicles and custom motor configs)
     AP_Int8 frame_type;

@@ -159,7 +159,6 @@ public:
         HOLD         =        54, // hold mode
         GUIDED       =        55, // guided mode
         LOITER       =        56, // loiter mode
-        FOLLOW       =        57, // follow mode
         CLEAR_WP     =        58, // clear waypoints
         SIMPLE       =        59, // simple mode
         ZIGZAG       =        60, // zigzag mode

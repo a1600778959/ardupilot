@@ -510,12 +510,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CRASH_ANGLE", 22, ParametersG2, crash_angle, 0),
 
-#if AP_FOLLOW_ENABLED
-    // @Group: FOLL
-    // @Path: ../libraries/AP_Follow/AP_Follow.cpp
-    AP_SUBGROUPINFO(follow, "FOLL", 23, ParametersG2, AP_Follow),
-#endif
-
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type
     // @Description: Frame Type
@@ -733,9 +727,6 @@ ParametersG2::ParametersG2(void)
 #endif
 #if AP_AVOIDANCE_ENABLED
     avoid(),
-#endif
-#if AP_FOLLOW_ENABLED
-    follow(),
 #endif
     wp_nav(attitude_control, pos_control),
     pos_control(attitude_control)
