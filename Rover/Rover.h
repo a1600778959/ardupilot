@@ -36,7 +36,6 @@
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_OSD/AP_OSD.h>
 #include <AR_Motors/AP_MotorsUGV.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Mission/AP_Mission_ChangeDetector.h>
@@ -158,9 +157,6 @@ private:
     AP_OpticalFlow optflow;
 #endif
 
-#if OSD_ENABLED || OSD_PARAM_ENABLED
-    AP_OSD osd;
-#endif
 #if AC_PRECLAND_ENABLED
     AC_PrecLand precland;
 #endif

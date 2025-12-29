@@ -10,7 +10,6 @@
 #include "AP_OpticalFlow_CXOF.h"
 #include "AP_OpticalFlow_MAV.h"
 #include "AP_OpticalFlow_HereFlow.h"
-#include "AP_OpticalFlow_MSP.h"
 #include "AP_OpticalFlow_UPFLOW.h"
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
@@ -160,11 +159,6 @@ void AP_OpticalFlow::init(uint32_t log_bit)
         backend = NEW_NOTHROW AP_OpticalFlow_HereFlow(*this);
 #endif
         break;
-    case Type::MSP:
-#if HAL_MSP_OPTICALFLOW_ENABLED
-        backend = AP_OpticalFlow_MSP::detect(*this);
-#endif
-        break;
     case Type::UPFLOW:
 #if AP_OPTICALFLOW_UPFLOW_ENABLED
         backend = AP_OpticalFlow_UPFLOW::detect(*this);
@@ -224,20 +218,6 @@ void AP_OpticalFlow::handle_msg(const mavlink_message_t &msg)
         backend->handle_msg(msg);
     }
 }
-
-#if HAL_MSP_OPTICALFLOW_ENABLED
-void AP_OpticalFlow::handle_msp(const MSP::msp_opflow_data_message_t &pkt)
-{
-    // exit immediately if not enabled
-    if (!enabled()) {
-        return;
-    }
-
-    if (backend != nullptr) {
-        backend->handle_msp(pkt);
-    }
-}
-#endif //HAL_MSP_OPTICALFLOW_ENABLED
 
 #if AP_OPTICALFLOW_CALIBRATOR_ENABLED
 // start calibration

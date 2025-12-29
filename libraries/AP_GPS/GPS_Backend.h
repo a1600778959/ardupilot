@@ -77,9 +77,6 @@ public:
 
     virtual void broadcast_configuration_failure_reason(void) const { return ; }
 
-#if HAL_MSP_GPS_ENABLED
-    virtual void handle_msp(const MSP::msp_gps_data_message_t &pkt) { return; }
-#endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     virtual void handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt) { return; }
 #endif

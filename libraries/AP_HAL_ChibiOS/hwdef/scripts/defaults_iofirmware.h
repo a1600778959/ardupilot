@@ -20,10 +20,6 @@
 #define AP_RC_CHANNEL_ENABLED 0
 #endif
 
-#ifndef AP_VIDEOTX_ENABLED
-#define AP_VIDEOTX_ENABLED 0
-#endif
-
 // make diagnosing Faults (e.g. HardFault) harder, but save bytes:
 #ifndef AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
 #define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 0

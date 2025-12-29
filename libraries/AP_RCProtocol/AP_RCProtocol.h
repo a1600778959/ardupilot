@@ -57,9 +57,6 @@ public:
 #if AP_RCPROTOCOL_SRXL2_ENABLED
         SRXL2      =  7,
 #endif
-#if AP_RCPROTOCOL_CRSF_ENABLED
-        CRSF       =  8,
-#endif
 #if AP_RCPROTOCOL_ST24_ENABLED
         ST24       =  9,
 #endif
@@ -159,9 +156,6 @@ public:
 #endif
 #if AP_RCPROTOCOL_FPORT2_ENABLED
         case FPORT2:
-#endif
-#if AP_RCPROTOCOL_CRSF_ENABLED
-        case CRSF:
 #endif
 #if AP_RCPROTOCOL_GHST_ENABLED
         case GHST:

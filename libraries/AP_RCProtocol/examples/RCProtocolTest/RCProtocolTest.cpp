@@ -20,7 +20,6 @@
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <RC_Channel/RC_Channel.h>
-#include <AP_VideoTX/AP_VideoTX.h>
 #include <stdio.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

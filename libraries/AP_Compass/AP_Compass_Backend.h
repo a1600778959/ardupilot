@@ -25,10 +25,6 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #endif
 
-#if AP_COMPASS_MSP_ENABLED
-#include <AP_MSP/msp.h>
-#endif
-
 #include <AP_Math/AP_Math.h>
 
 class Compass;  // forward declaration
@@ -77,10 +73,6 @@ public:
         DEVTYPE_BMM350 = 0x17,
         DEVTYPE_IIS2MDC = 0x18,
     };
-
-#if AP_COMPASS_MSP_ENABLED
-    virtual void handle_msp(const MSP::msp_compass_data_message_t &pkt) {}
-#endif
 
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
     virtual void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt) {}

@@ -18,7 +18,6 @@
 #if AP_GHST_TELEM_ENABLED
 
 #include "AP_GHST_Telem.h"
-#include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>

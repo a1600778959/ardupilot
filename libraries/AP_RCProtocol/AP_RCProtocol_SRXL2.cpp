@@ -27,7 +27,6 @@
 #include <AP_RCTelemetry/AP_Spektrum_Telem.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/utility/sparse-endian.h>
-#include <AP_VideoTX/AP_VideoTX.h>
 
 #include "spm_srxl.h"
 
@@ -389,9 +388,6 @@ bool srxlOnBind(SrxlFullID device, SrxlBindData info)
 // User-provided callback routine to handle reception of a VTX control packet.
 void srxlOnVtx(SrxlVtxData* pVtxData)
 {
-#if AP_VIDEOTX_ENABLED
-    AP_RCProtocol_Backend::configure_vtx(pVtxData->band, pVtxData->channel, pVtxData->power, pVtxData->pit);
-#endif
 }
 
 #endif  // AP_RCPROTOCOL_SRXL2_ENABLED

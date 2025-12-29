@@ -18,7 +18,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Bitmask.h>
 #include <AP_Volz_Protocol/AP_Volz_Protocol.h>
-#include <AP_RobotisServo/AP_RobotisServo.h>
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
@@ -617,11 +616,6 @@ private:
 #if AP_SBUSOUTPUT_ENABLED
     // support for SBUS protocol
     AP_SBusOut sbus;
-#endif
-
-#if AP_ROBOTISSERVO_ENABLED
-    // support for Robotis servo protocol
-    AP_RobotisServo robotis;
 #endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL

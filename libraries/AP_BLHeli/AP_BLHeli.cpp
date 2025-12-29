@@ -189,61 +189,6 @@ uint8_t AP_BLHeli::blheli_chan_to_output_chan(uint8_t motor)
 }
 
 /*
-  process one byte of serial input for MSP protocol
- */
-bool AP_BLHeli::msp_process_byte(uint8_t c)
-{
-    if (msp.state == MSP_IDLE) {
-        msp.escMode = PROTOCOL_NONE;
-        if (c == '$') {
-            msp.state = MSP_HEADER_START;
-        } else {
-            return false;
-        }
-    } else if (msp.state == MSP_HEADER_START) {
-        msp.state = (c == 'M') ? MSP_HEADER_M : MSP_IDLE;
-    } else if (msp.state == MSP_HEADER_M) {
-        msp.state = MSP_IDLE;
-        switch (c) {
-            case '<': // COMMAND
-                msp.packetType = MSP_PACKET_COMMAND;
-                msp.state = MSP_HEADER_ARROW;
-                break;
-            case '>': // REPLY
-                msp.packetType = MSP_PACKET_REPLY;
-                msp.state = MSP_HEADER_ARROW;
-                break;
-            default:
-                break;
-        }
-    } else if (msp.state == MSP_HEADER_ARROW) {
-        if (c > sizeof(msp.buf)) {
-            msp.state = MSP_IDLE;
-        } else {
-            msp.dataSize = c;
-            msp.offset = 0;
-            msp.checksum = 0;
-            msp.checksum ^= c;
-            msp.state = MSP_HEADER_SIZE;
-        }
-    } else if (msp.state == MSP_HEADER_SIZE) {
-        msp.cmdMSP = c;
-        msp.checksum ^= c;
-        msp.state = MSP_HEADER_CMD;
-    } else if (msp.state == MSP_HEADER_CMD && msp.offset < msp.dataSize) {
-        msp.checksum ^= c;
-        msp.buf[msp.offset++] = c;
-    } else if (msp.state == MSP_HEADER_CMD && msp.offset >= msp.dataSize) {
-        if (msp.checksum == c) {
-            msp.state = MSP_COMMAND_RECEIVED;
-        } else {
-            msp.state = MSP_IDLE;
-        }
-    }
-    return true;
-}
-
-/*
   update CRC state for blheli protocol
  */
 void AP_BLHeli::blheli_crc_update(uint8_t c)
@@ -301,39 +246,6 @@ bool AP_BLHeli::blheli_4way_process_byte(uint8_t c)
     return true;
 }
 
-
-/*
-  send a MSP protocol ack
- */
-void AP_BLHeli::msp_send_ack(uint8_t cmd)
-{
-    msp_send_reply(cmd, 0, 0);
-}
-
-/*
-  send a MSP protocol reply
- */
-void AP_BLHeli::msp_send_reply(uint8_t cmd, const uint8_t *buf, uint8_t len)
-{
-    uint8_t *b = &msp.buf[0];
-    *b++ = '$';
-    *b++ = 'M';
-    *b++ = '>';
-    *b++ = len;
-    *b++ = cmd;
-    // acks do not have a payload
-    if (len > 0) {
-        memcpy(b, buf, len);
-    }
-    b += len;
-    uint8_t c = 0;
-    for (uint8_t i=0; i<len+2; i++) {
-        c ^= msp.buf[i+3];
-    }
-    *b++ = c;
-    uart->write_locked(&msp.buf[0], len+6, BLHELI_UART_LOCK_KEY);
-}
-
 void AP_BLHeli::putU16(uint8_t *b, uint16_t v)
 {
     b[0] = v;
@@ -357,250 +269,6 @@ void AP_BLHeli::putU16_BE(uint8_t *b, uint16_t v)
 {
     b[0] = v >> 8;
     b[1] = v;
-}
-
-/*
-  process a MSP command from GCS
- */
-void AP_BLHeli::msp_process_command(void)
-{
-    debug("MSP cmd %u len=%u", msp.cmdMSP, msp.dataSize);
-    switch (msp.cmdMSP) {
-    case MSP_API_VERSION: {
-        debug("MSP_API_VERSION");
-        uint8_t buf[3] = { MSP_PROTOCOL_VERSION, API_VERSION_MAJOR, API_VERSION_MINOR };
-        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
-        break;
-    }
-
-    case MSP_FC_VARIANT:
-        debug("MSP_FC_VARIANT");
-        msp_send_reply(msp.cmdMSP, (const uint8_t *)ARDUPILOT_IDENTIFIER, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
-        break;
-
-    /*
-      Notes:
-        version 3.3.1 adds a reply to MSP_SET_MOTOR which was missing
-        version 3.3.0 requires a workaround in blheli suite to handle MSP_SET_MOTOR without an ack
-    */
-    case MSP_FC_VERSION: {
-        debug("MSP_FC_VERSION");
-        uint8_t version[3] = { 3, 3, 1 };
-        msp_send_reply(msp.cmdMSP, version, sizeof(version));
-        break;
-    }
-    case MSP_BOARD_INFO: {
-        debug("MSP_BOARD_INFO");
-        // send a generic 'ArduPilot ChibiOS' board type
-        uint8_t buf[7] = { 'A', 'R', 'C', 'H', 0, 0, 0 };
-        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
-        break;
-    }
-
-    case MSP_BUILD_INFO: {
-        debug("MSP_BUILD_INFO");
-         // build date, build time, git version
-        uint8_t buf[26] {
-                0x4d, 0x61, 0x72, 0x20, 0x31, 0x36, 0x20, 0x32, 0x30,
-                0x31, 0x38, 0x30, 0x38, 0x3A, 0x34, 0x32, 0x3a, 0x32, 0x39,
-                0x62, 0x30, 0x66, 0x66, 0x39, 0x32, 0x38};
-        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
-        break;
-    }
-
-    case MSP_REBOOT:
-        debug("MSP: ignoring reboot command, end serial comms");
-        serial_end();
-        blheli.connected[blheli.chan] = false;
-        break;
-
-    case MSP_UID:
-        // MCU identifier
-        debug("MSP_UID");
-        msp_send_reply(msp.cmdMSP, (const uint8_t *)UDID_START, 12);
-        break;
-
-        // a literal "4" is used for the PWMType here to allow Rover
-        // to use the same number for the same protocol.  At time of
-        // writing the AP_MotorsUGV::PWMType has not been unified with
-        // AP_Motors::PWMType.
-    case MSP_ADVANCED_CONFIG: {
-        debug("MSP_ADVANCED_CONFIG");
-        uint8_t buf[10];
-        buf[0] = 1; // gyro sync denom
-        buf[1] = 4; // pid process denom
-        buf[2] = 0; // use unsynced pwm
-        buf[3] = 4; // (uint8_t)AP_Motors::PWMType::DSHOT150;
-        putU16(&buf[4], 480); // motor PWM Rate
-        putU16(&buf[6], 450); // idle offset value
-        buf[8] = 0; // use 32kHz
-        buf[9] = 0; // motor PWM inversion
-        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
-        break;
-    }
-
-    case MSP_FEATURE_CONFIG: {
-        debug("MSP_FEATURE_CONFIG");
-        uint8_t buf[4];
-        putU32(buf, (channel_reversible_mask.get() != 0) ? FEATURE_3D : 0); // from MSPFeatures enum
-        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
-        break;
-    }
-
-    case MSP_STATUS: {
-        debug("MSP_STATUS");
-        uint8_t buf[21];
-        putU16(&buf[0], 1000); // loop time usec
-        putU16(&buf[2], 0);    // i2c error count
-        putU16(&buf[4], 0x27); // available sensors
-        putU32(&buf[6], 0);    // flight modes
-        buf[10] = 0;           // pid profile index
-        putU16(&buf[11], 5);   // system load percent
-        putU16(&buf[13], 0);   // gyro cycle time
-        buf[15] = 0;           // flight mode flags length
-        buf[16] = 18;          // arming disable flags count
-        putU32(&buf[17], 0);   // arming disable flags
-        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
-        break;
-    }
-
-    case MSP_MOTOR_3D_CONFIG: {
-        debug("MSP_MOTOR_3D_CONFIG");
-        uint8_t buf[6];
-        putU16(&buf[0], 1406); // 3D deadband low
-        putU16(&buf[2], 1514); // 3D deadband high
-        putU16(&buf[4], 1460); // 3D neutral
-        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
-        break;
-    }
-
-    case MSP_BATTERY_STATE: {
-        debug("MSP_BATTERY_STATE");
-        // ESC configurator seems to care a lot about the battery state,
-        // try and at least provide something believable
-        uint8_t buf[11] {};
-#if AP_BATTERY_ENABLED
-        AP_BattMonitor &battery = AP::battery();
-        float v;
-#if HAL_WITH_ESC_TELEM
-        if (!AP::esc_telem().get_voltage(blheli_chan_to_output_chan(blheli.chan), v)) {
-            v = battery.voltage();
-        }        
-#else
-            v = battery.voltage();
-#endif
-        buf[0] = battery.healthy() ? uint8_t(roundf(v / 3.85)) : 0; // cell count, 0 means no battery
-        putU16(&buf[1], uint16_t(battery.pack_capacity_mah())); // capacity in mAh
-        buf[3] = uint8_t(roundf(v * 10.0)); // legacy V in 0.1V steps
-
-        float cons = 0;
-        UNUSED_RESULT(battery.consumed_mah(cons));
-        putU16(&buf[4], uint16_t(roundf(cons))); // mAh used
-
-        float amps = 0.0;
-        UNUSED_RESULT(battery.current_amps(amps));
-        putU16(&buf[6], uint16_t(roundf(amps * 100.0))); // A in 0.01A steps
-        buf[8] = battery.healthy(); // alerts/state
-        // We are advertising MSP v1.42 which means supporting the new voltage field
-        putU16(&buf[9], uint16_t(roundf(v * 100.0))); // Voltage in 0.01V steps
-#endif
-        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
-        break;
-    }
-
-    case MSP_MOTOR_CONFIG: {
-        debug("MSP_MOTOR_CONFIG(n=%u, p=%u)", num_motors, motor_poles.get());
-        uint8_t buf[10];
-        SRV_Channel* channel = SRV_Channels::srv_channel(blheli_chan_to_output_chan(0));
-        putU16(&buf[0], channel->get_output_min()); // min throttle
-        putU16(&buf[2], channel->get_output_max()); // max throttle
-        putU16(&buf[4], channel->get_output_min()); // min command
-        // API 1.42
-        buf[6] = num_motors; // motorCount
-        buf[7] = motor_poles; // motorPoleCount
-        buf[8] = 0; // useDshotTelemetry
-        buf[9] = 0; // FEATURE_ESC_SENSOR
-        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
-        break;
-    }
-
-    case MSP_MOTOR: {
-        debug("MSP_MOTOR");
-        // get the output going to each motor
-        uint8_t buf[16] {};
-        for (uint8_t i = 0; i < num_motors; i++) {
-            // if we have a mix of reversible and normal report a PWM of zero, this allows BLHeliSuite to conect
-            uint8_t chan = blheli_chan_to_output_chan(i);
-            uint16_t v = mixed_type ? 0 : hal.rcout->read(blheli_chan_to_output_chan(i));
-            putU16(&buf[2*i], v);
-            debug("MOTOR %u chan: %u val: %u",i,chan,v);
-        }
-        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
-        break;
-    }
-
-    case MSP_SET_MOTOR: {
-        debug("MSP_SET_MOTOR");
-        if (!mixed_type) {
-            // set the output to each motor
-            uint8_t nmotors = msp.dataSize / 2;
-            debug("MSP_SET_MOTOR %u", nmotors);
-            motors_disabled_mask = SRV_Channels::get_disabled_channel_mask();
-            SRV_Channels::set_disabled_channel_mask(0xFFFF);
-            motors_disabled = true;
-            EXPECT_DELAY_MS(1000);
-            hal.rcout->cork();
-            for (uint8_t i = 0; i < nmotors; i++) {
-                if (i >= num_motors) {
-                    break;
-                }
-                uint16_t v = getU16(&msp.buf[i*2]);
-                debug("MSP_SET_MOTOR %u %u", i, v);
-                // map from a MSP value to a value in the range 1000 to 2000
-                uint16_t pwm = (v < 1000)?0:v;
-                hal.rcout->write(blheli_chan_to_output_chan(i), pwm);
-            }
-            hal.rcout->push();
-        } else {
-            debug("mixed type, Motors Disabled");
-        }
-        msp_send_ack(msp.cmdMSP);
-        break;
-    }
-
-    case MSP_SET_PASSTHROUGH: {
-        debug("MSP_SET_PASSTHROUGH");
-        if (msp.dataSize == 0) {
-            msp.escMode = PROTOCOL_4WAY;
-        } else if (msp.dataSize == 2) {
-            msp.escMode = (enum escProtocol)msp.buf[0];
-            msp.portIndex = msp.buf[1];
-        }
-        debug("escMode=%u portIndex=%u num_motors=%u", msp.escMode, msp.portIndex, num_motors);
-        uint8_t n = num_motors;
-        switch (msp.escMode) {
-        case PROTOCOL_4WAY:
-            break;
-        default:
-            n = 0;
-            serial_end();
-            break;
-        }
-        // doing the serial setup here avoids delays when doing it on demand and makes
-        // BLHeliSuite considerably more reliable
-        EXPECT_DELAY_MS(1000);
-        if (!hal.rcout->serial_setup_output(blheli_chan_to_output_chan(0), 19200, motor_mask)) {
-            msp_send_ack(ACK_D_GENERAL_ERROR);
-            break;
-        } else {
-            msp_send_reply(msp.cmdMSP, &n, 1);
-        }
-        break;
-    }
-    default:
-        debug("Unknown MSP command %u", msp.cmdMSP);
-        break;
-    }
 }
 
 /*
@@ -1239,7 +907,7 @@ bool AP_BLHeli::process_input(uint8_t b)
     bool valid_packet = false;
 
     if (msp.escMode == PROTOCOL_4WAY && blheli.state == BLHELI_IDLE && b == '$') {
-        debug("Change to MSP mode");
+        debug("Not support MSP mode");
         msp.escMode = PROTOCOL_NONE;
         serial_end();
     }
@@ -1250,8 +918,6 @@ bool AP_BLHeli::process_input(uint8_t b)
     }
     if (msp.escMode == PROTOCOL_4WAY) {
         blheli_4way_process_byte(b);
-    } else {
-        msp_process_byte(b);
     }
     if (msp.escMode == PROTOCOL_4WAY) {
         if (blheli.state == BLHELI_COMMAND_RECEIVED) {
@@ -1264,19 +930,7 @@ bool AP_BLHeli::process_input(uint8_t b)
             blheli.state = BLHELI_IDLE;
             msp.state = MSP_IDLE;
         }
-    } else if (msp.state == MSP_COMMAND_RECEIVED) {
-        if (msp.packetType == MSP_PACKET_COMMAND) {
-            valid_packet = true;
-            if (uart->lock_port(BLHELI_UART_LOCK_KEY, 0)) {
-                uart_locked = true;
-            }
-            last_valid_ms = AP_HAL::millis();
-            msp_process_command();
-        }
-        msp.state = MSP_IDLE;
-        blheli.state = BLHELI_IDLE;
     }
-
     return valid_packet;
 }
 

@@ -32,7 +32,6 @@
 
 #include <AP_Param/AP_Param.h>
 #include <Filter/LowPassFilter.h>
-#include <AP_MSP/msp_protocol.h>
 #include "blheli_4way_protocol.h"
 
 #define AP_BLHELI_MAX_ESCS 8
@@ -258,17 +257,13 @@ private:
     int8_t last_control_port;
 
     void serial_end();
-    bool msp_process_byte(uint8_t c);
     void blheli_crc_update(uint8_t c);
     bool blheli_4way_process_byte(uint8_t c);
     uint8_t blheli_chan_to_output_chan(uint8_t motor);
-    void msp_send_ack(uint8_t cmd);
-    void msp_send_reply(uint8_t cmd, const uint8_t *buf, uint8_t len);
     void putU16(uint8_t *b, uint16_t v);
     uint16_t getU16(const uint8_t *b);
     void putU32(uint8_t *b, uint32_t v);
     void putU16_BE(uint8_t *b, uint16_t v);
-    void msp_process_command(void);
     void blheli_send_reply(const uint8_t *buf, uint16_t len);
     uint16_t BL_CRC(const uint8_t *buf, uint16_t len);
     bool isMcuConnected(void);

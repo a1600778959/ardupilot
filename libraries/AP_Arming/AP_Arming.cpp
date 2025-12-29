@@ -40,11 +40,9 @@
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scripting/AP_Scripting.h>
-#include <AP_Camera/AP_RunCam.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Parachute/AP_Parachute.h>
-#include <AP_OSD/AP_OSD.h>
 #include <AP_Relay/AP_Relay.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Button/AP_Button.h>
@@ -1315,46 +1313,6 @@ bool AP_Arming::fence_checks(bool display_failure)
 }
 #endif  // AP_FENCE_ENABLED
 
-#if HAL_RUNCAM_ENABLED
-bool AP_Arming::camera_checks(bool display_failure)
-{
-    if (check_enabled(ARMING_CHECK_CAMERA)) {
-        AP_RunCam *runcam = AP::runcam();
-        if (runcam == nullptr) {
-            return true;
-        }
-
-        // check camera is ready
-        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-        if (!runcam->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-            check_failed(ARMING_CHECK_CAMERA, display_failure, "%s", fail_msg);
-            return false;
-        }
-    }
-    return true;
-}
-#endif  // HAL_RUNCAM_ENABLED
-
-#if OSD_ENABLED
-bool AP_Arming::osd_checks(bool display_failure) const
-{
-    if (check_enabled(ARMING_CHECK_OSD)) {
-        // if no OSD then pass
-        const AP_OSD *osd = AP::osd();
-        if (osd == nullptr) {
-            return true;
-        }
-        // do osd checks for configuration
-        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-        if (!osd->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-            check_failed(ARMING_CHECK_OSD, display_failure, "%s", fail_msg);
-            return false;
-        }
-   }
-    return true;
-}
-#endif  // OSD_ENABLED
-
 #if HAL_MOUNT_ENABLED
 bool AP_Arming::mount_checks(bool display_failure) const
 {
@@ -1626,12 +1584,6 @@ bool AP_Arming::pre_arm_checks(bool report)
 #endif
 #if HAL_PROXIMITY_ENABLED
         &  proximity_checks(report)
-#endif
-#if HAL_RUNCAM_ENABLED
-        &  camera_checks(report)
-#endif
-#if OSD_ENABLED
-        &  osd_checks(report)
 #endif
 #if HAL_MOUNT_ENABLED
         &  mount_checks(report)

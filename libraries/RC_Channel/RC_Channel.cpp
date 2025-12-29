@@ -35,7 +35,6 @@ extern const AP_HAL::HAL& hal;
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_Camera/AP_Camera.h>
-#include <AP_Camera/AP_RunCam.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Gripper/AP_Gripper.h>
@@ -54,7 +53,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Parachute/AP_Parachute_config.h>
@@ -681,9 +679,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
 #endif
-#if AP_VIDEOTX_ENABLED
-    case AUX_FUNC::VTX_POWER:
-#endif
 #if AP_OPTICALFLOW_CALIBRATOR_ENABLED
     case AUX_FUNC::OPTFLOW_CAL:
 #endif
@@ -733,10 +728,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
     case AUX_FUNC::MOTOR_ESTOP:
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
-#if HAL_RUNCAM_ENABLED
-    case AUX_FUNC::RUNCAM_CONTROL:
-    case AUX_FUNC::RUNCAM_OSD_CONTROL:
-#endif
 #if HAL_SPRAYER_ENABLED
     case AUX_FUNC::SPRAYER:
 #endif
@@ -832,10 +823,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::RELAY6,"Relay6"},
 #endif
     { AUX_FUNC::SURFACE_TRACKING,"SurfaceTracking"},
-#if HAL_RUNCAM_ENABLED
-    { AUX_FUNC::RUNCAM_CONTROL,"RunCamControl"},
-    { AUX_FUNC::RUNCAM_OSD_CONTROL,"RunCamOSDControl"},
-#endif
 #if HAL_VISUALODOM_ENABLED
     { AUX_FUNC::VISODOM_ALIGN,"VisOdomAlign"},
 #endif
@@ -912,15 +899,6 @@ bool RC_Channel::read_aux()
         // may wish to add special cases for other "AUXSW" things
         // here e.g. RCMAP_ROLL etc once they become options
         return false;
-#if AP_VIDEOTX_ENABLED
-    } else if (_option == AUX_FUNC::VTX_POWER) {
-        int8_t position;
-        if (read_6pos_switch(position)) {
-            AP::vtx().change_power(position);
-            return true;
-        }
-        return false;
-#endif  // AP_VIDEOTX_ENABLED
     }
 
     AuxSwitchPos new_position;
@@ -1118,46 +1096,6 @@ bool RC_Channel::do_aux_function_camera_lens(const AuxSwitchPos ch_flag)
 #endif // AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
 }
 #endif // AP_CAMERA_ENABLED
-
-#if HAL_RUNCAM_ENABLED
-void RC_Channel::do_aux_function_runcam_control(const AuxSwitchPos ch_flag)
-{
-    AP_RunCam *runcam = AP::runcam();
-    if (runcam == nullptr) {
-        return;
-    }
-
-    switch (ch_flag) {
-    case AuxSwitchPos::HIGH:
-        runcam->start_recording();
-        break;
-    case AuxSwitchPos::MIDDLE:
-        runcam->osd_option();
-        break;
-    case AuxSwitchPos::LOW:
-        runcam->stop_recording();
-        break;
-    }
-}
-
-void RC_Channel::do_aux_function_runcam_osd_control(const AuxSwitchPos ch_flag)
-{
-    AP_RunCam *runcam = AP::runcam();
-    if (runcam == nullptr) {
-        return;
-    }
-
-    switch (ch_flag) {
-    case AuxSwitchPos::HIGH:
-        runcam->enter_osd();
-        break;
-    case AuxSwitchPos::MIDDLE:
-    case AuxSwitchPos::LOW:
-        runcam->exit_osd();
-        break;
-    }
-}
-#endif
 
 #if AP_FENCE_ENABLED
 // enable or disable the fence
@@ -1423,16 +1361,6 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         do_aux_function_relay(5, ch_flag == AuxSwitchPos::HIGH);
         break;
 #endif  // AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
-
-#if HAL_RUNCAM_ENABLED
-    case AUX_FUNC::RUNCAM_CONTROL:
-        do_aux_function_runcam_control(ch_flag);
-        break;
-
-    case AUX_FUNC::RUNCAM_OSD_CONTROL:
-        do_aux_function_runcam_osd_control(ch_flag);
-        break;
-#endif
 
 #if AP_MISSION_ENABLED
     case AUX_FUNC::CLEAR_WP:

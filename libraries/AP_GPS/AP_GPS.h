@@ -25,7 +25,6 @@
 #include <AP_Param/AP_Param.h>
 #include "GPS_detect_state.h"
 #include <AP_Math/AP_Math.h>
-#include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <SITL/SIM_GPS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -56,7 +55,6 @@ class AP_GPS
     friend class AP_GPS_ERB;
     friend class AP_GPS_GSOF;
     friend class AP_GPS_MAV;
-    friend class AP_GPS_MSP;
     friend class AP_GPS_ExternalAHRS;
     friend class AP_GPS_NMEA;
     friend class AP_GPS_NOVA;
@@ -104,7 +102,6 @@ public:
         GPS_TYPE_HEMI = 16, // hemisphere NMEA
         GPS_TYPE_UBLOX_RTK_BASE = 17,
         GPS_TYPE_UBLOX_RTK_ROVER = 18,
-        GPS_TYPE_MSP = 19,
         GPS_TYPE_ALLYSTAR = 20, // AllyStar NMEA
         GPS_TYPE_EXTERNAL_AHRS = 21,
         GPS_TYPE_UAVCAN_RTK_BASE = 22,
@@ -259,9 +256,6 @@ public:
 
     // Pass mavlink data to message handlers (for MAV type)
     void handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg);
-#if HAL_MSP_GPS_ENABLED
-    void handle_msp(const MSP::msp_gps_data_message_t &pkt);
-#endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     // Retrieve the first instance ID that is configured as type GPS_TYPE_EXTERNAL_AHRS.
     // Can be used by external AHRS systems that only report one GPS to get the instance ID.

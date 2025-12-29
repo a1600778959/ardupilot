@@ -28,7 +28,6 @@
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_SRXL2.h"
-#include "AP_RCProtocol_CRSF.h"
 #include "AP_RCProtocol_ST24.h"
 #include "AP_RCProtocol_FPort.h"
 #include "AP_RCProtocol_FPort2.h"
@@ -74,9 +73,6 @@ void AP_RCProtocol::init()
 #endif
 #if AP_RCPROTOCOL_SRXL2_ENABLED
     backend[AP_RCProtocol::SRXL2] = NEW_NOTHROW AP_RCProtocol_SRXL2(*this);
-#endif
-#if AP_RCPROTOCOL_CRSF_ENABLED
-    backend[AP_RCProtocol::CRSF] = NEW_NOTHROW AP_RCProtocol_CRSF(*this);
 #endif
 #if AP_RCPROTOCOL_FPORT2_ENABLED
     backend[AP_RCProtocol::FPORT2] = NEW_NOTHROW AP_RCProtocol_FPort2(*this, true);
@@ -336,7 +332,7 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
     // FastSBUS:
     { 200000,  2,   2, true },
 #endif
-#if AP_RCPROTOCOL_CRSF_ENABLED || AP_RCPROTOCOL_GHST_ENABLED
+#if AP_RCPROTOCOL_GHST_ENABLED
     // CrossFire:
     { 416666,  0,   1, false },
     // CRSFv3 can negotiate higher rates which are sticky on soft reboot
@@ -586,10 +582,6 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_SRXL2_ENABLED
     case SRXL2:
         return "SRXL2";
-#endif
-#if AP_RCPROTOCOL_CRSF_ENABLED
-    case CRSF:
-        return "CRSF";
 #endif
 #if AP_RCPROTOCOL_ST24_ENABLED
     case ST24:

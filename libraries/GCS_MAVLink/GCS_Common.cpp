@@ -54,8 +54,6 @@
 #include <AP_Winch/AP_Winch.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
-#include <AP_OSD/AP_OSD.h>
-#include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
@@ -4013,16 +4011,6 @@ void GCS_MAVLINK::handle_obstacle_distance_3d(const mavlink_message_t &msg)
 }
 #endif
 
-#if OSD_PARAM_ENABLED
-void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
-{
-    AP_OSD *osd = AP::osd();
-    if (osd != nullptr) {
-        osd->handle_msg(msg, *this);
-    }
-}
-#endif
-
 void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
 {
     // if the heartbeat is from our GCS then we don't failsafe for
@@ -4303,13 +4291,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_OBSTACLE_DISTANCE_3D:
         handle_obstacle_distance_3d(msg);
-        break;
-#endif
-
-#if OSD_PARAM_ENABLED
-    case MAVLINK_MSG_ID_OSD_PARAM_CONFIG:
-    case MAVLINK_MSG_ID_OSD_PARAM_SHOW_CONFIG:
-        handle_osd_param_config(msg);
         break;
 #endif
 

@@ -46,19 +46,14 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Camera/AP_RunCam.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_Networking/AP_Networking.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
-#include <AP_VideoTX/AP_VideoTX.h>
-#include <AP_MSP/AP_MSP.h>
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
-#include <AP_VideoTX/AP_SmartAudio.h>
-#include <AP_VideoTX/AP_Tramp.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor.h>
 #include <SITL/SITL.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
@@ -364,14 +359,8 @@ protected:
     AP_RSSI rssi;
 #endif
 
-#if HAL_RUNCAM_ENABLED
-    AP_RunCam runcam;
-#endif
 #if HAL_GYROFFT_ENABLED
     AP_GyroFFT gyro_fft;
-#endif
-#if AP_VIDEOTX_ENABLED
-    AP_VideoTX vtx;
 #endif
 
 #if AP_SERIALMANAGER_ENABLED
@@ -411,24 +400,12 @@ protected:
     AP_OpenDroneID opendroneid;
 #endif
 
-#if HAL_MSP_ENABLED
-    AP_MSP msp;
-#endif
-
 #if HAL_GENERATOR_ENABLED
     AP_Generator generator;
 #endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS externalAHRS;
-#endif
-
-#if AP_SMARTAUDIO_ENABLED
-    AP_SmartAudio smartaudio;
-#endif
-
-#if AP_TRAMP_ENABLED
-    AP_Tramp tramp;
 #endif
 
 #if AP_NETWORKING_ENABLED

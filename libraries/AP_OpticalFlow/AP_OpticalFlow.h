@@ -22,7 +22,6 @@
  * AP_OpticalFlow.h - OpticalFlow Base Class for ArduPilot
  */
 
-#include <AP_MSP/msp.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_OpticalFlow_Calibrator.h"
@@ -51,7 +50,6 @@ public:
         CXOF = 4,
         MAVLINK = 5,
         UAVCAN = 6,
-        MSP = 7,
         UPFLOW = 8,
         SITL = 10,
     };
@@ -70,11 +68,6 @@ public:
 
     // handle optical flow mavlink messages
     void handle_msg(const mavlink_message_t &msg);
-
-#if HAL_MSP_OPTICALFLOW_ENABLED
-    // handle optical flow msp messages
-    void handle_msp(const MSP::msp_opflow_data_message_t &pkt);
-#endif
 
     // quality - returns the surface quality as a measure from 0 ~ 255
     uint8_t quality() const { return _state.surface_quality; }

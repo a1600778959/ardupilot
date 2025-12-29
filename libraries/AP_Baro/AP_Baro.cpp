@@ -45,7 +45,6 @@
 #include "AP_Baro_DPS280.h"
 #include "AP_Baro_Dummy.h"
 #include "AP_Baro_DroneCAN.h"
-#include "AP_Baro_MSP.h"
 #include "AP_Baro_ExternalAHRS.h"
 #include "AP_Baro_ICP101XX.h"
 #include "AP_Baro_ICP201XX.h"
@@ -692,18 +691,6 @@ void AP_Baro::init(void)
     _probe_i2c_barometers();
 #endif
 
-#if AP_BARO_MSP_ENABLED
-    if ((_baro_probe_ext.get() & PROBE_MSP) && msp_instance_mask == 0) {
-        // allow for late addition of MSP sensor
-        msp_instance_mask |= 1;
-    }
-    for (uint8_t i=0; i<8; i++) {
-        if (msp_instance_mask & (1U<<i)) {
-            ADD_BACKEND(NEW_NOTHROW AP_Baro_MSP(*this, i));
-        }
-    }
-#endif
-
 #if !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
 #if AP_SIM_BARO_ENABLED
     if (sitl->baro_count == 0) {
@@ -1008,25 +995,6 @@ void AP_Baro::set_pressure_correction(uint8_t instance, float p_correction)
         sensors[instance].p_correction = p_correction;
     }
 }
-
-#if AP_BARO_MSP_ENABLED
-/*
-  handle MSP barometer data
- */
-void AP_Baro::handle_msp(const MSP::msp_baro_data_message_t &pkt)
-{
-    if (pkt.instance > 7) {
-        return;
-    }
-    if (!init_done) {
-        msp_instance_mask |= 1U<<pkt.instance;
-    } else if (msp_instance_mask != 0) {
-        for (uint8_t i=0; i<_num_drivers; i++) {
-            drivers[i]->handle_msp(pkt);
-        }
-    }
-}
-#endif
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
 /*

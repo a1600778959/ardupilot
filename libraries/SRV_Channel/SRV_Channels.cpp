@@ -187,12 +187,6 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
 #endif
 
-#if AP_ROBOTISSERVO_ENABLED
-    // @Group: _ROB_
-    // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
-    AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
-#endif
-
 #if AP_FETTEC_ONEWIRE_ENABLED
     // @Group: _FTW_
     // @Path: ../AP_FETtecOneWire/AP_FETtecOneWire.cpp
@@ -495,11 +489,6 @@ void SRV_Channels::push()
 #if AP_SBUSOUTPUT_ENABLED
     // give sbus library a chance to update
     sbus.update();
-#endif
-
-#if AP_ROBOTISSERVO_ENABLED
-    // give robotis library a chance to update
-    robotis.update();
 #endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL

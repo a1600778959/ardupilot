@@ -17,7 +17,7 @@ def build(bld):
         name=vehicle + '_libs',
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
-            'AP_OSD',
+            #'AP_OSD',
             #'AP_Avoidance',
         ],
     )

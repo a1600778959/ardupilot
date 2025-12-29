@@ -39,9 +39,6 @@
 #include "AP_Compass_MMC5xx3.h"
 #include "AP_Compass_MAG3110.h"
 #include "AP_Compass_RM3100.h"
-#if AP_COMPASS_MSP_ENABLED
-#include "AP_Compass_MSP.h"
-#endif
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
 #include "AP_Compass_ExternalAHRS.h"
 #endif
@@ -1405,14 +1402,6 @@ void Compass::_detect_backends(void)
     CHECK_UNREG_LIMIT_RETURN;
 #endif
 
-#if AP_COMPASS_MSP_ENABLED
-    for (uint8_t i=0; i<8; i++) {
-        if (msp_instance_mask & (1U<<i)) {
-            ADD_BACKEND(DRIVER_MSP, NEW_NOTHROW AP_Compass_MSP(i));
-        }
-    }
-#endif
-
     // finally look for i2c and spi compasses not found yet
     CHECK_UNREG_LIMIT_RETURN;
     probe_i2c_spi_compasses();
@@ -2239,24 +2228,6 @@ bool Compass::have_scale_factor(uint8_t i) const
     }
     return true;
 }
-
-#if AP_COMPASS_MSP_ENABLED
-void Compass::handle_msp(const MSP::msp_compass_data_message_t &pkt)
-{
-    if (!_driver_enabled(DRIVER_MSP)) {
-        return;
-    }
-    if (!init_done) {
-        if (pkt.instance < 8) {
-            msp_instance_mask |= 1U<<pkt.instance;
-        }
-    } else {
-        for (uint8_t i=0; i<_backend_count; i++) {
-            _backends[i]->handle_msp(pkt);
-        }
-    }
-}
-#endif // AP_COMPASS_MSP_ENABLED
 
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
 void Compass::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)

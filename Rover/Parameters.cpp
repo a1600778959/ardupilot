@@ -378,12 +378,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
 
-#if OSD_ENABLED || OSD_PARAM_ENABLED
-    // @Group: OSD
-    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
-    GOBJECT(osd, "OSD", AP_OSD),
-#endif
-
 #if AP_OPTICALFLOW_ENABLED
     // @Group: FLOW
     // @Path: ../libraries/AP_OpticalFlow/AP_OpticalFlow.cpp
