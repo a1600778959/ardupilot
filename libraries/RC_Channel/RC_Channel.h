@@ -128,9 +128,6 @@ public:
         AUTOTUNE_MODE =       17, // auto tune
         LAND =                18, // change to LAND flight mode
         GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
-        PARACHUTE_ENABLE  =   21, // Parachute enable/disable
-        PARACHUTE_RELEASE =   22, // Parachute release
-        PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
         MISSION_RESET =       24, // Reset auto mission to start from first command
         ATTCON_FEEDFWD =      25, // enable/disable the roll and pitch rate feed forward
         ATTCON_ACCEL_LIM =    26, // enable/disable the roll, pitch and yaw accel limiting

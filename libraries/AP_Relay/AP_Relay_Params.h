@@ -21,7 +21,6 @@ public:
         NONE     = 0,
         RELAY    = 1,
         IGNITION = 2,
-        PARACHUTE = 3,
         CAMERA = 4,
         BRUSHED_REVERSE_1 = 5,
         BRUSHED_REVERSE_2 = 6,
