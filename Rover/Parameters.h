@@ -338,11 +338,6 @@ public:
     AP_Proximity proximity;
 #endif
 
-#if MODE_DOCK_ENABLED
-    // we need a pointer to the mode for the G2 table
-    class ModeDock *mode_dock_ptr;
-#endif
-
 #if AP_AVOIDANCE_ENABLED
     // avoidance library
     AC_Avoid avoid;

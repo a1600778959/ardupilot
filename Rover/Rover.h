@@ -101,9 +101,6 @@ public:
     friend class ModeSmartRTL;
     friend class ModeAoafllow;
     friend class ModeSimple;
-#if MODE_DOCK_ENABLED
-    friend class ModeDock;
-#endif
 
     friend class RC_Channel_Rover;
     friend class RC_Channels_Rover;
@@ -249,9 +246,6 @@ private:
     ModeSmartRTL mode_smartrtl;
     ModeAoafllow mode_aoafollow; // <- 新增此行
     ModeSimple mode_simple;
-#if MODE_DOCK_ENABLED
-    ModeDock mode_dock;
-#endif
 
     // cruise throttle and speed learning
     typedef struct {

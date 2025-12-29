@@ -647,12 +647,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MANUAL_OPTIONS", 53, ParametersG2, manual_options, 0),
 
-#if MODE_DOCK_ENABLED
-    // @Group: DOCK
-    // @Path: mode_dock.cpp
-    AP_SUBGROUPPTR(mode_dock_ptr, "DOCK", 54, ParametersG2, ModeDock),
-#endif
-
     // @Param: MANUAL_STR_EXPO
     // @DisplayName: Manual Steering Expo
     // @Description: Manual steering expo to allow faster steering when stick at edges
@@ -721,9 +715,6 @@ ParametersG2::ParametersG2(void)
     smart_rtl(),
 #if HAL_PROXIMITY_ENABLED
     proximity(),
-#endif
-#if MODE_DOCK_ENABLED
-    mode_dock_ptr(&rover.mode_dock),
 #endif
 #if AP_AVOIDANCE_ENABLED
     avoid(),
