@@ -33,7 +33,6 @@ extern const AP_HAL::HAL& hal;
 #include <GCS_MAVLink/GCS.h>
 
 #include <AC_Avoidance/AC_Avoid.h>
-#include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Generator/AP_Generator.h>
@@ -719,9 +718,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
     case AUX_FUNC::MOTOR_ESTOP:
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
-#if HAL_SPRAYER_ENABLED
-    case AUX_FUNC::SPRAYER:
-#endif
     case AUX_FUNC::FFT_NOTCH_TUNE:
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::RETRACT_MOUNT1:
@@ -769,9 +765,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #endif
 #if AP_FENCE_ENABLED
     { AUX_FUNC::FENCE,"Fence"},
-#endif
-#if HAL_SPRAYER_ENABLED
-    { AUX_FUNC::SPRAYER,"Sprayer"},
 #endif
 #if AP_MISSION_ENABLED
     { AUX_FUNC::MISSION_RESET,"MissionReset"},
@@ -1134,19 +1127,6 @@ void RC_Channel::do_aux_function_generator(const AuxSwitchPos ch_flag)
 }
 #endif
 
-#if HAL_SPRAYER_ENABLED
-void RC_Channel::do_aux_function_sprayer(const AuxSwitchPos ch_flag)
-{
-    AC_Sprayer *sprayer = AP::sprayer();
-    if (sprayer == nullptr) {
-        return;
-    }
-    sprayer->run(ch_flag == AuxSwitchPos::HIGH);
-    // if we are disarmed the pilot must want to test the pump
-    sprayer->test_pump((ch_flag == AuxSwitchPos::HIGH) && !hal.util->get_soft_armed());
-}
-#endif // HAL_SPRAYER_ENABLED
-
 void RC_Channel::do_aux_function_lost_vehicle_sound(const AuxSwitchPos ch_flag)
 {
     switch (ch_flag) {
@@ -1339,12 +1319,6 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         if (ch_flag != AuxSwitchPos::MIDDLE) {
             AP::battery().MPPT_set_powered_state_to_all(ch_flag == AuxSwitchPos::HIGH);
         }
-        break;
-#endif
-
-#if HAL_SPRAYER_ENABLED
-    case AUX_FUNC::SPRAYER:
-        do_aux_function_sprayer(ch_flag);
         break;
 #endif
 

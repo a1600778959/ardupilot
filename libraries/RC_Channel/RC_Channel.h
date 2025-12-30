@@ -123,7 +123,6 @@ public:
         RESETTOARMEDYAW =     12, // UNUSED
         SUPERSIMPLE_MODE =    13, // change to simple mode in middle, super simple at top
         ACRO_TRAINER =        14, // low = disabled, middle = leveled, high = leveled and limited
-        SPRAYER =             15, // enable/disable the crop sprayer
         AUTO =                16, // change to auto flight mode
         AUTOTUNE_MODE =       17, // auto tune
         MISSION_RESET =       24, // Reset auto mission to start from first command
@@ -353,7 +352,6 @@ protected:
     void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
     void do_aux_function_rc_override_enable(const AuxSwitchPos ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
-    void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
     void do_aux_function_generator(const AuxSwitchPos ch_flag);
     void do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag);
     void do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t instance);

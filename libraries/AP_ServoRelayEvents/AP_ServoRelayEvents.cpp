@@ -39,9 +39,6 @@ bool AP_ServoRelayEvents::do_set_servo(uint8_t _channel, uint16_t pwm)
     {
     case SRV_Channel::k_none:
     case SRV_Channel::k_manual:
-    case SRV_Channel::k_sprayer_pump:
-    case SRV_Channel::k_sprayer_spinner:
-    case SRV_Channel::k_gripper:
     case SRV_Channel::k_rcin1 ... SRV_Channel::k_rcin16: // rc pass-thru
         break;
     case SRV_Channel::k_rcin1_mapped ... SRV_Channel::k_rcin16_mapped: {
@@ -104,9 +101,6 @@ bool AP_ServoRelayEvents::do_repeat_servo(uint8_t _channel, uint16_t _servo_valu
     {
     case SRV_Channel::k_none:
     case SRV_Channel::k_manual:
-    case SRV_Channel::k_sprayer_pump:
-    case SRV_Channel::k_sprayer_spinner:
-    case SRV_Channel::k_gripper:
     case SRV_Channel::k_rcin1 ... SRV_Channel::k_rcin16: // rc pass-thru
         break;
     case SRV_Channel::k_rcin1_mapped ... SRV_Channel::k_rcin16_mapped: {

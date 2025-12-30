@@ -4,7 +4,6 @@
 
 #include "RC_Channel.h"
 #include <AC_Avoidance/AC_Avoid.h>
-#include "AC_Sprayer/AC_Sprayer.h"
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include "AP_Rally.h"
@@ -355,11 +354,6 @@ public:
     // loiter type
     AP_Int8 loit_type;
     AP_Float loit_radius;
-
-#if HAL_SPRAYER_ENABLED
-    // Sprayer
-    AC_Sprayer sprayer;
-#endif
 
 #if HAL_RALLY_ENABLED
     // Rally point library

@@ -34,7 +34,6 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_Camera/AP_Camera.h>
-#include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Relay/AP_Relay.h>
 #include <AP_RSSI/AP_RSSI.h>
@@ -4743,24 +4742,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_set_ekf_source_set(const mavlink_command_
 }
 #endif
 
-#if HAL_SPRAYER_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_int_t &packet)
-{
-    AC_Sprayer *sprayer = AP::sprayer();
-    if (sprayer == nullptr) {
-        return MAV_RESULT_FAILED;
-    }
-
-    if (is_equal(packet.param1, 1.0f)) {
-        sprayer->run(true);
-    } else if (is_zero(packet.param1)) {
-        sprayer->run(false);
-    }
-
-    return MAV_RESULT_ACCEPTED;
-}
-#endif
-
 #if HAL_INS_ACCELCAL_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_int_t &packet)
 {
@@ -5212,12 +5193,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_SET_MODE:
         return handle_command_do_set_mode(packet);
-
-#if HAL_SPRAYER_ENABLED
-    case MAV_CMD_DO_SPRAYER:
-        return handle_command_do_sprayer(packet);
-#endif
-
 #if AP_CAMERA_ENABLED
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
