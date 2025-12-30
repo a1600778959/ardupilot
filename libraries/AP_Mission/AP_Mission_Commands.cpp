@@ -6,7 +6,6 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Camera/AP_Camera.h>
-#include <AP_Gripper/AP_Gripper.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_Scripting/AP_Scripting.h>
@@ -34,33 +33,6 @@ bool AP_Mission::start_command_do_aux_function(const AP_Mission::Mission_Command
     return true;
 }
 #endif  // AP_RC_CHANNEL_ENABLED
-
-#if AP_GRIPPER_ENABLED
-bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd)
-{
-    AP_Gripper &gripper = AP::gripper();
-
-    // Note: we ignore the gripper num parameter because we only
-    // support one gripper
-    switch (cmd.content.gripper.action) {
-    case GRIPPER_ACTION_RELEASE:
-        gripper.release();
-        // Log_Write_Event(DATA_GRIPPER_RELEASE);
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper Released");
-        return true;
-    case GRIPPER_ACTION_GRAB:
-        gripper.grab();
-        // Log_Write_Event(DATA_GRIPPER_GRAB);
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper Grabbed");
-        return true;
-    default:
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        AP_HAL::panic("Unhandled gripper case");
-#endif
-        return false;
-    }
-}
-#endif  // AP_GRIPPER_ENABLED
 
 #if AP_SERVORELAYEVENTS_ENABLED
 bool AP_Mission::start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd)

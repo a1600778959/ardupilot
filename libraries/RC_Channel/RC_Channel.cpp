@@ -37,7 +37,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Generator/AP_Generator.h>
-#include <AP_Gripper/AP_Gripper.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -710,9 +709,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::GPS_DISABLE:
     case AUX_FUNC::GPS_DISABLE_YAW:
 #endif
-#if AP_GRIPPER_ENABLED
-    case AUX_FUNC::GRIPPER:
-#endif
 #if AP_INERTIALSENSOR_KILL_IMU_ENABLED
     case AUX_FUNC::KILL_IMU1:
     case AUX_FUNC::KILL_IMU2:
@@ -1151,25 +1147,6 @@ void RC_Channel::do_aux_function_sprayer(const AuxSwitchPos ch_flag)
 }
 #endif // HAL_SPRAYER_ENABLED
 
-#if AP_GRIPPER_ENABLED
-void RC_Channel::do_aux_function_gripper(const AuxSwitchPos ch_flag)
-{
-    AP_Gripper &gripper = AP::gripper();
-
-    switch (ch_flag) {
-    case AuxSwitchPos::LOW:
-        gripper.release();
-        break;
-    case AuxSwitchPos::MIDDLE:
-        // nothing
-        break;
-    case AuxSwitchPos::HIGH:
-        gripper.grab();
-        break;
-    }
-}
-#endif  // AP_GRIPPER_ENABLED
-
 void RC_Channel::do_aux_function_lost_vehicle_sound(const AuxSwitchPos ch_flag)
 {
     switch (ch_flag) {
@@ -1305,12 +1282,6 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
 #if AP_FENCE_ENABLED
     case AUX_FUNC::FENCE:
         do_aux_function_fence(ch_flag);
-        break;
-#endif
-
-#if AP_GRIPPER_ENABLED
-    case AUX_FUNC::GRIPPER:
-        do_aux_function_gripper(ch_flag);
         break;
 #endif
 

@@ -34,7 +34,6 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_Camera/AP_Camera.h>
-#include <AP_Gripper/AP_Gripper.h>
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Relay/AP_Relay.h>
@@ -4744,35 +4743,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_set_ekf_source_set(const mavlink_command_
 }
 #endif
 
-#if AP_GRIPPER_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_int_t &packet)
-{
-    AP_Gripper &gripper = AP::gripper();
-
-    // param1 : gripper number (ignored)
-    // param2 : action (0=release, 1=grab). See GRIPPER_ACTIONS enum.
-    if(!gripper.enabled()) {
-        return MAV_RESULT_FAILED;
-    }
-
-    MAV_RESULT result = MAV_RESULT_ACCEPTED;
-
-    switch ((uint8_t)packet.param2) {
-    case GRIPPER_ACTION_RELEASE:
-        gripper.release();
-        break;
-    case GRIPPER_ACTION_GRAB:
-        gripper.grab();
-        break;
-    default:
-        result = MAV_RESULT_FAILED;
-        break;
-    }
-
-    return result;
-}
-#endif  // AP_GRIPPER_ENABLED
-
 #if HAL_SPRAYER_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_int_t &packet)
 {
@@ -5231,11 +5201,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_FLIGHTTERMINATION:
         return handle_flight_termination(packet);
-
-#if AP_GRIPPER_ENABLED
-    case MAV_CMD_DO_GRIPPER:
-        return handle_command_do_gripper(packet);
-#endif
 
 #if AP_MISSION_ENABLED
     case MAV_CMD_DO_JUMP_TAG:

@@ -1,7 +1,5 @@
 #include "Rover.h"
 
-#include <AP_Gripper/AP_Gripper.h>
-
 /*
   Rover parameter definitions
 */
@@ -856,10 +854,6 @@ void Rover::load_parameters(void)
 #if AP_SCRIPTING_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
         { &scripting, scripting.var_info, 41 },
-#endif
-#if AP_GRIPPER_ENABLED
-    // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
-        { &gripper, gripper.var_info, 39 },
 #endif
     };
 

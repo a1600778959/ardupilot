@@ -126,7 +126,6 @@ public:
         SPRAYER =             15, // enable/disable the crop sprayer
         AUTO =                16, // change to auto flight mode
         AUTOTUNE_MODE =       17, // auto tune
-        GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
         MISSION_RESET =       24, // Reset auto mission to start from first command
         ATTCON_FEEDFWD =      25, // enable/disable the roll and pitch rate feed forward
         ATTCON_ACCEL_LIM =    26, // enable/disable the roll, pitch and yaw accel limiting
@@ -350,7 +349,6 @@ protected:
     bool do_aux_function_camera_lens(const AuxSwitchPos ch_flag);
     void do_aux_function_fence(const AuxSwitchPos ch_flag);
     void do_aux_function_clear_wp(const AuxSwitchPos ch_flag);
-    void do_aux_function_gripper(const AuxSwitchPos ch_flag);
     void do_aux_function_lost_vehicle_sound(const AuxSwitchPos ch_flag);
     void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
     void do_aux_function_rc_override_enable(const AuxSwitchPos ch_flag);
