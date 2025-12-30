@@ -95,7 +95,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AC_Sprayer',
     'AC_Fence',
     'AC_Avoidance',
-    'AP_LandingGear',
+    #'AP_LandingGear',
     #'AP_RobotisServo',
     'AP_NMEA_Output',
     #'AP_OSD',

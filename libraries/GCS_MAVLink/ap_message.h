@@ -78,7 +78,6 @@ enum ap_message : uint8_t {
     MSG_POSITION_TARGET_LOCAL_NED,
     MSG_BATTERY_STATUS,
     MSG_AOA_SSA,
-    MSG_LANDING,
     MSG_ESC_TELEMETRY,
     MSG_ORIGIN,
     MSG_HOME,

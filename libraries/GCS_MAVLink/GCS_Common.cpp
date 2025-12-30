@@ -60,8 +60,6 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_KDECAN/AP_KDECAN.h>
-#include <AP_LandingGear/AP_LandingGear.h>
-#include <AP_Landing/AP_Landing_config.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -1106,9 +1104,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_BATTERY_STATUS,        MSG_BATTERY_STATUS},
 #endif
         { MAVLINK_MSG_ID_AOA_SSA,               MSG_AOA_SSA},
-#if HAL_LANDING_DEEPSTALL_ENABLED
-        { MAVLINK_MSG_ID_DEEPSTALL,             MSG_LANDING},
-#endif
         { MAVLINK_MSG_ID_EXTENDED_SYS_STATE,    MSG_EXTENDED_SYS_STATE},
         { MAVLINK_MSG_ID_AUTOPILOT_VERSION,     MSG_AUTOPILOT_VERSION},
 #if HAL_EFI_ENABLED
@@ -4804,31 +4799,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_int_t &p
 }
 #endif
 
-#if AP_LANDINGGEAR_ENABLED
-/*
-  handle MAV_CMD_AIRFRAME_CONFIGURATION for landing gear control
- */
-MAV_RESULT GCS_MAVLINK::handle_command_airframe_configuration(const mavlink_command_int_t &packet)
-{
-    // Param 1: Select which gear, not used in ArduPilot
-    // Param 2: 0 = Deploy, 1 = Retract
-    // For safety, anything other than 1 will deploy
-    AP_LandingGear *lg = AP_LandingGear::get_singleton();
-    if (lg == nullptr) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-    switch ((uint8_t)packet.param2) {
-    case 1:
-        lg->set_position(AP_LandingGear::LandingGear_Retract);
-        return MAV_RESULT_ACCEPTED;
-    default:
-        lg->set_position(AP_LandingGear::LandingGear_Deploy);
-        return MAV_RESULT_ACCEPTED;
-    }
-    return MAV_RESULT_FAILED;
-}
-#endif
-
 #if HAL_INS_ACCELCAL_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_int_t &packet)
 {
@@ -5248,11 +5218,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 #if HAL_INS_ACCELCAL_ENABLED
     case MAV_CMD_ACCELCAL_VEHICLE_POS:
         return handle_command_accelcal_vehicle_pos(packet);
-#endif
-
-#if AP_LANDINGGEAR_ENABLED
-    case MAV_CMD_AIRFRAME_CONFIGURATION:
-        return handle_command_airframe_configuration(packet);
 #endif
 
 #if AP_BATTERY_ENABLED

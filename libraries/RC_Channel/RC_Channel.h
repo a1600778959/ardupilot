@@ -126,14 +126,12 @@ public:
         SPRAYER =             15, // enable/disable the crop sprayer
         AUTO =                16, // change to auto flight mode
         AUTOTUNE_MODE =       17, // auto tune
-        LAND =                18, // change to LAND flight mode
         GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
         MISSION_RESET =       24, // Reset auto mission to start from first command
         ATTCON_FEEDFWD =      25, // enable/disable the roll and pitch rate feed forward
         ATTCON_ACCEL_LIM =    26, // enable/disable the roll, pitch and yaw accel limiting
         RETRACT_MOUNT1 =      27, // Retract Mount1
         RELAY =               28, // Relay pin on/off (only supports first relay)
-        LANDING_GEAR =        29, // Landing gear controller
         LOST_VEHICLE_SOUND =  30, // Play lost vehicle sound
         MOTOR_ESTOP =         31, // Emergency Stop Switch
         MOTOR_INTERLOCK =     32, // Motor On/Off switch
