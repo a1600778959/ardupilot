@@ -101,9 +101,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if AP_SERVORELAYEVENTS_ENABLED
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200,  66),
 #endif
-#if AC_PRECLAND_ENABLED
-    SCHED_TASK(update_precland,      400,     50,  70),
-#endif
 #if AP_RPM_ENABLED
     SCHED_TASK_CLASS(AP_RPM,              &rover.rpm_sensor,       update,         10,  100,  72),
 #endif

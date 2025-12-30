@@ -4289,10 +4289,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
-    case MAVLINK_MSG_ID_LANDING_TARGET:
-        handle_landing_target(msg);
-        break;
-
     case MAVLINK_MSG_ID_NAMED_VALUE_FLOAT:
         handle_named_value(msg);
         break;
@@ -5050,17 +5046,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
     return MAV_RESULT_UNSUPPORTED;
 #endif
 }
-
-
-void GCS_MAVLINK::handle_landing_target(const mavlink_message_t &msg)
-{
-    mavlink_landing_target_t m;
-    mavlink_msg_landing_target_decode(&msg, &m);
-    // correct offboard timestamp
-    const uint32_t corrected_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, LANDING_TARGET));
-    handle_landing_target(m, corrected_ms);
-}
-
 
 #if AP_HOME_ENABLED
 bool GCS_MAVLINK::set_home_to_current_location(bool _lock)

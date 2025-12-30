@@ -93,11 +93,6 @@ void Rover::init_ardupilot()
     camera.init();
 #endif
 
-#if AC_PRECLAND_ENABLED
-    // initialise precision landing
-    init_precland();
-#endif
-
     /*
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.

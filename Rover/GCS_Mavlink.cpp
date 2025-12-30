@@ -1015,16 +1015,6 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
     }
 }
 
-/*
-  handle a LANDING_TARGET command. The timestamp has been jitter corrected
-*/
-void GCS_MAVLINK_Rover::handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
-{
-#if AC_PRECLAND_ENABLED
-    rover.precland.handle_msg(packet, timestamp_ms);
-#endif
-}
-
 uint64_t GCS_MAVLINK_Rover::capabilities() const
 {
     return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |

@@ -41,7 +41,6 @@
 #include <AP_Mission/AP_Mission_ChangeDetector.h>
 #include <AR_WPNav/AR_WPNav_OA.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
-#include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #include <AP_AOA/AP_AOAFilter.h>           //添加AOA头文件
 #include <AP_AOA/AP_AOAPID.h>              //添加AOAPID头文件
@@ -68,9 +67,6 @@
 #include "GCS_Mavlink.h"
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
-#if AC_PRECLAND_ENABLED
-#include <AC_PrecLand/AC_PrecLand.h>
-#endif
 #include "RC_Channel.h"                  // RC Channel Library
 
 #include "mode.h"
@@ -150,9 +146,6 @@ private:
     AP_OpticalFlow optflow;
 #endif
 
-#if AC_PRECLAND_ENABLED
-    AC_PrecLand precland;
-#endif
     // GCS handling
     GCS_Rover _gcs;  // avoid using this; use gcs()
     GCS_Rover &gcs() { return _gcs; }
