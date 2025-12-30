@@ -51,7 +51,6 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_Winch/AP_Winch.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_RPM/AP_RPM.h>
@@ -1111,9 +1110,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
 #if HAL_GENERATOR_ENABLED
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
-#endif
-#if AP_WINCH_ENABLED
-        { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
 #endif
 #if HAL_WITH_ESC_TELEM
         { MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4,  MSG_ESC_TELEMETRY},
@@ -6189,13 +6185,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         }
         break;
     }
-#endif
-
-#if AP_WINCH_ENABLED
-    case MSG_WINCH_STATUS:
-        CHECK_PAYLOAD_SIZE(WINCH_STATUS);
-        send_winch_status();
-        break;
 #endif
 
 #if HAL_HIGH_LATENCY2_ENABLED

@@ -796,10 +796,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #endif
     { AUX_FUNC::PRECISION_LOITER,"PrecisionLoiter"},
     { AUX_FUNC::AVOID_PROXIMITY,"AvoidProximity"},
-#if AP_WINCH_ENABLED
-    { AUX_FUNC::WINCH_ENABLE,"WinchEnable"},
-    { AUX_FUNC::WINCH_CONTROL,"WinchControl"},
-#endif
 #if AP_MISSION_ENABLED
     { AUX_FUNC::CLEAR_WP,"ClearWaypoint"},
 #endif

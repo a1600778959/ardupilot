@@ -145,8 +145,6 @@ public:
         ARMDISARM_UNUSED =    41, // UNUSED
         SMART_RTL =           42, // change to SmartRTL flight mode
         INVERTED  =           43, // enable inverted flight
-        WINCH_ENABLE =        44, // winch enable/disable
-        WINCH_CONTROL =       45, // winch control
         RC_OVERRIDE_ENABLE =  46, // enable RC Override
         USER_FUNC1 =          47, // user function #1
         USER_FUNC2 =          48, // user function #2
