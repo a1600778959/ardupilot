@@ -171,7 +171,6 @@ public:
         SURFACE_TRACKING =    75, // Surface tracking upwards or downwards
         STANDBY  =            76, // Standby mode
         TAKEOFF   =           77, // takeoff
-        VISODOM_ALIGN =       80, // align visual odometry camera's attitude to AHRS
         DISARM =              81, // disarm vehicle
         Q_ASSIST =            82, // disable, enable and force Q assist
         ZIGZAG_Auto =         83, // zigzag auto switch

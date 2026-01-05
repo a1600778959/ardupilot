@@ -40,7 +40,6 @@ public:
         ARMING_CHECK_RANGEFINDER = (1U << 15),
         ARMING_CHECK_CAMERA      = (1U << 16),
         ARMING_CHECK_AUX_AUTH    = (1U << 17),
-        ARMING_CHECK_VISION      = (1U << 18),
         ARMING_CHECK_FFT         = (1U << 19),
         ARMING_CHECK_OSD         = (1U << 20),
     };
@@ -258,7 +257,6 @@ protected:
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const class RC_Channel *channels[4]) const;
 
-    bool visodom_checks(bool report) const;
     bool disarm_switch_checks(bool report) const;
 
     // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced

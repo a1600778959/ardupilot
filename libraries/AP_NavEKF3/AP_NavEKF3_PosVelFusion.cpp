@@ -441,20 +441,6 @@ void NavEKF3_core::CorrectExtNavForSensorOffset(ext_nav_elements &ext_nav_data)
     // external nav data is against the public_origin, so convert to offset from EKF_origin
     ext_nav_data.pos.xy() += EKF_origin.get_distance_NE_ftype(public_origin);
 
-#if HAL_VISUALODOM_ENABLED
-    const auto *visual_odom = dal.visualodom();
-    if (visual_odom == nullptr) {
-        return;
-    }
-    const Vector3F posOffsetBody = visual_odom->get_pos_offset().toftype() - accelPosOffset;
-    if (posOffsetBody.is_zero()) {
-        return;
-    }
-    Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
-    ext_nav_data.pos.x -= posOffsetEarth.x;
-    ext_nav_data.pos.y -= posOffsetEarth.y;
-    ext_nav_data.pos.z -= posOffsetEarth.z;
-#endif
 }
 
 // correct external navigation earth-frame velocity using sensor body-frame offset
@@ -466,19 +452,6 @@ void NavEKF3_core::CorrectExtNavVelForSensorOffset(ext_nav_vel_elements &ext_nav
     }
     ext_nav_vel_data.corrected = true;
 
-#if HAL_VISUALODOM_ENABLED
-    const auto *visual_odom = dal.visualodom();
-    if (visual_odom == nullptr) {
-        return;
-    }
-    const Vector3F posOffsetBody = visual_odom->get_pos_offset().toftype() - accelPosOffset;
-    if (posOffsetBody.is_zero()) {
-        return;
-    }
-    // TODO use a filtered angular rate with a group delay that matches the sensor delay
-    const Vector3F angRate = imuDataDelayed.delAng * (1.0/imuDataDelayed.delAngDT);
-    ext_nav_vel_data.vel += get_vel_correction_for_sensor_offset(posOffsetBody, prevTnb, angRate);
-#endif
 }
 
 // calculate velocity variance helper function

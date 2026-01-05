@@ -41,7 +41,6 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Relay/AP_Relay.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Button/AP_Button.h>
@@ -1583,9 +1582,6 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if AP_FETTEC_ONEWIRE_ENABLED
         &  fettec_checks(report)
 #endif
-#if HAL_VISUALODOM_ENABLED
-        &  visodom_checks(report)
-#endif
 #if AP_ARMING_AUX_AUTH_ENABLED
         &  aux_auth_checks(report)
 #endif
@@ -1866,27 +1862,6 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
     return ret;
 }
 #endif  // AP_RC_CHANNEL_ENABLED
-
-#if HAL_VISUALODOM_ENABLED
-// check visual odometry is working
-bool AP_Arming::visodom_checks(bool display_failure) const
-{
-    if (!check_enabled(ARMING_CHECK_VISION)) {
-        return true;
-    }
-
-    AP_VisualOdom *visual_odom = AP::visualodom();
-    if (visual_odom != nullptr) {
-        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-        if (!visual_odom->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-            check_failed(ARMING_CHECK_VISION, display_failure, "VisOdom: %s", fail_msg);
-            return false;
-        }
-    }
-
-    return true;
-}
-#endif
 
 #if AP_RC_CHANNEL_ENABLED
 // check disarm switch is asserted

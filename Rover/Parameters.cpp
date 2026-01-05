@@ -416,7 +416,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(beacon, "BCN", 6, ParametersG2, AP_Beacon),
 #endif
 
-    // 7 was used by AP_VisualOdometry
 
     // @Group: MOT_
     // @Path: ../libraries/AR_Motors/AP_MotorsUGV.cpp

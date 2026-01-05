@@ -12,11 +12,6 @@
 #define AP_DDS_UDP_ENABLED AP_DDS_ENABLED && AP_NETWORKING_ENABLED
 #endif
 
-#include <AP_VisualOdom/AP_VisualOdom_config.h>
-#ifndef AP_DDS_VISUALODOM_ENABLED
-#define AP_DDS_VISUALODOM_ENABLED HAL_VISUALODOM_ENABLED && AP_DDS_ENABLED
-#endif
-
 // Whether experimental interfaces are enabled.
 #ifndef AP_DDS_EXPERIMENTAL_ENABLED
 #define AP_DDS_EXPERIMENTAL_ENABLED 1

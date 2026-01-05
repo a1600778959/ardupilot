@@ -3,7 +3,6 @@
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <GCS_MAVLink/GCS.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_DAL/AP_DAL.h>
 
@@ -70,14 +69,6 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         // limit the time delay value from the GPS library to a max of 250 msec which is the max value the EKF has been tested for.
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , MIN((uint16_t)(gps_delay_sec * 1000.0f),250));
     }
-
-#if HAL_VISUALODOM_ENABLED
-    // include delay from visual odometry if enabled
-    const auto *visual_odom = dal.visualodom();
-    if ((visual_odom != nullptr) && visual_odom->enabled()) {
-        maxTimeDelay_ms = MAX(maxTimeDelay_ms, MIN(visual_odom->get_delay_ms(), 250));
-    }
-#endif
 
     // calculate the IMU buffer length required to accommodate the maximum delay with some allowance for jitter
     imu_buffer_length = (maxTimeDelay_ms / (uint16_t)(EKF_TARGET_DT_MS)) + 1;

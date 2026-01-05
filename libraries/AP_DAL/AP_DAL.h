@@ -6,7 +6,6 @@
 #include "AP_DAL_RangeFinder.h"
 #include "AP_DAL_Compass.h"
 #include "AP_DAL_Beacon.h"
-#include "AP_DAL_VisualOdom.h"
 
 #include "LogStructure.h"
 
@@ -140,11 +139,6 @@ public:
 #if AP_BEACON_ENABLED
     AP_DAL_Beacon *beacon() {
         return _beacon;
-    }
-#endif
-#if HAL_VISUALODOM_ENABLED
-    AP_DAL_VisualOdom *visualodom() {
-        return _visualodom;
     }
 #endif
 
@@ -292,12 +286,6 @@ public:
 #endif
     }
     void handle_message(const log_RVOH &msg) {
-#if HAL_VISUALODOM_ENABLED
-        if (_visualodom == nullptr) {
-            _visualodom = NEW_NOTHROW AP_DAL_VisualOdom;
-        }
-        _visualodom->handle_message(msg);
-#endif
     }
     void handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_REPH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
@@ -349,9 +337,6 @@ private:
     AP_DAL_Compass _compass;
 #if AP_BEACON_ENABLED
     AP_DAL_Beacon *_beacon;
-#endif
-#if HAL_VISUALODOM_ENABLED
-    AP_DAL_VisualOdom *_visualodom;
 #endif
 
     static bool logging_started;

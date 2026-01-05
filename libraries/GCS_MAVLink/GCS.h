@@ -582,7 +582,6 @@ protected:
 #endif
     void handle_radio_status(const mavlink_message_t &msg);
     void handle_serial_control(const mavlink_message_t &msg);
-    void handle_vision_position_delta(const mavlink_message_t &msg);
 
     virtual void handle_message(const mavlink_message_t &msg);
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
@@ -1022,24 +1021,6 @@ private:
     void handle_common_mission_message(const mavlink_message_t &msg);
 
     virtual void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) {};
-
-    void handle_vicon_position_estimate(const mavlink_message_t &msg);
-    void handle_vision_position_estimate(const mavlink_message_t &msg);
-    void handle_global_vision_position_estimate(const mavlink_message_t &msg);
-    void handle_att_pos_mocap(const mavlink_message_t &msg);
-    void handle_odometry(const mavlink_message_t &msg);
-    void handle_common_vision_position_estimate_data(const uint64_t usec,
-                                                     const float x,
-                                                     const float y,
-                                                     const float z,
-                                                     const float roll,
-                                                     const float pitch,
-                                                     const float yaw,
-                                                     const float covariance[21],
-                                                     const uint8_t reset_counter,
-                                                     const uint16_t payload_size);
-    void handle_vision_speed_estimate(const mavlink_message_t &msg);
-
     void lock_channel(const mavlink_channel_t chan, bool lock);
 
     mavlink_signing_t signing;

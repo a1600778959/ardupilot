@@ -51,7 +51,6 @@
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_Networking/AP_Networking.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor.h>
@@ -377,10 +376,6 @@ protected:
 
 #if HAL_HOTT_TELEM_ENABLED
     AP_Hott_Telem hott_telem;
-#endif
-
-#if HAL_VISUALODOM_ENABLED
-    AP_VisualOdom visual_odom;
 #endif
 
 #if HAL_WITH_ESC_TELEM

@@ -97,11 +97,6 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
         _beacon->start_frame();
     }
 #endif
-#if HAL_VISUALODOM_ENABLED
-    if (_visualodom) {
-        _visualodom->start_frame();
-    }
-#endif
 
     // populate some derivative values:
     _micros = _RFRH.time_us;
@@ -144,13 +139,6 @@ void AP_DAL::init_sensors(void)
     auto *bcn = AP::beacon();
     if (bcn != nullptr && bcn->enabled()) {
         alloc_failed |= (_beacon = NEW_NOTHROW AP_DAL_Beacon) == nullptr;
-    }
-#endif
-
-#if HAL_VISUALODOM_ENABLED
-    auto *vodom = AP::visualodom();
-    if (vodom != nullptr && vodom->enabled()) {
-        alloc_failed |= (_visualodom = NEW_NOTHROW AP_DAL_VisualOdom) == nullptr;
     }
 #endif
 

@@ -40,7 +40,6 @@
 #include "AP_DDS_Client.h"
 #include "AP_DDS_Topic_Table.h"
 #include "AP_DDS_Service_Table.h"
-#include "AP_DDS_External_Odom.h"
 
 #define STRCPY(D,S) strncpy(D, S, ARRAY_SIZE(D))
 
@@ -702,9 +701,6 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
 
         if (rx_dynamic_transforms_topic.transforms_size > 0) {
-#if AP_DDS_VISUALODOM_ENABLED
-            AP_DDS_External_Odom::handle_external_odom(rx_dynamic_transforms_topic);
-#endif // AP_DDS_VISUALODOM_ENABLED
 
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received tf2_msgs/TFMessage: TF is empty", msg_prefix);

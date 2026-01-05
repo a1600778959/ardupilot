@@ -14,7 +14,6 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Arming/AP_Arming.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_GPS/AP_GPS.h>
@@ -304,17 +303,6 @@ void GCS::update_sensor_status_flags()
     }
     if (optflow && optflow->healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-
-#if HAL_VISUALODOM_ENABLED
-    const AP_VisualOdom *visual_odom = AP::visualodom();
-    if (visual_odom && visual_odom->enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-        if (visual_odom->healthy()) {
-            control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-        }
     }
 #endif
 

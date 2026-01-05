@@ -46,7 +46,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_GPS/AP_GPS.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Notify/AP_Notify.h>
@@ -646,9 +645,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::RELAY5:
     case AUX_FUNC::RELAY6:
 #endif
-#if HAL_VISUALODOM_ENABLED
-    case AUX_FUNC::VISODOM_ALIGN:
-#endif
 #if AP_AHRS_ENABLED
     case AUX_FUNC::EKF_LANE_SWITCH:
     case AUX_FUNC::EKF_YAW_RESET:
@@ -798,9 +794,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::RELAY6,"Relay6"},
 #endif
     { AUX_FUNC::SURFACE_TRACKING,"SurfaceTracking"},
-#if HAL_VISUALODOM_ENABLED
-    { AUX_FUNC::VISODOM_ALIGN,"VisOdomAlign"},
-#endif
     { AUX_FUNC::AIRMODE, "AirMode"},
 #if AP_CAMERA_ENABLED
     { AUX_FUNC::CAM_MODE_TOGGLE,"CamModeToggle"},
@@ -1372,17 +1365,6 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         }
         }
         break;
-
-#if HAL_VISUALODOM_ENABLED
-    case AUX_FUNC::VISODOM_ALIGN:
-        if (ch_flag == AuxSwitchPos::HIGH) {
-            AP_VisualOdom *visual_odom = AP::visualodom();
-            if (visual_odom != nullptr) {
-                visual_odom->request_align_yaw_to_ahrs();
-            }
-        }
-        break;
-#endif
 
     case AUX_FUNC::EKF_SOURCE_SET: {
         AP_NavEKF_Source::SourceSetSelection source_set = AP_NavEKF_Source::SourceSetSelection::PRIMARY;
