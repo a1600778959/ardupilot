@@ -20,7 +20,6 @@ public:
     enum class FUNCTION : uint8_t {
         NONE     = 0,
         RELAY    = 1,
-        IGNITION = 2,
         CAMERA = 4,
         BRUSHED_REVERSE_1 = 5,
         BRUSHED_REVERSE_2 = 6,

@@ -71,7 +71,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Mount',
     'AP_Module',
     'AP_Button',
-    'AP_ICEngine',
+    #'AP_ICEngine',
     'AP_Networking',
     'AP_Frsky_Telem',
     'AP_IBus_Telem',

@@ -53,7 +53,6 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_ICEngine/AP_ICEngine.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -462,20 +461,6 @@ bool AP_Arming::ins_checks(bool report)
         }
 
         bool run_imu_consistency_check = true;
-#if AP_ICENGINE_ENABLED
-        if (option_enabled(Option::SKIP_IMU_CONSISTENCY_ICE_RUNNING)) {
-            // ICE motors can greatly disturb the IMU, so we get arming failures
-            // due to gyro (and sometimes accel) inconsistency. Allow this check to be
-            // disabled while the motor is running
-            auto ice = AP::ice();
-            if (ice != nullptr) {
-                const auto ice_state = ice->get_state();
-                if (ice_state == AP_ICEngine::ICE_STARTING || ice_state == AP_ICEngine::ICE_RUNNING) {
-                    run_imu_consistency_check = false;
-                }
-            }
-        }
-#endif
 
         if (run_imu_consistency_check) {
             // check all accelerometers point in roughly same direction

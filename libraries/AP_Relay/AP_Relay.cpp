@@ -16,7 +16,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
-#include <AP_ICEngine/AP_ICEngine.h>
 #include <AP_Camera/AP_Camera.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -206,14 +205,6 @@ void AP_Relay::convert_params()
     // Dont need this conversion on periph as relay support is more recent
 
     // Before converting local params we must find any relays being used by index from external libs
-    int8_t ice_relay = -1;
-#if AP_ICENGINE_ENABLED
-    AP_ICEngine *ice = AP::ice();
-    int8_t ice_relay_index;
-    if (ice != nullptr && ice->get_legacy_ignition_relay_index(ice_relay_index)) {
-        ice_relay = ice_relay_index;
-    }
-#endif
     int8_t cam_relay = -1;
 #if AP_CAMERA_ENABLED
     AP_Camera *camera = AP::camera();
@@ -256,10 +247,7 @@ void AP_Relay::convert_params()
 
         // Work out what function this relay should be
         AP_Relay_Params::FUNCTION new_fun;
-        if (i == ice_relay) {
-            new_fun = AP_Relay_Params::FUNCTION::IGNITION;
-
-        } else if (i == cam_relay) {
+        if (i == cam_relay) {
             new_fun = AP_Relay_Params::FUNCTION::CAMERA;
 
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
