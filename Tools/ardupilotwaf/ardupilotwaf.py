@@ -65,7 +65,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'RC_Channel',
     'SRV_Channel',
     'StorageManager',
-    'AP_Tuning',
+    #'AP_Tuning',
     'AP_RPM',
     'AP_RSSI',
     'AP_Mount',
