@@ -1332,27 +1332,6 @@ void AP_DroneCAN::handle_himark_servoinfo(const CanardRxTransfer& transfer, cons
 }
 #endif // AP_DRONECAN_HIMARK_SERVO_SUPPORT
 
-#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
-void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg)
-{
-#if HAL_LOGGING_ENABLED
-    AP::logger().WriteStreaming(
-        "CVOL",
-        "TimeUS,Id,Pos,Cur,V,Pow,T",
-        "s#dAv%O",
-        "F-00000",
-        "QBfffBh",
-        AP_HAL::micros64(),
-        msg.actuator_id,
-        ToDeg(msg.actual_position),
-        msg.current * 0.025f,
-        msg.voltage * 0.2f,
-        uint8_t(msg.motor_pwm * (100.0/255.0)),
-        int16_t(msg.motor_temperature) - 50);
-#endif
-}
-#endif
-
 /*
   handle ESC status message
  */

@@ -169,11 +169,6 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("_RATE",  18, SRV_Channels, default_rate, 50),
 
-#if AP_VOLZ_ENABLED
-    // @Group: _VOLZ_
-    // @Path: ../AP_Volz_Protocol/AP_Volz_Protocol.cpp
-    AP_SUBGROUPINFO(volz, "_VOLZ_",  19, SRV_Channels, AP_Volz_Protocol),
-#endif
 
 #if AP_SBUSOUTPUT_ENABLED
     // @Group: _SBUS_
@@ -480,11 +475,6 @@ void SRV_Channels::cork()
 void SRV_Channels::push()
 {
     hal.rcout->push();
-
-#if AP_VOLZ_ENABLED
-    // give volz library a chance to update
-    volz.update();
-#endif
 
 #if AP_SBUSOUTPUT_ENABLED
     // give sbus library a chance to update
