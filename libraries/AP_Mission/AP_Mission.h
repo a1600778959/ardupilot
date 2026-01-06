@@ -121,13 +121,6 @@ public:
         float cycle_time;       // cycle time in seconds (the time between peaks or the time the servo is at the specified pwm value for each cycle?)
     };
 
-    // mount control command structure
-    struct PACKED Mount_Control {
-        float pitch;            // pitch angle in degrees
-        float roll;             // roll angle in degrees
-        float yaw;              // yaw angle (relative to vehicle heading) in degrees
-    };
-
     // digicam control command structure
     struct PACKED Digicam_Configure {
         uint8_t shooting_mode;  // ProgramAuto = 1, AV = 2, TV = 3, Man=4, IntelligentAuto=5, SuperiorAuto=6
@@ -250,16 +243,6 @@ public:
         int16_t climb_rate;
     };
 
-    // MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW support
-    struct PACKED gimbal_manager_pitchyaw_Command {
-        int8_t pitch_angle_deg;
-        int16_t yaw_angle_deg;
-        int8_t pitch_rate_degs;
-        int8_t yaw_rate_degs;
-        uint8_t flags;
-        uint8_t gimbal_id;
-    };
-
     // MAV_CMD_IMAGE_START_CAPTURE support
     struct PACKED image_start_capture_Command {
         uint8_t instance;
@@ -278,13 +261,6 @@ public:
     struct PACKED set_camera_focus_Command {
         uint8_t focus_type;
         float focus_value;
-    };
-
-    // MAV_CMD_SET_CAMERA_SOURCE support
-    struct PACKED set_camera_source_Command {
-        uint8_t instance;
-        uint8_t primary_source;
-        uint8_t secondary_source;
     };
 
     // MAV_CMD_VIDEO_START_CAPTURE support
@@ -324,9 +300,6 @@ public:
 
         // do-repeate-servo
         Repeat_Servo_Command repeat_servo;
-
-        // mount control
-        Mount_Control mount_control;
 
         // camera configure
         Digicam_Configure digicam_configure;
@@ -372,9 +345,6 @@ public:
         // nav attitude time
         nav_attitude_time_Command nav_attitude_time;
 
-        // MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW
-        gimbal_manager_pitchyaw_Command gimbal_manager_pitchyaw;
-
         // MAV_CMD_IMAGE_START_CAPTURE support
         image_start_capture_Command image_start_capture;
 
@@ -383,9 +353,6 @@ public:
 
         // MAV_CMD_SET_CAMERA_FOCUS support
         set_camera_focus_Command set_camera_focus;
-
-        // MAV_CMD_SET_CAMEARA_SOURCE support
-        set_camera_source_Command set_camera_source;
 
         // MAV_CMD_VIDEO_START_CAPTURE support
         video_start_capture_Command video_start_capture;
@@ -933,7 +900,6 @@ private:
     bool start_command_camera(const AP_Mission::Mission_Command& cmd);
     bool command_do_set_repeat_dist(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
-    bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
     bool start_command_fence(const AP_Mission::Mission_Command& cmd);
 
     /*

@@ -41,7 +41,6 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RCTelemetry/AP_Spektrum_Telem.h>
-#include <AP_Mount/AP_Mount.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_EFI/AP_EFI.h>
@@ -788,35 +787,6 @@ void GCS_MAVLINK::handle_mission_write_partial_list(const mavlink_message_t &msg
     use_prot->handle_mission_write_partial_list(*this, msg, packet);
 }
 
-#if HAL_MOUNT_ENABLED
-/*
-  pass mavlink messages to the AP_Mount singleton
- */
-void GCS_MAVLINK::handle_mount_message(const mavlink_message_t &msg)
-{
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return;
-    }
-    mount->handle_message(chan, msg);
-}
-
-#endif
-
-/*
-  pass parameter value messages through to mount library
- */
-void GCS_MAVLINK::handle_param_value(const mavlink_message_t &msg)
-{
-#if HAL_MOUNT_ENABLED
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return;
-    }
-    mount->handle_param_value(msg);
-#endif
-}
-
 void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...) const
 {
     va_list arg_list;
@@ -1061,23 +1031,11 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_CAMERA_FEEDBACK,       MSG_CAMERA_FEEDBACK},
         { MAVLINK_MSG_ID_CAMERA_INFORMATION,    MSG_CAMERA_INFORMATION},
         { MAVLINK_MSG_ID_CAMERA_SETTINGS,       MSG_CAMERA_SETTINGS},
-#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
-        { MAVLINK_MSG_ID_CAMERA_FOV_STATUS,     MSG_CAMERA_FOV_STATUS},
-#endif
         { MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS, MSG_CAMERA_CAPTURE_STATUS},
-#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
-        { MAVLINK_MSG_ID_CAMERA_THERMAL_RANGE,  MSG_CAMERA_THERMAL_RANGE},
-#endif // AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
         { MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION, MSG_VIDEO_STREAM_INFORMATION},
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 #endif // AP_CAMERA_ENABLED
-#if HAL_MOUNT_ENABLED
-        { MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS, MSG_GIMBAL_DEVICE_ATTITUDE_STATUS},
-        { MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE},
-        { MAVLINK_MSG_ID_GIMBAL_MANAGER_INFORMATION, MSG_GIMBAL_MANAGER_INFORMATION},
-        { MAVLINK_MSG_ID_GIMBAL_MANAGER_STATUS, MSG_GIMBAL_MANAGER_STATUS},
-#endif
 #if AP_OPTICALFLOW_ENABLED
         { MAVLINK_MSG_ID_OPTICAL_FLOW,          MSG_OPTICAL_FLOW},
 #endif
@@ -1761,10 +1719,6 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
         return;
     }
     if (msg.msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
-#if HAL_MOUNT_ENABLED
-        // allow mounts to see the location of other vehicles
-        handle_mount_message(msg);
-#endif
     }
 #if AP_SCRIPTING_ENABLED
     {
@@ -3983,32 +3937,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
-#if HAL_MOUNT_ENABLED
-#if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
-    case MAVLINK_MSG_ID_MOUNT_CONFIGURE: // deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
-        send_received_message_deprecation_warning("MOUNT_CONFIGURE");
-        handle_mount_message(msg);
-        break;
-#endif
-#if AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
-    case MAVLINK_MSG_ID_MOUNT_CONTROL: // deprecated. Use MAV_CMD_DO_MOUNT_CONTROL
-        send_received_message_deprecation_warning("MOUNT_CONTROL");
-        handle_mount_message(msg);
-        break;
-#endif
-    case MAVLINK_MSG_ID_GIMBAL_REPORT:
-    case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
-    case MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS:
-    case MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_ATTITUDE:
-    case MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_PITCHYAW:
-        handle_mount_message(msg);
-        break;
-#endif
-
-    case MAVLINK_MSG_ID_PARAM_VALUE:
-        handle_param_value(msg);
-        break;
-
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
         handle_radio_status(msg);
@@ -4582,17 +4510,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_comman
 }
 #endif  // HAL_INS_ACCELCAL_ENABLED
 
-#if HAL_MOUNT_ENABLED
-MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
-{
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-    return mount->handle_command(packet, msg);
-}
-#endif  // HAL_MOUNT_ENABLED
-
 #if AP_ARMING_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
 {
@@ -4652,8 +4569,6 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
 {
     switch(command) {
     case MAV_CMD_DO_SET_HOME:
-    case MAV_CMD_DO_SET_ROI:
-    case MAV_CMD_DO_SET_ROI_LOCATION:
     // case MAV_CMD_NAV_TAKEOFF:  // technically yes, but we don't do lat/lng
     // case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_DO_REPOSITION:
@@ -4676,8 +4591,8 @@ bool GCS_MAVLINK::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_co
         MAV_FRAME frame;
     } frame_map[] {
         { MAV_CMD_FIXED_MAG_CAL_YAW, MAV_FRAME_GLOBAL_RELATIVE_ALT },
-        { MAV_CMD_DO_SET_ROI, MAV_FRAME_GLOBAL_RELATIVE_ALT },
-        { MAV_CMD_DO_SET_ROI_LOCATION, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+        { MAV_FRAME_GLOBAL_RELATIVE_ALT },
+        { MAV_FRAME_GLOBAL_RELATIVE_ALT },
         { MAV_CMD_DO_SET_HOME, MAV_FRAME_GLOBAL },
     };
 
@@ -4799,30 +4714,6 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
 }
 #endif  // AP_MAVLINK_COMMAND_LONG_ENABLED
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
-{
-#if HAL_MOUNT_ENABLED
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-
-    // sanity check location
-    if (!roi_loc.check_latlng()) {
-        return MAV_RESULT_FAILED;
-    }
-
-    if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
-        mount->clear_roi_target();
-    } else {
-        mount->set_roi_target(roi_loc);
-    }
-    return MAV_RESULT_ACCEPTED;
-#else
-    return MAV_RESULT_UNSUPPORTED;
-#endif
-}
-
 #if AP_HOME_ENABLED
 bool GCS_MAVLINK::set_home_to_current_location(bool _lock)
 {
@@ -4911,28 +4802,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_wind_estimate(const mavlink_
     return MAV_RESULT_ACCEPTED;
 }
 #endif // AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
-
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &packet)
-{
-    // be aware that this method is called for both MAV_CMD_DO_SET_ROI
-    // and MAV_CMD_DO_SET_ROI_LOCATION.  If you intend to support any
-    // of the extra fields in the former then you will need to split
-    // off support for MAV_CMD_DO_SET_ROI_LOCATION (which doesn't
-    // support the extra fields).
-
-    // param1 : /* Region of interest mode (not used)*/
-    // param2 : /* MISSION index/ target ID (not used)*/
-    // param3 : /* ROI index (not used)*/
-    // param4 : /* empty */
-    // x : lat
-    // y : lon
-    // z : alt
-    Location roi_loc;
-    if (!location_from_command_t(packet, roi_loc)) {
-        return MAV_RESULT_DENIED;
-    }
-    return handle_command_do_set_roi(roi_loc);
-}
 
 #if AP_FILESYSTEM_FORMAT_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
@@ -5028,7 +4897,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
-    case MAV_CMD_SET_CAMERA_SOURCE:
     case MAV_CMD_IMAGE_START_CAPTURE:
     case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_CAMERA_TRACK_POINT:
@@ -5038,24 +4906,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         return handle_command_camera(packet);
 #endif
-
-    case MAV_CMD_DO_SET_ROI_NONE: {
-        const Location zero_loc = Location();
-        return handle_command_do_set_roi(zero_loc);
-    }
-
-    case MAV_CMD_DO_SET_ROI:
-    case MAV_CMD_DO_SET_ROI_LOCATION:
-        return handle_command_do_set_roi(packet);
-
-#if HAL_MOUNT_ENABLED
-    case MAV_CMD_DO_SET_ROI_SYSID:
-    case MAV_CMD_DO_MOUNT_CONFIGURE:
-    case MAV_CMD_DO_MOUNT_CONTROL:
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
-    case MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
-        return handle_command_mount(packet, msg);
-#endif  // HAL_MOUNT_ENABLED
 
     case MAV_CMD_DO_SEND_BANNER:
         send_banner();
@@ -5431,35 +5281,6 @@ void GCS_MAVLINK::send_global_position_int()
 #endif  // AP_AHRS_ENABLED
 }
 
-#if HAL_MOUNT_ENABLED
-void GCS_MAVLINK::send_gimbal_device_attitude_status() const
-{
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return;
-    }
-    mount->send_gimbal_device_attitude_status(chan);
-}
-
-void GCS_MAVLINK::send_gimbal_manager_information() const
-{
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return;
-    }
-    mount->send_gimbal_manager_information(chan);
-}
-
-void GCS_MAVLINK::send_gimbal_manager_status() const
-{
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return;
-    }
-    mount->send_gimbal_manager_status(chan);
-}
-#endif
-
 void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc)
 {
 
@@ -5511,57 +5332,6 @@ bool GCS_MAVLINK::send_relay_status() const
     return relay->send_relay_status(*this);
 }
 #endif  // AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
-
-void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
-{
-#if AP_AHRS_ENABLED
-    // get attitude
-    const AP_AHRS &ahrs = AP::ahrs();
-    Quaternion quat;
-    if (!ahrs.get_quaternion(quat)) {
-        return;
-    }
-    const float repr_offseq_q[] = {quat.q1, quat.q2, quat.q3, quat.q4};
-
-    // get velocity
-    Vector3f vel;
-    if (!ahrs.get_velocity_NED(vel)) {
-        vel.zero();
-    }
-
-    // get vehicle earth-frame rotation rate targets
-    Vector3f rate_ef_targets;
-#if AP_VEHICLE_ENABLED
-    const AP_Vehicle *vehicle = AP::vehicle();
-    if (vehicle != nullptr) {
-        vehicle->get_rate_ef_targets(rate_ef_targets);
-    }
-#endif
-
-    // get estimator flags
-    uint16_t est_status_flags = 0;
-    nav_filter_status nav_filt_status;
-    if (ahrs.get_filter_status(nav_filt_status)) {
-        est_status_flags = (uint16_t)(nav_filt_status.value & 0xFFFF);
-    }
-
-    mavlink_msg_autopilot_state_for_gimbal_device_send(
-        chan,
-        mavlink_system.sysid,   // target system (this autopilot's gimbal)
-        0,                  // target component (anything)
-        AP_HAL::micros(),   // time boot us
-        repr_offseq_q,  // attitude as quaternion
-        0,      // attitude estimated delay in micros
-        vel.x,  // x speed in NED (m/s)
-        vel.y,  // y speed in NED (m/s)
-        vel.z,  // z speed in NED (m/s)
-        0,      // velocity estimated delay in micros
-        rate_ef_targets.z,  // feed forward angular velocity z
-        est_status_flags,   // estimator status
-        0,      // landed_state (see MAV_LANDED_STATE)
-        AP::ahrs().get_yaw_rate_earth());   // [rad/s] Z component of angular velocity in NED (North, East, Down). NaN if unknown
-#endif  // AP_AHRS_ENABLED
-}
 
 void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message)
 {
@@ -5703,13 +5473,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_CAMERA_FEEDBACK:
     case MSG_CAMERA_INFORMATION:
     case MSG_CAMERA_SETTINGS:
-#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
-    case MSG_CAMERA_FOV_STATUS:
-#endif
     case MSG_CAMERA_CAPTURE_STATUS:
-#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
-    case MSG_CAMERA_THERMAL_RANGE:
-#endif
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     case MSG_VIDEO_STREAM_INFORMATION:
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
@@ -5754,25 +5518,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_local_position();
         break;
 #endif
-
-#if HAL_MOUNT_ENABLED
-    case MSG_GIMBAL_DEVICE_ATTITUDE_STATUS:
-        CHECK_PAYLOAD_SIZE(GIMBAL_DEVICE_ATTITUDE_STATUS);
-        send_gimbal_device_attitude_status();
-        break;
-    case MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE:
-        CHECK_PAYLOAD_SIZE(AUTOPILOT_STATE_FOR_GIMBAL_DEVICE);
-        send_autopilot_state_for_gimbal_device();
-        break;
-    case MSG_GIMBAL_MANAGER_INFORMATION:
-        CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_INFORMATION);
-        send_gimbal_manager_information();
-        break;
-    case MSG_GIMBAL_MANAGER_STATUS:
-        CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_STATUS);
-        send_gimbal_manager_status();
-        break;
-#endif  // HAL_MOUNT_ENABLED
 
 #if AP_OPTICALFLOW_ENABLED
     case MSG_OPTICAL_FLOW:

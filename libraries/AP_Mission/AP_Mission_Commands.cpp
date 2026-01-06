@@ -9,7 +9,6 @@
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <RC_Channel/RC_Channel.h>
-#include <AP_Mount/AP_Mount.h>
 #include <AC_Fence/AC_Fence.h>
 
 #if AP_RC_CHANNEL_ENABLED
@@ -136,19 +135,6 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
         }
         return false;
 
-#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
-    case MAV_CMD_SET_CAMERA_SOURCE:
-        if (cmd.content.set_camera_source.instance == 0) {
-            // set lens for every backend
-            bool ret = false;
-            for (uint8_t i=0; i<AP_CAMERA_MAX_INSTANCES; i++) {
-                ret |= camera->set_camera_source(i, (AP_Camera::CameraSource)cmd.content.set_camera_source.primary_source, (AP_Camera::CameraSource)cmd.content.set_camera_source.secondary_source);
-            }
-            return ret;
-        }
-        return camera->set_camera_source(cmd.content.set_camera_source.instance-1, (AP_Camera::CameraSource)cmd.content.set_camera_source.primary_source, (AP_Camera::CameraSource)cmd.content.set_camera_source.secondary_source);
-#endif
-
     case MAV_CMD_IMAGE_START_CAPTURE:
         // check if this is a single picture request (e.g. total images is 1 or interval and total images are zero)
         if ((cmd.content.image_start_capture.total_num_images == 1) ||
@@ -223,50 +209,6 @@ bool AP_Mission::start_command_do_scripting(const AP_Mission::Mission_Command& c
 #else
     return false;
 #endif // AP_SCRIPTING_ENABLED
-}
-
-bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd)
-{
-#if HAL_MOUNT_ENABLED
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return false;
-    }
-
-    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is 2nd gimbal, etc
-    uint8_t gimbal_instance = mount->get_primary_instance();
-    if (cmd.content.gimbal_manager_pitchyaw.gimbal_id > 0) {
-        gimbal_instance = cmd.content.gimbal_manager_pitchyaw.gimbal_id - 1;
-    }
-
-    // check flags for change to RETRACT
-    if ((cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        mount->set_mode(gimbal_instance, MAV_MOUNT_MODE_RETRACT);
-        return true;
-    }
-    // check flags for change to NEUTRAL
-    if ((cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        mount->set_mode(gimbal_instance, MAV_MOUNT_MODE_NEUTRAL);
-        return true;
-    }
-
-    // handle angle target
-    const bool pitch_angle_valid = !isnan(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) && (fabsF(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) <= 90);
-    const bool yaw_angle_valid = !isnan(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg) && (fabsF(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg) <= 360);
-    if (pitch_angle_valid && yaw_angle_valid) {
-        mount->set_angle_target(gimbal_instance, 0, cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg, cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
-        return true;
-    }
-
-    // handle rate target
-    if (!isnan(cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs) && !isnan(cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs)) {
-        mount->set_rate_target(gimbal_instance, 0, cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs, cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
-        return true;
-    }
-
-#endif // HAL_MOUNT_ENABLED
-    // if we got this far then message is not handled
-    return false;
 }
 
 bool AP_Mission::start_command_fence(const AP_Mission::Mission_Command& cmd)

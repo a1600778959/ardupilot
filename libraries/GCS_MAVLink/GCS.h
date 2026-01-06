@@ -21,7 +21,6 @@
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Mount/AP_Mount_config.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
 #include <AP_AHRS/AP_AHRS_config.h>
@@ -376,9 +375,6 @@ public:
     void send_local_position() const;
     void send_vfr_hud();
     void send_vibration() const;
-    void send_gimbal_device_attitude_status() const;
-    void send_gimbal_manager_information() const;
-    void send_gimbal_manager_status() const;
     void send_named_float(const char *name, float value) const;
     void send_home_position() const;
     void send_gps_global_origin() const;
@@ -397,9 +393,6 @@ public:
 #if HAL_HIGH_LATENCY2_ENABLED
     void send_high_latency2() const;
 #endif // HAL_HIGH_LATENCY2_ENABLED
-    void send_uavionix_adsb_out_status() const;
-    void send_autopilot_state_for_gimbal_device() const;
-
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
         _locked = _lock;
@@ -572,11 +565,7 @@ protected:
     void handle_common_rally_message(const mavlink_message_t &msg);
     void handle_rally_fetch_point(const mavlink_message_t &msg);
     void handle_rally_point(const mavlink_message_t &msg) const;
-#if HAL_MOUNT_ENABLED
-    virtual void handle_mount_message(const mavlink_message_t &msg);
-#endif
     void handle_fence_message(const mavlink_message_t &msg);
-    void handle_param_value(const mavlink_message_t &msg);
 #if HAL_LOGGING_ENABLED
     virtual uint32_t log_radio_bit() const { return 0; }
 #endif
@@ -659,16 +648,10 @@ protected:
     void handle_command_long(const mavlink_message_t &msg);
     MAV_RESULT handle_command_accelcal_vehicle_pos(const mavlink_command_int_t &packet);
 
-#if HAL_MOUNT_ENABLED
-    virtual MAV_RESULT handle_command_mount(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
-#endif
-
     MAV_RESULT handle_command_mag_cal(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_fixed_mag_cal_yaw(const mavlink_command_int_t &packet);
 
     MAV_RESULT handle_command_camera(const mavlink_command_int_t &packet);
-    MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet);
-    virtual MAV_RESULT handle_command_do_set_roi(const Location &roi_loc);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_get_home_position(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_fence_enable(const mavlink_command_int_t &packet);

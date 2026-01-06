@@ -6,7 +6,6 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Mount/AP_Mount.h>
 #include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -121,15 +120,6 @@ uint8_t AP_Camera_Backend::get_mount_instance() const
 // get mavlink gimbal device id which is normally mount_instance+1
 uint8_t AP_Camera_Backend::get_gimbal_device_id() const
 {
-#if HAL_MOUNT_ENABLED
-    const uint8_t mount_instance = get_mount_instance();
-    AP_Mount* mount = AP::mount();
-    if (mount != nullptr) {
-        if (mount->get_mount_type(mount_instance) != AP_Mount::Type::None) {
-            return (mount_instance + 1);
-        }
-    }
-#endif
     return 0;
 }
 
@@ -289,58 +279,6 @@ void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
         NaNf,               // zoomLevel float, percentage from 0 to 100, NaN if unknown
         NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
-
-#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
-// send camera field of view status
-void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
-{
-    // getting corresponding mount instance for camera
-    AP_Mount* mount = AP::mount();
-    if (mount == nullptr) {
-        return;
-    }
-
-    // get latest POI from mount
-    Quaternion quat;
-    Location camera_loc;
-    Location poi_loc;
-    const bool have_poi_loc = mount->get_poi(get_mount_instance(), quat, camera_loc, poi_loc);
-
-    // if failed to get POI, get camera location directly from AHRS
-    // and attitude directly from mount
-    bool have_camera_loc = have_poi_loc;
-    if (!have_camera_loc) {
-        have_camera_loc = AP::ahrs().get_location(camera_loc);
-        mount->get_attitude_quaternion(get_mount_instance(), quat);
-    }
-
-    // calculate attitude quaternion in earth frame using AHRS yaw
-    Quaternion quat_ef;
-    quat_ef.from_euler(0, 0, AP::ahrs().get_yaw());
-    quat_ef *= quat;
-
-    // send camera fov status message only if the last calculated values aren't stale
-    const float quat_array[4] = {
-        quat_ef.q1,
-        quat_ef.q2,
-        quat_ef.q3,
-        quat_ef.q4
-    };
-    mavlink_msg_camera_fov_status_send(
-        chan,
-        AP_HAL::millis(),
-        have_camera_loc ? camera_loc.lat : INT32_MAX,
-        have_camera_loc ? camera_loc.lng : INT32_MAX,
-        have_camera_loc ? camera_loc.alt * 10 : INT32_MAX,
-        have_poi_loc ? poi_loc.lat : INT32_MAX,
-        have_poi_loc ? poi_loc.lng : INT32_MAX,
-        have_poi_loc ? poi_loc.alt * 10 : INT32_MAX,
-        quat_array,
-        horizontal_fov() > 0 ? horizontal_fov() : NaNf,
-        vertical_fov() > 0 ? vertical_fov() : NaNf
-    );
-}
-#endif
 
 // send camera capture status message to GCS
 void AP_Camera_Backend::send_camera_capture_status(mavlink_channel_t chan) const

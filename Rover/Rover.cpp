@@ -104,9 +104,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if AP_RPM_ENABLED
     SCHED_TASK_CLASS(AP_RPM,              &rover.rpm_sensor,       update,         10,  100,  72),
 #endif
-#if HAL_MOUNT_ENABLED
-    SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200,  75),
-#endif
 #if AP_CAMERA_ENABLED
     SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update,         50,  200,  78),
 #endif
@@ -410,11 +407,6 @@ void Rover::update_logging2(void)
         gyro_fft.write_log_messages();
 #endif
     }
-#if HAL_MOUNT_ENABLED
-    if (should_log(MASK_LOG_CAMERA)) {
-        camera_mount.write_log();
-    }
-#endif
 }
 #endif  // HAL_LOGGING_ENABLED
 

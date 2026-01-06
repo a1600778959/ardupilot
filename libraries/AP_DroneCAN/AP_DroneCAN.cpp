@@ -45,7 +45,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
-#include <AP_Mount/AP_Mount_Xacti.h>
 #include <string.h>
 
 #if AP_DRONECAN_SERIAL_ENABLED
@@ -391,9 +390,6 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
 #if AP_PROXIMITY_DRONECAN_ENABLED
     AP_Proximity_DroneCAN::subscribe_msgs(this);
 #endif
-#if HAL_MOUNT_XACTI_ENABLED
-    AP_Mount_Xacti::subscribe_msgs(this);
-#endif
 #if AP_TEMPERATURE_SENSOR_DRONECAN_ENABLED
     AP_TemperatureSensor_DroneCAN::subscribe_msgs(this);
 #endif
@@ -449,16 +445,7 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
 
     notify_state.set_timeout_ms(20);
     notify_state.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
-
-#if HAL_MOUNT_XACTI_ENABLED
-    xacti_copter_att_status.set_timeout_ms(20);
-    xacti_copter_att_status.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
-    xacti_gimbal_control_data.set_timeout_ms(20);
-    xacti_gimbal_control_data.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
-    xacti_gnss_status.set_timeout_ms(20);
-    xacti_gnss_status.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
-#endif
-
+    
 #if AP_RELAY_DRONECAN_ENABLED
     relay_hardpoint.set_timeout_ms(20);
     relay_hardpoint.set_priority(CANARD_TRANSFER_PRIORITY_LOW);

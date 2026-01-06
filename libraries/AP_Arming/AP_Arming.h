@@ -224,10 +224,6 @@ protected:
 
     bool camera_checks(bool display_failure);
 
-    bool osd_checks(bool display_failure) const;
-
-    bool mount_checks(bool display_failure) const;
-
 #if AP_ARMING_AUX_AUTH_ENABLED
     bool aux_auth_checks(bool display_failure);
 #endif

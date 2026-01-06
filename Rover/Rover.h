@@ -26,7 +26,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>          // Battery monitor library
 #include <AP_Camera/AP_Camera.h>                    // Camera triggering
-#include <AP_Mount/AP_Mount.h>                      // Camera/Antenna mount
 #include <AP_Param/AP_Param.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
 #include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
@@ -159,11 +158,6 @@ private:
     // Camera
 #if AP_CAMERA_ENABLED
     AP_Camera camera{MASK_LOG_CAMERA};
-#endif
-
-    // Camera/Antenna mount tracking and stabilisation stuff
-#if HAL_MOUNT_ENABLED
-    AP_Mount camera_mount;
 #endif
 
     // true if initialisation has completed

@@ -83,11 +83,6 @@ void Rover::init_ardupilot()
     relay.init();
 #endif
 
-#if HAL_MOUNT_ENABLED
-    // initialise camera mount
-    camera_mount.init();
-#endif
-
 #if AP_CAMERA_ENABLED
     // initialise camera
     camera.init();

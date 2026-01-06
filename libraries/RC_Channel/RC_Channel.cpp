@@ -47,7 +47,6 @@ extern const AP_HAL::HAL& hal;
 #include <AC_Fence/AC_Fence.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Mount/AP_Mount.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -671,14 +670,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::OPTFLOW_CAL:
 #endif
     case AUX_FUNC::TURBINE_START:
-#if HAL_MOUNT_ENABLED
-    case AUX_FUNC::MOUNT1_ROLL:
-    case AUX_FUNC::MOUNT1_PITCH:
-    case AUX_FUNC::MOUNT1_YAW:
-    case AUX_FUNC::MOUNT2_ROLL:
-    case AUX_FUNC::MOUNT2_PITCH:
-    case AUX_FUNC::MOUNT2_YAW:
-#endif
 #if HAL_GENERATOR_ENABLED
     case AUX_FUNC::LOWEHEISER_STARTER:
 #endif
@@ -687,9 +678,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
 #if AP_CAMERA_ENABLED
     case AUX_FUNC::CAMERA_IMAGE_TRACKING:
-#endif
-#if HAL_MOUNT_ENABLED
-    case AUX_FUNC::MOUNT_LRF_ENABLE:
 #endif
 #if HAL_GENERATOR_ENABLED
     case AUX_FUNC::LOWEHEISER_THROTTLE:
@@ -714,11 +702,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::MOTOR_ESTOP:
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
     case AUX_FUNC::FFT_NOTCH_TUNE:
-#if HAL_MOUNT_ENABLED
-    case AUX_FUNC::RETRACT_MOUNT1:
-    case AUX_FUNC::RETRACT_MOUNT2:
-    case AUX_FUNC::MOUNT_LOCK:
-#endif
 #if HAL_LOGGING_ENABLED
     case AUX_FUNC::LOG_PAUSE:
 #endif
@@ -728,7 +711,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::CAMERA_ZOOM:
     case AUX_FUNC::CAMERA_MANUAL_FOCUS:
     case AUX_FUNC::CAMERA_AUTO_FOCUS:
-    case AUX_FUNC::CAMERA_LENS:
 #endif
 #if AP_AHRS_ENABLED
     case AUX_FUNC::AHRS_TYPE:
@@ -763,10 +745,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #endif
 #if AP_MISSION_ENABLED
     { AUX_FUNC::MISSION_RESET,"MissionReset"},
-#endif
-#if HAL_MOUNT_ENABLED
-    { AUX_FUNC::RETRACT_MOUNT1,"RetractMount1"},
-    { AUX_FUNC::RETRACT_MOUNT2,"RetractMount2"},
 #endif
 #if AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
     { AUX_FUNC::RELAY,"Relay1"},
@@ -810,9 +788,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::WEATHER_VANE_ENABLE, "Weathervane"},
     { AUX_FUNC::TURBINE_START, "Turbine Start"},
     { AUX_FUNC::FFT_NOTCH_TUNE, "FFT Notch Tuning"},
-#if HAL_MOUNT_ENABLED
-    { AUX_FUNC::MOUNT_LOCK, "MountLock"},
-#endif
 #if HAL_LOGGING_ENABLED
     { AUX_FUNC::LOG_PAUSE, "Pause Stream Logging"},
 #endif
@@ -822,10 +797,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CAMERA_MANUAL_FOCUS, "Camera Manual Focus"},
     { AUX_FUNC::CAMERA_AUTO_FOCUS, "Camera Auto Focus"},
     { AUX_FUNC::CAMERA_IMAGE_TRACKING, "Camera Image Tracking"},
-    { AUX_FUNC::CAMERA_LENS, "Camera Lens"},
-#endif
-#if HAL_MOUNT_ENABLED
-    { AUX_FUNC::MOUNT_LRF_ENABLE, "Mount LRF Enable"},
 #endif
 };
 
@@ -1047,16 +1018,7 @@ bool RC_Channel::do_aux_function_camera_image_tracking(const AuxSwitchPos ch_fla
 
 bool RC_Channel::do_aux_function_camera_lens(const AuxSwitchPos ch_flag)
 {
-#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
-    AP_Camera *camera = AP::camera();
-    if (camera == nullptr) {
-        return false;
-    }
-    // Low selects lens 0 (default), Mediums selects lens1, High selects lens2
-    return camera->set_lens((uint8_t)ch_flag);
-#else
     return false;
-#endif // AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
 }
 #endif // AP_CAMERA_ENABLED
 
@@ -1184,34 +1146,6 @@ void RC_Channel::do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag)
     }
 #endif
 }
-
-/**
- * Perform the RETRACT_MOUNT 1/2 process.
- * 
- * @param [in] ch_flag  Position of the switch. HIGH, MIDDLE and LOW.
- * @param [in] instance 0: RETRACT MOUNT 1 <br>
- *                      1: RETRACT MOUNT 2
-*/
-#if HAL_MOUNT_ENABLED
-void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t instance)
-{
-    AP_Mount *mount = AP::mount();
-    if (mount == nullptr) {
-        return;
-    }
-    switch (ch_flag) {
-    case AuxSwitchPos::HIGH:
-        mount->set_mode(instance,MAV_MOUNT_MODE_RETRACT);
-        break;
-    case AuxSwitchPos::MIDDLE:
-        // nothing
-        break;
-    case AuxSwitchPos::LOW:
-        mount->set_mode_to_default(instance);
-        break;
-    }
-}
-#endif  // HAL_MOUNT_ENABLED
 
 bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source)
 {
@@ -1455,39 +1389,7 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
     case AUX_FUNC::CAMERA_IMAGE_TRACKING:
         return do_aux_function_camera_image_tracking(ch_flag);
 
-#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
-    case AUX_FUNC::CAMERA_LENS:
-        return do_aux_function_camera_lens(ch_flag);
-#endif // AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
 #endif // AP_CAMERA_ENABLED
-
-#if HAL_MOUNT_ENABLED
-    case AUX_FUNC::RETRACT_MOUNT1:
-        do_aux_function_retract_mount(ch_flag, 0);
-        break;
-
-    case AUX_FUNC::RETRACT_MOUNT2:
-        do_aux_function_retract_mount(ch_flag, 1);
-        break;
-
-    case AUX_FUNC::MOUNT_LOCK: {
-        AP_Mount *mount = AP::mount();
-        if (mount == nullptr) {
-            break;
-        }
-        mount->set_yaw_lock(ch_flag == AuxSwitchPos::HIGH);
-        break;
-    }
-
-    case AUX_FUNC::MOUNT_LRF_ENABLE: {
-        AP_Mount *mount = AP::mount();
-        if (mount == nullptr) {
-            break;
-        }
-        mount->set_rangefinder_enable(0, ch_flag == AuxSwitchPos::HIGH);
-        break;
-    }
-#endif
 
 #if HAL_LOGGING_ENABLED
     case AUX_FUNC::LOG_PAUSE: {
@@ -1584,15 +1486,6 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
     }
 #endif
 
-    // do nothing for these functions
-#if HAL_MOUNT_ENABLED
-    case AUX_FUNC::MOUNT1_ROLL:
-    case AUX_FUNC::MOUNT1_PITCH:
-    case AUX_FUNC::MOUNT1_YAW:
-    case AUX_FUNC::MOUNT2_ROLL:
-    case AUX_FUNC::MOUNT2_PITCH:
-    case AUX_FUNC::MOUNT2_YAW:
-#endif
 #if AP_SCRIPTING_ENABLED
     case AUX_FUNC::SCRIPTING_1:
     case AUX_FUNC::SCRIPTING_2:

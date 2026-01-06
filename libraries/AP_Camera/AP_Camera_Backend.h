@@ -88,11 +88,6 @@ public:
     // set camera lens as a value from 0 to 5
     virtual bool set_lens(uint8_t lens) { return false; }
 
-#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
-    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
-    virtual bool set_camera_source(AP_Camera::CameraSource primary_source, AP_Camera::CameraSource secondary_source) { return false; }
-#endif
-
     // get camera image horizontal or vertical field of view in degrees.  returns 0 if unknown
     float horizontal_fov() const { return MAX(0.0f, _params.hfov); }
     float vertical_fov() const { return MAX(0.0f, _params.vfov); }
@@ -128,18 +123,8 @@ public:
     // send camera settings message to GCS
     virtual void send_camera_settings(mavlink_channel_t chan) const;
 
-#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
-    // send camera field of view status
-    void send_camera_fov_status(mavlink_channel_t chan) const;
-#endif
-
     // send camera capture status message to GCS
     virtual void send_camera_capture_status(mavlink_channel_t chan) const;
-
-#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
-    // send camera thermal range message to GCS
-    virtual void send_camera_thermal_range(mavlink_channel_t chan) const {};
-#endif
 
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state

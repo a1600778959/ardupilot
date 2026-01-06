@@ -58,12 +58,6 @@ public:
 #if AP_CAMERA_RELAY_ENABLED
         RELAY = 2,          // Relay controlled camera
 #endif
-#if AP_CAMERA_SOLOGIMBAL_ENABLED
-        SOLOGIMBAL = 3,     // GoPro in Solo gimbal
-#endif
-#if AP_CAMERA_MOUNT_ENABLED
-        MOUNT = 4,          // Mount library implements camera
-#endif
 #if AP_CAMERA_MAVLINK_ENABLED
         MAVLINK = 5,        // MAVLink enabled camera
 #endif
@@ -143,23 +137,6 @@ public:
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
     bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
     bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
-
-#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
-    // set camera lens as a value from 0 to 5, instance starts from 0
-    bool set_lens(uint8_t lens);
-    bool set_lens(uint8_t instance, uint8_t lens);
-
-    // camera source handling enum.  This is a one-to-one mapping with the CAMERA_SOURCE mavlink enum
-    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
-    enum class CameraSource {
-        DEFAULT = 0,
-        RGB = 1,
-        IR = 2,
-        NDVI = 3,
-        RGB_WIDEANGLE = 4,
-    };
-    bool set_camera_source(uint8_t instance, CameraSource primary_source, CameraSource secondary_source);
-#endif
 
     // set if vehicle is in AUTO mode
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
@@ -244,18 +221,8 @@ private:
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan);
 
-#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
-    // send camera field of view status
-    void send_camera_fov_status(mavlink_channel_t chan);
-#endif
-
     // send camera capture status message to GCS
     void send_camera_capture_status(mavlink_channel_t chan);
-
-#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
-    // send camera thermal range message to GCS
-    void send_camera_thermal_range(mavlink_channel_t chan);
-#endif
 
     HAL_Semaphore _rsem;                // semaphore for multi-thread access
     AP_Camera_Backend *primary;         // primary camera backed

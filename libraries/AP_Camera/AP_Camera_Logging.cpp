@@ -1,5 +1,4 @@
 #include "AP_Camera_Backend.h"
-#include <AP_Mount/AP_Mount.h>
 #include <AP_Logger/AP_Logger_config.h>
 
 #if AP_CAMERA_ENABLED && HAL_LOGGING_ENABLED
@@ -70,12 +69,6 @@ void AP_Camera_Backend::Write_CameraInfo(enum LogMessages msg, uint64_t timestam
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 
-#if HAL_MOUNT_ENABLED
-    auto *mount = AP_Mount::get_singleton();
-    if (mount!= nullptr) {
-        mount->write_log(get_mount_instance(), timestamp_us);
-    }
-#endif
 }
 
 // Write a Camera packet

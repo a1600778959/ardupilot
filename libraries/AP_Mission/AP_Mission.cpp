@@ -378,13 +378,11 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
     case MAV_CMD_DO_AUX_FUNCTION:
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
     case MAV_CMD_JUMP_TAG:
     case MAV_CMD_IMAGE_START_CAPTURE:
     case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
-    case MAV_CMD_SET_CAMERA_SOURCE:
     case MAV_CMD_VIDEO_START_CAPTURE:
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         return true;
@@ -451,7 +449,6 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
-    case MAV_CMD_SET_CAMERA_SOURCE:
     case MAV_CMD_VIDEO_START_CAPTURE:
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         return start_command_camera(cmd);
@@ -464,8 +461,6 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
         return start_command_do_scripting(cmd);
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         return command_do_set_repeat_dist(cmd);
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
-        return start_command_do_gimbal_manager_pitchyaw(cmd);
     case MAV_CMD_JUMP_TAG:
         _jump_tag.tag = cmd.content.jump.target;
         _jump_tag.age = 1;
@@ -889,8 +884,6 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_DO_RETURN_PATH_START:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_GO_AROUND:
-    case MAV_CMD_DO_SET_ROI_LOCATION:
-    case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_PAYLOAD_PLACE:
@@ -1220,15 +1213,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
         break;
 
-    case MAV_CMD_DO_SET_ROI_LOCATION:                   // MAV ID: 195
-    case MAV_CMD_DO_SET_ROI_NONE:                       // MAV ID: 197
-        cmd.p1 = packet.param1;                         // gimbal device id
-        break;
-
-    case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
-        cmd.p1 = packet.param1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
-        break;
-
     case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // MAV ID: 202
         cmd.content.digicam_configure.shooting_mode = packet.param1;
         cmd.content.digicam_configure.shutter_speed = packet.param2;
@@ -1246,13 +1230,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.digicam_control.focus_lock = packet.param4;
         cmd.content.digicam_control.shooting_cmd = packet.x;
         cmd.content.digicam_control.cmd_id = packet.y;
-        break;
-
-    case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
-        // TODO: this is only valid if packet.z == MAV_MOUNT_MODE_MAVLINK_TARGETING
-        cmd.content.mount_control.pitch = packet.param1;
-        cmd.content.mount_control.roll = packet.param2;
-        cmd.content.mount_control.yaw = packet.param3;
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
@@ -1365,15 +1342,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;
         break;
 
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
-        cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg = packet.param1;
-        cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg = packet.param2;
-        cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs = packet.param3;
-        cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs = packet.param4;
-        cmd.content.gimbal_manager_pitchyaw.flags = packet.x;
-        cmd.content.gimbal_manager_pitchyaw.gimbal_id = packet.z;
-        break;
-
     case MAV_CMD_IMAGE_START_CAPTURE:
         cmd.content.image_start_capture.instance = packet.param1;
         cmd.content.image_start_capture.interval_s = packet.param2;
@@ -1393,12 +1361,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_SET_CAMERA_FOCUS:
         cmd.content.set_camera_focus.focus_type = packet.param1;
         cmd.content.set_camera_focus.focus_value = packet.param2;
-        break;
-
-    case MAV_CMD_SET_CAMERA_SOURCE:
-        cmd.content.set_camera_source.instance = packet.param1;
-        cmd.content.set_camera_source.primary_source = packet.param2;
-        cmd.content.set_camera_source.secondary_source = packet.param3;
         break;
 
     case MAV_CMD_VIDEO_START_CAPTURE:
@@ -1724,15 +1686,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
         break;
 
-    case MAV_CMD_DO_SET_ROI_LOCATION:                   // MAV ID: 195
-    case MAV_CMD_DO_SET_ROI_NONE:                       // MAV ID: 197
-        packet.param1 = cmd.p1;                         // gimbal device id
-        break;
-
-    case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
-        packet.param1 = cmd.p1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
-        break;
-
     case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // MAV ID: 202
         packet.param1 = cmd.content.digicam_configure.shooting_mode;
         packet.param2 = cmd.content.digicam_configure.shutter_speed;
@@ -1750,13 +1703,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.digicam_control.focus_lock;
         packet.x = cmd.content.digicam_control.shooting_cmd;
         packet.y = cmd.content.digicam_control.cmd_id;
-        break;
-
-    case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
-        packet.param1 = cmd.content.mount_control.pitch;
-        packet.param2 = cmd.content.mount_control.roll;
-        packet.param3 = cmd.content.mount_control.yaw;
-        packet.z = MAV_MOUNT_MODE_MAVLINK_TARGETING;
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
@@ -1871,15 +1817,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.p1;
         break;
 
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
-        packet.param1 = cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg;
-        packet.param2 = cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg;
-        packet.param3 = cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs;
-        packet.param4 = cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs;
-        packet.x = cmd.content.gimbal_manager_pitchyaw.flags;
-        packet.z = cmd.content.gimbal_manager_pitchyaw.gimbal_id;
-        break;
-
     case MAV_CMD_IMAGE_START_CAPTURE:
         packet.param1 = cmd.content.image_start_capture.instance;
         packet.param2 = cmd.content.image_start_capture.interval_s;
@@ -1899,12 +1836,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_SET_CAMERA_FOCUS:
         packet.param1 = cmd.content.set_camera_focus.focus_type;
         packet.param2 = cmd.content.set_camera_focus.focus_value;
-        break;
-
-    case MAV_CMD_SET_CAMERA_SOURCE:
-        packet.param1 = cmd.content.set_camera_source.instance;
-        packet.param2 = cmd.content.set_camera_source.primary_source;
-        packet.param3 = cmd.content.set_camera_source.secondary_source;
         break;
 
     case MAV_CMD_VIDEO_START_CAPTURE:
@@ -2754,12 +2685,6 @@ const char *AP_Mission::Mission_Command::type() const
         return "DigiCamCtrl";
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         return "SetCamTrigDst";
-    case MAV_CMD_DO_SET_ROI_LOCATION:
-        return "SetROILocation";
-    case MAV_CMD_DO_SET_ROI_NONE:
-        return "SetROINone";
-    case MAV_CMD_DO_SET_ROI:
-        return "SetROI";
     case MAV_CMD_DO_SET_REVERSE:
         return "SetReverse";
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
@@ -2802,8 +2727,6 @@ const char *AP_Mission::Mission_Command::type() const
 #endif
     case MAV_CMD_DO_AUX_FUNCTION:
         return "AuxFunction";
-    case MAV_CMD_DO_MOUNT_CONTROL:
-        return "MountControl";
     case MAV_CMD_DO_WINCH:
         return "Winch";
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
@@ -2824,8 +2747,6 @@ const char *AP_Mission::Mission_Command::type() const
         return "NavAttitudeTime";
     case MAV_CMD_DO_PAUSE_CONTINUE:
         return "PauseContinue";
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
-        return "GimbalPitchYaw";
     case MAV_CMD_IMAGE_START_CAPTURE:
         return "ImageStartCapture";
     case MAV_CMD_IMAGE_STOP_CAPTURE:
@@ -2834,8 +2755,6 @@ const char *AP_Mission::Mission_Command::type() const
         return "SetCameraZoom";
     case MAV_CMD_SET_CAMERA_FOCUS:
         return "SetCameraFocus";
-    case MAV_CMD_SET_CAMERA_SOURCE:
-        return "SetCameraSource";
     case MAV_CMD_VIDEO_START_CAPTURE:
         return "VideoStartCapture";
     case MAV_CMD_VIDEO_STOP_CAPTURE:

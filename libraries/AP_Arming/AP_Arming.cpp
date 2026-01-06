@@ -46,7 +46,6 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 #include <AP_RPM/AP_RPM.h>
-#include <AP_Mount/AP_Mount.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -1289,24 +1288,6 @@ bool AP_Arming::fence_checks(bool display_failure)
 }
 #endif  // AP_FENCE_ENABLED
 
-#if HAL_MOUNT_ENABLED
-bool AP_Arming::mount_checks(bool display_failure) const
-{
-    if (check_enabled(ARMING_CHECK_CAMERA)) {
-        AP_Mount *mount = AP::mount();
-        if (mount == nullptr) {
-            return true;
-        }
-        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] = {};
-        if (!mount->pre_arm_checks(fail_msg, sizeof(fail_msg))) {
-            check_failed(ARMING_CHECK_CAMERA, display_failure, "Mount: %s", fail_msg);
-            return false;
-        }
-    }
-    return true;
-}
-#endif  // HAL_MOUNT_ENABLED
-
 #if AP_FETTEC_ONEWIRE_ENABLED
 bool AP_Arming::fettec_checks(bool display_failure) const
 {
@@ -1560,9 +1541,6 @@ bool AP_Arming::pre_arm_checks(bool report)
 #endif
 #if HAL_PROXIMITY_ENABLED
         &  proximity_checks(report)
-#endif
-#if HAL_MOUNT_ENABLED
-        &  mount_checks(report)
 #endif
 #if AP_FETTEC_ONEWIRE_ENABLED
         &  fettec_checks(report)
