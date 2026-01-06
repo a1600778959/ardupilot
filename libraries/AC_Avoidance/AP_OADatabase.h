@@ -53,9 +53,6 @@ public:
     // empty queue and try and put into database. Return true if there's more work to do
     bool process_queue();
 
-    // send ADSB_VEHICLE mavlink messages
-    void send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_ms);
-
     static const struct AP_Param::GroupInfo var_info[];
 
 private:

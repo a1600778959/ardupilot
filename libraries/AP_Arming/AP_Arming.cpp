@@ -1879,7 +1879,6 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
         case Method::CPUFAILSAFE:
         case Method::BATTERYFAILSAFE:
         case Method::AFS:
-        case Method::ADSBCOLLISIONACTION:
         case Method::PARACHUTE_RELEASE:
         case Method::CRASH:
         case Method::FENCEBREACH:

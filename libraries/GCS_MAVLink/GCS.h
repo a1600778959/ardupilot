@@ -289,7 +289,6 @@ public:
         STREAM_EXTRA2,
         STREAM_EXTRA3,
         STREAM_PARAMS,
-        STREAM_ADSB,
         NUM_STREAMS
     };
 

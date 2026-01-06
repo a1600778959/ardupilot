@@ -404,19 +404,6 @@ struct PACKED log_WheelEncoder {
     uint8_t quality_1;
 };
 
-struct PACKED log_ADSB {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint32_t ICAO_address;
-    int32_t lat;
-    int32_t lng;
-    int32_t alt;
-    uint16_t heading;
-    uint16_t hor_velocity;
-    int16_t ver_velocity;
-    uint16_t squawk;
-};
-
 struct PACKED log_MAG {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -656,18 +643,6 @@ struct PACKED log_VER {
 #define PID_FMT    "QffffffffffB"
 #define PID_UNITS  "s-----------"
 #define PID_MULTS  "F-----------"
-
-// @LoggerMessage: ADSB
-// @Description: Automatic Dependent Serveillance - Broadcast detected vehicle information
-// @Field: TimeUS: Time since system startup
-// @Field: ICAO_address: Transponder address
-// @Field: Lat: Vehicle latitude
-// @Field: Lng: Vehicle longitude
-// @Field: Alt: Vehicle altitude
-// @Field: Heading: Vehicle heading
-// @Field: Hor_vel: Vehicle horizontal velocity
-// @Field: Ver_vel: Vehicle vertical velocity
-// @Field: Squark: Transponder squawk code
 
 // @LoggerMessage: ARM
 // @Description: Arming status changes
@@ -1250,8 +1225,6 @@ LOG_STRUCTURE_FROM_FENCE \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" , true }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
       "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" , true }, \
-    { LOG_ADSB_MSG, sizeof(log_ADSB), \
-      "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }, \
     { LOG_EVENT_MSG, sizeof(log_Event), \
       "EV",   "QB",           "TimeUS,Id", "s-", "F-" }, \
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm), \
@@ -1341,7 +1314,6 @@ enum LogMessages : uint8_t {
     LOG_WHEELENCODER_MSG,
     LOG_MAV_MSG,
     LOG_ERROR_MSG,
-    LOG_ADSB_MSG,
     LOG_ARM_DISARM_MSG,
     LOG_WINCH_MSG,
     LOG_IDS_FROM_AC_ATTITUDECONTROL,
