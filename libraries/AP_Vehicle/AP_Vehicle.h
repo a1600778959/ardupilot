@@ -51,7 +51,6 @@
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_Networking/AP_Networking.h>
-#include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor.h>
 #include <SITL/SITL.h>
@@ -266,10 +265,6 @@ public:
       return false if failed or n/a
      */
     virtual bool get_wp_crosstrack_error_m(float &xtrack_error) const { return false; }
-
-#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-    AP_Frsky_Parameters frsky_parameters;
-#endif
 
     /*
       Returns the pan and tilt for use by onvif camera in scripting

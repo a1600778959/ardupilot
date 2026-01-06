@@ -7,7 +7,6 @@
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_Arming/AP_Arming.h>
-#include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_RPM/AP_RPM.h>
@@ -37,12 +36,6 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Group: FFT_
     // @Path: ../AP_GyroFFT/AP_GyroFFT.cpp
     AP_SUBGROUPINFO(gyro_fft, "FFT_",  2, AP_Vehicle, AP_GyroFFT),
-#endif
-
-#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-    // @Group: FRSKY_
-    // @Path: ../AP_Frsky_Telem/AP_Frsky_Parameters.cpp
-    AP_SUBGROUPINFO(frsky_parameters, "FRSKY_", 6, AP_Vehicle, AP_Frsky_Parameters),
 #endif
 
 #if HAL_GENERATOR_ENABLED

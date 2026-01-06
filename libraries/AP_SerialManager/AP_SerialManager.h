@@ -39,14 +39,11 @@ public:
         SerialProtocol_Console = 0, // unused
         SerialProtocol_MAVLink = 1,
         SerialProtocol_MAVLink2 = 2,                 // do not use - use MAVLink and provide instance of 1
-        SerialProtocol_FrSky_D = 3,                  // FrSky D protocol (D-receivers)
-        SerialProtocol_FrSky_SPort = 4,              // FrSky SPort protocol (X-receivers)
         SerialProtocol_GPS = 5,
         SerialProtocol_GPS2 = 6,                     // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
         SerialProtocol_Gimbal = 8,                   // SToRM32, Siyi custom serial protocols
         SerialProtocol_Rangefinder = 9,
-        SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
         SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
         SerialProtocol_Aerotenna_USD1      = 12, // USD1 support - deprecated, users should use Rangefinder
         SerialProtocol_Beacon = 13,

@@ -467,17 +467,6 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX,
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX);
                     break;
-                case SerialProtocol_FrSky_D:
-                    // Note baudrate is hardcoded to 9600
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_FRSKY_D_BAUD/1000); // update baud param in case user looks at it
-                    // begin is handled by AP_Frsky_telem library
-                    break;
-                case SerialProtocol_FrSky_SPort:
-                case SerialProtocol_FrSky_SPort_Passthrough:
-                    // Note baudrate is hardcoded to 57600
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_FRSKY_SPORT_BAUD/1000); // update baud param in case user looks at it
-                    // begin is handled by AP_Frsky_telem library
-                    break;
                 case SerialProtocol_GPS:
                 case SerialProtocol_GPS2:
                     uart->begin(state[i].baudrate(),

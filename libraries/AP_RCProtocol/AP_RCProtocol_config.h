@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
-#include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <GCS_MAVLink/GCS_config.h>
 #include <AP_Radio/AP_Radio_config.h>
 
@@ -23,9 +22,6 @@
 
 #ifndef AP_RCPROTOCOL_FPORT_ENABLED
 #define AP_RCPROTOCOL_FPORT_ENABLED AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED
-#endif
-#ifndef AP_RCPROTOCOL_FPORT2_ENABLED
-#define AP_RCPROTOCOL_FPORT2_ENABLED AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED && AP_FRSKY_SPORT_TELEM_ENABLED
 #endif
 
 #ifndef AP_RCPROTOCOL_IBUS_ENABLED

@@ -60,12 +60,6 @@ public:
 #if AP_RCPROTOCOL_ST24_ENABLED
         ST24       =  9,
 #endif
-#if AP_RCPROTOCOL_FPORT_ENABLED
-        FPORT      = 10,
-#endif
-#if AP_RCPROTOCOL_FPORT2_ENABLED
-        FPORT2     = 11,
-#endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
         FASTSBUS   = 12,
 #endif
@@ -150,12 +144,6 @@ public:
 #endif
 #if AP_RCPROTOCOL_PPMSUM_ENABLED
         case PPMSUM:
-#endif
-#if AP_RCPROTOCOL_FPORT_ENABLED
-        case FPORT:
-#endif
-#if AP_RCPROTOCOL_FPORT2_ENABLED
-        case FPORT2:
 #endif
 #if AP_RCPROTOCOL_GHST_ENABLED
         case GHST:

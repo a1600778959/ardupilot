@@ -1,11 +1,10 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
-#include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 
 #ifndef HAL_CRSF_TELEM_ENABLED
-#define HAL_CRSF_TELEM_ENABLED AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
+#define HAL_CRSF_TELEM_ENABLED 0
 #endif
 
 #ifndef HAL_SPEKTRUM_TELEM_ENABLED
