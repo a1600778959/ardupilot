@@ -480,19 +480,8 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX);
                     break;
-                case SerialProtocol_Gimbal:
-                    // Note baudrate is hardcoded to 115200
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_GIMBAL_BAUD / 1000);     // update baud param in case user looks at it
-                    uart->begin(state[i].baudrate(),
-                                         AP_SERIALMANAGER_GIMBAL_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_GIMBAL_BUFSIZE_TX);
-                    break;
                 case SerialProtocol_Aerotenna_USD1:
                     state[i].protocol.set_and_save(SerialProtocol_Rangefinder);
-                    break;
-                case SerialProtocol_Volz:
-                    // Note baudrate is hardcoded to 115200
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_VOLZ_BAUD);   // update baud param in case user looks at it
                     break;
                 case SerialProtocol_Sbus1:
                     state[i].baud.set_and_default(AP_SERIALMANAGER_SBUS1_BAUD / 1000);   // update baud param in case user looks at it
@@ -511,15 +500,7 @@ void AP_SerialManager::init()
                     uart->begin(state[i].baudrate(), 30, 30);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
-
-                case SerialProtocol_Robotis:
-                    uart->begin(state[i].baudrate(),
-                                         AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX);
-                    uart->set_unbuffered_writes(true);
-                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-                    break;
-
+                    
                 case SerialProtocol_SLCAN:
                     uart->begin(state[i].baudrate(),
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_RX,
@@ -537,14 +518,6 @@ void AP_SerialManager::init()
                     break;
 #endif
                     
-                case SerialProtocol_EFI:
-                    state[i].baud.set_default(AP_SERIALMANAGER_EFI_MS_BAUD);
-                    uart->begin(state[i].baudrate(),
-                                         AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_EFI_MS_BUFSIZE_TX);
-                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-                    break;
-
                 case SerialProtocol_Generator:
                     break;
 #if AP_SERIALMANAGER_IMUOUT_ENABLED

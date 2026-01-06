@@ -417,10 +417,6 @@ protected:
     static const struct AP_Scheduler::Task scheduler_tasks[];
 #endif
 
-#if OSD_ENABLED
-    void publish_osd_info();
-#endif
-
 #if HAL_INS_ACCELCAL_ENABLED
     // update accel calibration
     void accel_cal_update();

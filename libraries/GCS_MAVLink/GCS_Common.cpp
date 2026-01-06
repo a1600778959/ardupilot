@@ -2594,9 +2594,6 @@ void GCS::setup_uarts()
     ltm_telemetry.init();
 #endif
 
-#if AP_DEVO_TELEM_ENABLED
-    devo_telemetry.init();
-#endif
 }
 
 #if AP_BATTERY_ENABLED && AP_MAVLINK_BATTERY2_ENABLED

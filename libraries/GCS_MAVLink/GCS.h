@@ -17,7 +17,6 @@
 #include <AP_RTC/JitterCorrection.h>
 #include <AP_Common/Bitmask.h>
 #include <AP_LTM_Telem/AP_LTM_Telem.h>
-#include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -1175,11 +1174,6 @@ public:
 #if AP_LTM_TELEM_ENABLED
     // LTM backend
     AP_LTM_Telem ltm_telemetry;
-#endif
-
-#if AP_DEVO_TELEM_ENABLED
-    // Devo backend
-    AP_DEVO_Telem devo_telemetry;
 #endif
 
     // install an alternative protocol handler

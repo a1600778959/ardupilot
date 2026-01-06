@@ -28,10 +28,6 @@ void Rover::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
-#if OSD_ENABLED
-    osd.init();
-#endif
-
     // initialise compass
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
