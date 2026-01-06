@@ -2,7 +2,6 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#include <AP_EFI/AP_EFI_config.h>
 #include <AP_Generator/AP_Generator_config.h>
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_config.h>
@@ -17,10 +16,6 @@
 
 #ifndef AP_RPM_BACKEND_DEFAULT_ENABLED
 #define AP_RPM_BACKEND_DEFAULT_ENABLED AP_RPM_ENABLED
-#endif
-
-#ifndef AP_RPM_EFI_ENABLED
-#define AP_RPM_EFI_ENABLED AP_RPM_BACKEND_DEFAULT_ENABLED && HAL_EFI_ENABLED
 #endif
 
 #ifndef AP_RPM_ESC_TELEM_ENABLED

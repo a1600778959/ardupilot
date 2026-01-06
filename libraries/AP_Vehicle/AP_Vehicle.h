@@ -32,7 +32,6 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Button/AP_Button.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_EFI/AP_EFI.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Generator/AP_Generator.h>
@@ -386,11 +385,6 @@ protected:
 
 #if AP_NETWORKING_ENABLED
     AP_Networking networking;
-#endif
-
-#if HAL_EFI_ENABLED
-    // EFI Engine Monitor
-    AP_EFI efi;
 #endif
 
 #if AP_STATS_ENABLED

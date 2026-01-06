@@ -2,9 +2,9 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_config.h>
-#include <AP_EFI/AP_EFI_config.h>
 #include <AP_Generator/AP_Generator_config.h>
 #include <AP_Torqeedo/AP_Torqeedo_config.h>
+#include "AP_Scripting/AP_Scripting_config.h"
 
 #ifndef AP_BATTERY_ENABLED
 #define AP_BATTERY_ENABLED 1
@@ -20,10 +20,6 @@
 
 #ifndef AP_BATTERY_BEBOP_ENABLED
 #define AP_BATTERY_BEBOP_ENABLED AP_BATTERY_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO)
-#endif
-
-#ifndef AP_BATTERY_EFI_ENABLED
-#define AP_BATTERY_EFI_ENABLED AP_BATTERY_BACKEND_DEFAULT_ENABLED && HAL_EFI_ENABLED
 #endif
 
 #ifndef AP_BATTERY_ESC_ENABLED

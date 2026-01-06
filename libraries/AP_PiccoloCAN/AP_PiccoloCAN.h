@@ -27,7 +27,6 @@
 #include "AP_PiccoloCAN_ESC.h"
 #include "AP_PiccoloCAN_ECU.h"
 #include "AP_PiccoloCAN_Servo.h"
-#include <AP_EFI/AP_EFI_Currawong_ECU.h>
 
 #if HAL_PICCOLO_CAN_ENABLE
 
@@ -100,13 +99,6 @@ private:
     // interpret a servo message received over CAN
     bool handle_servo_message(AP_HAL::CANFrame &frame);
 
-#if AP_EFI_CURRAWONG_ECU_ENABLED
-    void send_ecu_messages(void);
-
-    // interpret an ECU message received over CAN
-    bool handle_ecu_message(AP_HAL::CANFrame &frame);
-#endif
-
     bool _initialized;
     char _thread_name[16];
     uint8_t _driver_index;
@@ -128,8 +120,6 @@ private:
     AP_Int32 _srv_bm;       //!< Servo selection bitmask
     AP_Int16 _srv_hz;       //!< Servo update rate (Hz)
 
-    AP_Int16 _ecu_id;       //!< ECU Node ID
-    AP_Int16 _ecu_hz;       //!< ECU update rate (Hz)
 
     HAL_Semaphore _telem_sem;
 };

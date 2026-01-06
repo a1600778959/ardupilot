@@ -50,12 +50,6 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(externalAHRS, "EAHRS", 8, AP_Vehicle, AP_ExternalAHRS),
 #endif
 
-#if HAL_EFI_ENABLED
-    // @Group: EFI
-    // @Path: ../AP_EFI/AP_EFI.cpp
-    AP_SUBGROUPINFO(efi, "EFI", 9, AP_Vehicle, AP_EFI),
-#endif
-
 #if AP_CUSTOMROTATIONS_ENABLED
     // @Group: CUST_ROT
     // @Path: ../AP_CustomRotations/AP_CustomRotations.cpp
@@ -387,11 +381,6 @@ void AP_Vehicle::setup()
     opendroneid.init();
 #endif
 
-// init EFI monitoring
-#if HAL_EFI_ENABLED
-    efi.init();
-#endif
-
 #if AP_TEMPERATURE_SENSOR_ENABLED
     temperature_sensor.init();
 #endif
@@ -540,9 +529,6 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if AP_FENCE_ENABLED
     SCHED_TASK_CLASS(AC_Fence,     &vehicle.fence,          update,                   10, 100, 248),
-#endif
-#if HAL_EFI_ENABLED
-    SCHED_TASK_CLASS(AP_EFI,       &vehicle.efi,            update,                   50, 200, 250),
 #endif
     SCHED_TASK(one_Hz_update,                                                         1, 100, 252),
 #if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED

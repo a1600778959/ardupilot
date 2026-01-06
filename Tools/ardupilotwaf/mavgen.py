@@ -27,7 +27,7 @@ class mavgen(Task.Task):
         while head < len(queue):
             node = queue[head]
             head += 1
-
+            print(node.abspath())
             tree = et.parse(node.abspath())
             root = tree.getroot()
             includes = root.findall('include')

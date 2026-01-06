@@ -289,7 +289,7 @@ public:
         STREAM_EXTRA2,
         STREAM_EXTRA3,
         STREAM_PARAMS,
-        NUM_STREAMS
+        NUM_STREAMS = 10
     };
 
     // streams must be moved out into the top level for

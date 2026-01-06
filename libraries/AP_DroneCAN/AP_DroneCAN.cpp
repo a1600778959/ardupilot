@@ -34,7 +34,6 @@
 #include <AP_OpticalFlow/AP_OpticalFlow_HereFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder_DroneCAN.h>
 #include <AP_RCProtocol/AP_RCProtocol_DroneCAN.h>
-#include <AP_EFI/AP_EFI_DroneCAN.h>
 #include <AP_GPS/AP_GPS_DroneCAN.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor_DroneCAN.h>
@@ -382,9 +381,6 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
 #endif
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
     AP_RCProtocol_DroneCAN::subscribe_msgs(this);
-#endif
-#if AP_EFI_DRONECAN_ENABLED
-    AP_EFI_DroneCAN::subscribe_msgs(this);
 #endif
 
 #if AP_PROXIMITY_DRONECAN_ENABLED

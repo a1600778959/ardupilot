@@ -113,7 +113,6 @@ public:
         FuelLevel_Analog               = 24,
         Analog_Volt_Synthetic_Current  = 25,
         INA239_SPI                     = 26,
-        EFI                            = 27,
         AD7091R5                       = 28,
         Scripting                      = 29,
     };

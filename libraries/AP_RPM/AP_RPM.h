@@ -42,9 +42,6 @@ public:
         RPM_TYPE_PWM     = 1,
         RPM_TYPE_PIN     = 2,
 #endif
-#if AP_RPM_EFI_ENABLED
-        RPM_TYPE_EFI     = 3,
-#endif
 #if AP_RPM_HARMONICNOTCH_ENABLED
         RPM_TYPE_HNTCH   = 4,
 #endif

@@ -34,8 +34,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_CANManager/AP_CANManager.h>
 
-#include <AP_EFI/AP_EFI_Currawong_ECU.h>
-
 #include <stdio.h>
 
 // Protocol files for the Velocity ESC
@@ -86,22 +84,6 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
     // @User: Advanced
     // @Range: 1 500
     AP_GROUPINFO("SRV_RT", 4, AP_PiccoloCAN, _srv_hz, PICCOLO_MSG_RATE_HZ_DEFAULT),
-#if AP_EFI_CURRAWONG_ECU_ENABLED
-    // @Param: ECU_ID
-    // @DisplayName: ECU Node ID
-    // @Description: Node ID to send ECU throttle messages to. Set to zero to disable ECU throttle messages. Set to 255 to broadcast to all ECUs.
-    // @Range: 0 255
-    // @User: Advanced
-    AP_GROUPINFO("ECU_ID", 5, AP_PiccoloCAN, _ecu_id, PICCOLO_CAN_ECU_ID_DEFAULT),
-
-    // @Param: ECU_RT
-    // @DisplayName: ECU command output rate
-    // @Description: Output rate of ECU command messages
-    // @Units: Hz
-    // @User: Advanced
-    // @Range: 1 500
-    AP_GROUPINFO("ECU_RT", 6, AP_PiccoloCAN, _ecu_hz, PICCOLO_MSG_RATE_HZ_DEFAULT),
-#endif
     AP_GROUPEND
 };
 
@@ -179,9 +161,6 @@ void AP_PiccoloCAN::loop()
 
     uint16_t esc_tx_counter = 0;
     uint16_t servo_tx_counter = 0;
-#if AP_EFI_CURRAWONG_ECU_ENABLED
-    uint16_t ecu_tx_counter = 0;
-#endif
 
     // CAN Frame ID components
     uint8_t frame_id_group;     // Piccolo message group
@@ -204,11 +183,6 @@ void AP_PiccoloCAN::loop()
         _srv_hz.set(constrain_int16(_srv_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
         uint16_t servoCmdRateMs = 1000 / _srv_hz;
-#if AP_EFI_CURRAWONG_ECU_ENABLED
-        _ecu_hz.set(constrain_int16(_ecu_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
-
-        uint16_t ecuCmdRateMs = 1000 / _ecu_hz;
-#endif
 
         // 1ms loop delay
         hal.scheduler->delay_microseconds(1000);
@@ -224,14 +198,6 @@ void AP_PiccoloCAN::loop()
             servo_tx_counter = 0;
             send_servo_messages();
         }
-
-#if AP_EFI_CURRAWONG_ECU_ENABLED
-        // Transmit ecu throttle commands at regular intervals
-        if (ecu_tx_counter++ > ecuCmdRateMs) {
-            ecu_tx_counter = 0;
-            send_ecu_messages();
-        }
-#endif
 
         // Look for any message responses on the CAN bus
         while (read_frame(rxFrame, 0)) {
@@ -261,11 +227,6 @@ void AP_PiccoloCAN::loop()
                     break;
                 }
 
-                break;
-            case PiccoloCAN_MessageGroup::ECU_OUT:
-            #if AP_EFI_CURRAWONG_ECU_ENABLED
-                handle_ecu_message(rxFrame);
-            #endif
                 break;
             default:
                 break;
@@ -353,13 +314,6 @@ void AP_PiccoloCAN::update()
             }
         }
     }
-
-#if AP_EFI_CURRAWONG_ECU_ENABLED
-    if (_ecu_id != 0) {
-        _ecu_info.command = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-        _ecu_info.newCommand = true;
-    }
-#endif // AP_EFI_CURRAWONG_ECU_ENABLED
 
 #if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
@@ -599,37 +553,6 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 
     return _escs[addr].handle_can_frame(frame);
 }
-
-#if AP_EFI_CURRAWONG_ECU_ENABLED
-void AP_PiccoloCAN::send_ecu_messages(void)
-{
-    AP_HAL::CANFrame txFrame {};
-
-    // No ECU node id set, don't send anything
-    if (_ecu_id == 0) {
-        return;
-    }
-
-    if (_ecu_info.newCommand) {
-        encodeECU_ThrottleCommandPacket(&txFrame, _ecu_info.command);
-        txFrame.id |= (uint8_t) _ecu_id;
-
-        _ecu_info.newCommand = false;
-
-        write_frame(txFrame, 1000);
-    }
-}
-
-bool AP_PiccoloCAN::handle_ecu_message(AP_HAL::CANFrame &frame)
-{
-    // Get the ecu instance
-    AP_EFI_Currawong_ECU* ecu = AP_EFI_Currawong_ECU::get_instance();
-    if (ecu != nullptr) {
-        return ecu->handle_message(frame);
-    }
-    return false;
-}
-#endif // AP_EFI_CURRAWONG_ECU_ENABLED
 
 /**
  * Check if a given servo channel is "active" (has been configured for Piccolo control output)

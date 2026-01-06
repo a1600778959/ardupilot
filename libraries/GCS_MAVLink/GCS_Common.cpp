@@ -43,7 +43,6 @@
 #include <AP_RCTelemetry/AP_Spektrum_Telem.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_Baro/AP_Baro.h>
-#include <AP_EFI/AP_EFI.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -1058,9 +1057,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_AOA_SSA,               MSG_AOA_SSA},
         { MAVLINK_MSG_ID_EXTENDED_SYS_STATE,    MSG_EXTENDED_SYS_STATE},
         { MAVLINK_MSG_ID_AUTOPILOT_VERSION,     MSG_AUTOPILOT_VERSION},
-#if HAL_EFI_ENABLED
-        { MAVLINK_MSG_ID_EFI_STATUS,            MSG_EFI_STATUS},
-#endif
 #if HAL_GENERATOR_ENABLED
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
 #endif
@@ -4057,17 +4053,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         AP_CheckFirmware::handle_msg(chan, msg);
         break;
 #endif
-
-#if AP_EFI_MAV_ENABLED
-    case MAVLINK_MSG_ID_EFI_STATUS:
-    {
-        AP_EFI *efi = AP::EFI();
-        if (efi) {
-            efi->handle_EFI_message(msg);
-        }
-        break;
-    }
-#endif
     }
 
 }
@@ -5671,17 +5656,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_ESC_TELEMETRY:
         AP::esc_telem().send_esc_telemetry_mavlink(uint8_t(chan));
         break;
-#endif
-
-#if HAL_EFI_ENABLED
-    case MSG_EFI_STATUS: {
-        CHECK_PAYLOAD_SIZE(EFI_STATUS);
-        AP_EFI *efi = AP::EFI();
-        if (efi) {
-            efi->send_mavlink_status(chan);
-        }
-        break;
-    }
 #endif
 
 #if HAL_HIGH_LATENCY2_ENABLED

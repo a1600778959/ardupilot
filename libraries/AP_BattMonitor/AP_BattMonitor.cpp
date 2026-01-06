@@ -18,7 +18,6 @@
 #include "AP_BattMonitor_FuelFlow.h"
 #include "AP_BattMonitor_FuelLevel_PWM.h"
 #include "AP_BattMonitor_Generator.h"
-#include "AP_BattMonitor_EFI.h"
 #include "AP_BattMonitor_INA2xx.h"
 #include "AP_BattMonitor_INA239.h"
 #include "AP_BattMonitor_LTC2946.h"
@@ -589,11 +588,6 @@ AP_BattMonitor::init()
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_INA239(*this, state[instance], _params[instance]);
                 break;
 #endif
-#if AP_BATTERY_EFI_ENABLED
-            case Type::EFI:
-                drivers[instance] = NEW_NOTHROW AP_BattMonitor_EFI(*this, state[instance], _params[instance]);
-                break;
-#endif // AP_BATTERY_EFI_ENABLED
 #if AP_BATTERY_AD7091R5_ENABLED
             case Type::AD7091R5:
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_AD7091R5(*this, state[instance], _params[instance]);
