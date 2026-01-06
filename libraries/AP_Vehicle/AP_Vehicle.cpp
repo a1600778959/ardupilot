@@ -376,9 +376,6 @@ void AP_Vehicle::setup()
     gyro_fft.init(1000);
 #endif
 #endif
-#if HAL_HOTT_TELEM_ENABLED
-    hott_telem.init();
-#endif
 
 #if AP_PARAM_KEY_DUMP
     AP_Param::show_all(hal.console, true);

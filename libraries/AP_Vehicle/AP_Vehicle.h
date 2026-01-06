@@ -47,7 +47,6 @@
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
-#include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_Networking/AP_Networking.h>
@@ -367,10 +366,6 @@ protected:
 #if AP_AHRS_ENABLED
     // Inertial Navigation EKF
     AP_AHRS ahrs;
-#endif
-
-#if HAL_HOTT_TELEM_ENABLED
-    AP_Hott_Telem hott_telem;
 #endif
 
 #if HAL_WITH_ESC_TELEM
