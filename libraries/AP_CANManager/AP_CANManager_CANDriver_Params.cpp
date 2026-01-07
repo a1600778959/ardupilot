@@ -19,7 +19,6 @@
 #include "AP_CANManager.h"
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
-#include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 
 // table of user settable CAN bus parameters
 const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
@@ -42,12 +41,6 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
     // index 3 was KDECAN
 
     // index 4 was CANTester
-
-#if HAL_PICCOLO_CAN_ENABLE
-    // @Group: PC_
-    // @Path: ../AP_PiccoloCAN/AP_PiccoloCAN.cpp
-    AP_SUBGROUPPTR(_piccolocan, "PC_", 5, AP_CANManager::CANDriver_Params, AP_PiccoloCAN),
-#endif
 
     // @Param: PROTOCOL2
     // @DisplayName: Secondary protocol with 11 bit CAN addressing

@@ -29,7 +29,6 @@
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
   #include <AP_DroneCAN/AP_DroneCAN.h>
-  #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #endif
 
 #if NUM_SERVO_CHANNELS == 0
@@ -509,16 +508,6 @@ void SRV_Channels::push()
                 ap_dronecan->SRV_push_servos();
                 break;
             }
-#if HAL_PICCOLO_CAN_ENABLE
-            case AP_CAN::Protocol::PiccoloCAN: {
-                AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
-                if (ap_pcan == nullptr) {
-                    continue;
-                }
-                ap_pcan->update();
-                break;
-            }
-#endif
             case AP_CAN::Protocol::None:
             default:
                 break;

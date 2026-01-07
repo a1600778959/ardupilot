@@ -18,7 +18,6 @@ public:
         DroneCAN = 1,
         // 2 was KDECAN -- do not re-use
         // 3 was ToshibaCAN -- do not re-use
-        PiccoloCAN = 4,
         // 5 was CANTester
         EFI_NWPMU = 6,
         USD1 = 7,

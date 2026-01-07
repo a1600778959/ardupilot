@@ -27,7 +27,6 @@
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #include <GCS_MAVLink/GCS.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/CANSocketIface.h>
@@ -218,18 +217,6 @@ void AP_CANManager::init()
             }
 
             AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[drv_num], AP_DroneCAN::var_info);
-            break;
-#endif
-#if HAL_PICCOLO_CAN_ENABLE
-        case AP_CAN::Protocol::PiccoloCAN:
-            _drivers[drv_num] = _drv_param[drv_num]._piccolocan = NEW_NOTHROW AP_PiccoloCAN;
-
-            if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::allocation_error("PiccoloCAN %d", drv_num + 1);
-                continue;
-            }
-
-            AP_Param::load_object_from_eeprom((AP_PiccoloCAN*)_drivers[drv_num], AP_PiccoloCAN::var_info);
             break;
 #endif
         default:

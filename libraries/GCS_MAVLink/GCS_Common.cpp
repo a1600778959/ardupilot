@@ -75,7 +75,6 @@
   #include <AP_CANManager/AP_CANManager.h>
   #include <AP_Common/AP_Common.h>
 
-  #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
   #include <AP_DroneCAN/AP_DroneCAN.h>
 #endif
 

@@ -58,7 +58,6 @@
   #include <AP_Common/AP_Common.h>
   #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-  #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
   #include <AP_DroneCAN/AP_DroneCAN.h>
 #endif
 
@@ -1207,21 +1206,6 @@ bool AP_Arming::can_checks(bool report)
 
         for (uint8_t i = 0; i < num_drivers; i++) {
             switch (AP::can().get_driver_type(i)) {
-                case AP_CAN::Protocol::PiccoloCAN: {
-#if HAL_PICCOLO_CAN_ENABLE
-                    AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
-
-                    if (ap_pcan != nullptr && !ap_pcan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-                        check_failed(ARMING_CHECK_SYSTEM, report, "PiccoloCAN: %s", fail_msg);
-                        return false;
-                    }
-
-#else
-                    check_failed(ARMING_CHECK_SYSTEM, report, "PiccoloCAN not enabled");
-                    return false;
-#endif
-                    break;
-                }
                 case AP_CAN::Protocol::DroneCAN:
                 {
 #if HAL_ENABLE_DRONECAN_DRIVERS

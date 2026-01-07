@@ -21,8 +21,8 @@ SOURCE_EXTS = [
 COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES = [
     'AP_CANManager',
     'AP_KDECAN',
-    'AP_PiccoloCAN',
-    'AP_PiccoloCAN/piccolo_protocol',
+    #'AP_PiccoloCAN',
+    #'AP_PiccoloCAN/piccolo_protocol',
 ]
 
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
@@ -267,7 +267,7 @@ def ap_get_all_libraries(bld):
             continue
         libraries.append(name)
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
-    libraries.append('AP_PiccoloCAN/piccolo_protocol')
+    #libraries.append('AP_PiccoloCAN/piccolo_protocol')
     return libraries
 
 @conf
