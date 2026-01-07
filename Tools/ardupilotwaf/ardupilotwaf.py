@@ -28,7 +28,7 @@ COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES = [
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     #'AP_Airspeed',
     'AP_AccelCal',
-    'AP_ADC',
+    #'AP_ADC',
     'AP_AHRS',
     #'AP_Airspeed',
     'AP_Baro',
