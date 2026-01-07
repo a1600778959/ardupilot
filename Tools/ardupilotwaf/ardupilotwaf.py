@@ -103,7 +103,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     #'AP_ADSB',
     #'AP_ADSB/sagetech-sdk',
     'AC_PID',
-    'AP_SerialLED',
+    #'AP_SerialLED',
     #'AP_EFI',
     #'AP_Hott_Telem',
     'AP_ESC_Telem',

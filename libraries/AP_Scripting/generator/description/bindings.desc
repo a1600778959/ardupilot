@@ -354,15 +354,6 @@ singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
 singleton AP_Vehicle method set_crosstrack_start boolean Location
 
-include AP_SerialLED/AP_SerialLED.h
-singleton AP_SerialLED rename serialLED
-singleton AP_SerialLED depends AP_SERIALLED_ENABLED
-singleton AP_SerialLED method set_num_neopixel boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
-singleton AP_SerialLED method set_num_neopixel_rgb boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
-singleton AP_SerialLED method set_num_profiled boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
-singleton AP_SerialLED method set_RGB boolean uint8_t 1 16 int8_t -1 INT8_MAX uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
-singleton AP_SerialLED method send boolean uint8_t 1 16
-
 include SRV_Channel/SRV_Channel.h
 singleton SRV_Channels depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RC_OUT))
 singleton SRV_Channels rename SRV_Channels
