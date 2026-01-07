@@ -16,12 +16,10 @@ public:
     enum class Protocol : uint8_t {
         None = 0,
         DroneCAN = 1,
-        // 2 was KDECAN -- do not re-use
         // 3 was ToshibaCAN -- do not re-use
         // 5 was CANTester
         EFI_NWPMU = 6,
         USD1 = 7,
-        KDECAN = 8,
         // 9 was MPPT_PacketDigital
         Scripting = 10,
         Benewake = 11,

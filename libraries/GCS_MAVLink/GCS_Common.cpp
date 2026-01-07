@@ -51,7 +51,6 @@
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <RC_Channel/RC_Channel.h>
-#include <AP_KDECAN/AP_KDECAN.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"

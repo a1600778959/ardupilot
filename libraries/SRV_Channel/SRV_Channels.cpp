@@ -24,7 +24,6 @@
 
 #include "SRV_Channel.h"
 #include <AP_Logger/AP_Logger.h>
-#include <AP_KDECAN/AP_KDECAN.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -487,12 +486,6 @@ void SRV_Channels::push()
 
 #if AP_FETTEC_ONEWIRE_ENABLED
     fetteconwire.update();
-#endif
-
-#if AP_KDECAN_ENABLED
-    if (AP::kdecan() != nullptr) {
-        AP::kdecan()->update();
-    }
 #endif
 
 #if HAL_ENABLE_DRONECAN_DRIVERS

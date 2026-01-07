@@ -92,12 +92,6 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPPTR(dds_client, "DDS", 18, AP_Vehicle, AP_DDS_Client),
 #endif
 
-#if AP_KDECAN_ENABLED
-    // @Group: KDE_
-    // @Path: ../AP_KDECAN/AP_KDECAN.cpp
-    AP_SUBGROUPINFO(kdecan, "KDE_",  19, AP_Vehicle, AP_KDECAN),
-#endif
-
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     // @Param: FLTMODE_GCSBLOCK
     // @DisplayName: Flight mode block from GCS
@@ -383,10 +377,6 @@ void AP_Vehicle::setup()
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
     temperature_sensor.init();
-#endif
-
-#if AP_KDECAN_ENABLED
-    kdecan.init();
 #endif
 
 #if HAL_NMEA_OUTPUT_ENABLED
