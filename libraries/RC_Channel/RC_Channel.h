@@ -173,7 +173,6 @@ public:
         Q_ASSIST =            82, // disable, enable and force Q assist
         ZIGZAG_Auto =         83, // zigzag auto switch
         AIRMODE =             84, // enable / disable airmode for copter
-        GENERATOR   =         85, // generator control
         TER_DISABLE =         86, // disable terrain following in CRUISE/FBWB modes
         CROW_SELECT =         87, // select CROW mode for diff spoilers;high disables,mid forces progressive
         SOARING =             88, // three-position switch to set soaring mode
@@ -199,7 +198,6 @@ public:
         QRTL =               108, // QRTL mode
         CUSTOM_CONTROLLER =  109,  // use Custom Controller
         KILL_IMU3 =          110, // disable third IMU (for IMU failure testing)
-        LOWEHEISER_STARTER = 111,  // allows for manually running starter
         AHRS_TYPE =          112, // change AHRS_EKF_TYPE
 
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
@@ -248,7 +246,6 @@ public:
         FWD_THR =            209, // VTOL manual forward throttle
         AIRBRAKE =           210, // manual airbrake control
         WALKING_HEIGHT =     211, // walking robot height input
-        LOWEHEISER_THROTTLE= 218,  // allows for throttle on slider
         TRANSMITTER_TUNING = 219, // use a transmitter knob or slider for in-flight tuning
 
         // inputs 248-249 are reserved for the Skybrush fork at
@@ -338,7 +335,6 @@ protected:
     void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
     void do_aux_function_rc_override_enable(const AuxSwitchPos ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
-    void do_aux_function_generator(const AuxSwitchPos ch_flag);
     void do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag);
 
     typedef int8_t modeswitch_pos_t;

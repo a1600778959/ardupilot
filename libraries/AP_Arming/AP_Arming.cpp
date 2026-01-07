@@ -37,7 +37,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Generator/AP_Generator.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
@@ -1407,22 +1406,6 @@ bool AP_Arming::aux_auth_checks(bool display_failure)
 }
 #endif  // AP_ARMING_AUX_AUTH_ENABLED
 
-#if HAL_GENERATOR_ENABLED
-bool AP_Arming::generator_checks(bool display_failure) const
-{
-    const AP_Generator *generator = AP::generator();
-    if (generator == nullptr) {
-        return true;
-    }
-    char failure_msg[100] = {};
-    if (!generator->pre_arm_check(failure_msg, sizeof(failure_msg))) {
-        check_failed(display_failure, "Generator: %s", failure_msg);
-        return false;
-    }
-    return true;
-}
-#endif  // HAL_GENERATOR_ENABLED
-
 #if AP_OPENDRONEID_ENABLED
 // OpenDroneID Checks
 bool AP_Arming::opendroneid_checks(bool display_failure)
@@ -1517,9 +1500,6 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  terrain_checks(report)
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS && HAL_CANMANAGER_ENABLED
         &  can_checks(report)
-#endif
-#if HAL_GENERATOR_ENABLED
-        &  generator_checks(report)
 #endif
 #if HAL_PROXIMITY_ENABLED
         &  proximity_checks(report)

@@ -48,9 +48,6 @@ public:
 #if AP_RPM_ESC_TELEM_ENABLED
         RPM_TYPE_ESC_TELEM  = 5,
 #endif
-#if AP_RPM_GENERATOR_ENABLED
-        RPM_TYPE_GENERATOR  = 6,
-#endif
 #if AP_RPM_DRONECAN_ENABLED
         RPM_TYPE_DRONECAN = 7,
 #endif

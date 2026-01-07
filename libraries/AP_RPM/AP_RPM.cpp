@@ -20,7 +20,6 @@
 #include "RPM_Backend.h"
 #include "RPM_Pin.h"
 #include "RPM_SITL.h"
-#include "RPM_Generator.h"
 #include "RPM_HarmonicNotch.h"
 #include "RPM_ESC_Telem.h"
 #include "RPM_DroneCAN.h"
@@ -94,11 +93,6 @@ void AP_RPM::init(void)
             drivers[i] = NEW_NOTHROW AP_RPM_ESC_Telem(*this, i, state[i]);
             break;
 #endif  // AP_RPM_ESC_TELEM_ENABLED
-#if AP_RPM_GENERATOR_ENABLED
-        case RPM_TYPE_GENERATOR:
-            drivers[i] = NEW_NOTHROW AP_RPM_Generator(*this, i, state[i]);
-            break;
-#endif  // AP_RPM_GENERATOR_ENABLED
 #if AP_RPM_HARMONICNOTCH_ENABLED
         // include harmonic notch last
         // this makes whatever process is driving the dynamic notch appear as an RPM value

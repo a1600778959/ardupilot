@@ -1055,9 +1055,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_AOA_SSA,               MSG_AOA_SSA},
         { MAVLINK_MSG_ID_EXTENDED_SYS_STATE,    MSG_EXTENDED_SYS_STATE},
         { MAVLINK_MSG_ID_AUTOPILOT_VERSION,     MSG_AUTOPILOT_VERSION},
-#if HAL_GENERATOR_ENABLED
-        { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
-#endif
 #if HAL_WITH_ESC_TELEM
         { MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4,  MSG_ESC_TELEMETRY},
 #endif
@@ -5272,17 +5269,6 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
             0,0);   // yaw, yaw_rate
 }
 
-#if HAL_GENERATOR_ENABLED
-void GCS_MAVLINK::send_generator_status() const
-{
-    AP_Generator *generator = AP::generator();
-    if (generator == nullptr) {
-        return;
-    }
-    generator->send_generator_status(*this);
-}
-#endif
-
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
 bool GCS_MAVLINK::send_relay_status() const
 {
@@ -5634,13 +5620,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(VIBRATION);
         send_vibration();
         break;
-
-#if HAL_GENERATOR_ENABLED
-    case MSG_GENERATOR_STATUS:
-    	CHECK_PAYLOAD_SIZE(GENERATOR_STATUS);
-    	send_generator_status();
-    	break;
-#endif
 
     case MSG_AUTOPILOT_VERSION:
         CHECK_PAYLOAD_SIZE(AUTOPILOT_VERSION);

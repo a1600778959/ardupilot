@@ -34,7 +34,6 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Generator/AP_Generator.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Notify/AP_Notify.h>                    // Notify library
@@ -372,10 +371,6 @@ protected:
 
 #if AP_OPENDRONEID_ENABLED
     AP_OpenDroneID opendroneid;
-#endif
-
-#if HAL_GENERATOR_ENABLED
-    AP_Generator generator;
 #endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED

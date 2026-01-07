@@ -103,8 +103,6 @@ public:
         SUI6                           = 14,
         NeoDesign                      = 15,
         MAXELL                         = 16,
-        GENERATOR_ELEC                 = 17,
-        GENERATOR_FUEL                 = 18,
         Rotoye                         = 19,
         // 20 was MPPT_PacketDigital
         INA2XX                         = 21,

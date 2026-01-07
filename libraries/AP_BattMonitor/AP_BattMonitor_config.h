@@ -2,7 +2,6 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_config.h>
-#include <AP_Generator/AP_Generator_config.h>
 #include <AP_Torqeedo/AP_Torqeedo_config.h>
 #include "AP_Scripting/AP_Scripting_config.h"
 
@@ -52,10 +51,6 @@
 
 #ifndef AP_BATTERY_FUELLEVEL_ANALOG_ENABLED
 #define AP_BATTERY_FUELLEVEL_ANALOG_ENABLED AP_BATTERY_BACKEND_DEFAULT_ENABLED && (BOARD_FLASH_SIZE > 1024)
-#endif
-
-#ifndef AP_BATTERY_GENERATOR_ENABLED
-#define AP_BATTERY_GENERATOR_ENABLED HAL_GENERATOR_ENABLED
 #endif
 
 #ifndef AP_BATTERY_INA239_ENABLED

@@ -38,12 +38,6 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(gyro_fft, "FFT_",  2, AP_Vehicle, AP_GyroFFT),
 #endif
 
-#if HAL_GENERATOR_ENABLED
-    // @Group: GEN_
-    // @Path: ../AP_Generator/AP_Generator.cpp
-    AP_SUBGROUPINFO(generator, "GEN_", 7, AP_Vehicle, AP_Generator),
-#endif
-
 #if HAL_EXTERNAL_AHRS_ENABLED
     // @Group: EAHRS
     // @Path: ../AP_ExternalAHRS/AP_ExternalAHRS.cpp
@@ -326,10 +320,6 @@ void AP_Vehicle::setup()
     externalAHRS.init();
 #endif
 
-#if HAL_GENERATOR_ENABLED
-    generator.init();
-#endif
-
 #if AP_STATS_ENABLED
     // initialise stats module
     stats.init();
@@ -501,9 +491,6 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20, 225),
 #if HAL_WITH_ESC_TELEM
     SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                  100,  50, 230),
-#endif
-#if HAL_GENERATOR_ENABLED
-    SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50, 235),
 #endif
 #if AP_OPENDRONEID_ENABLED
     SCHED_TASK_CLASS(AP_OpenDroneID, &vehicle.opendroneid,  update,                   10,  50, 236),

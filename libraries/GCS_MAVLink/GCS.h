@@ -384,7 +384,6 @@ public:
     void send_sys_status();
     void send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc);
     void send_rpm() const;
-    void send_generator_status() const;
     int8_t battery_remaining_pct(const uint8_t instance) const;
 
 #if HAL_HIGH_LATENCY2_ENABLED
