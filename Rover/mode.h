@@ -13,7 +13,6 @@ public:
     // ----------------
     enum class Number : uint8_t {
         MANUAL       = 0,
-        STEERING     = 3,
         HOLD         = 4,
         LOITER       = 5,
         SIMPLE       = 7,
@@ -774,33 +773,6 @@ protected:
     bool _enter() override;
     bool _load_point;
     bool _loitering;        // true if loitering at end of SRTL
-};
-
-
-
-class ModeSteering : public Mode
-{
-public:
-
-    Number mode_number() const override { return Number::STEERING; }
-    const char *name4() const override { return "STER"; }
-
-    // methods that affect movement of the vehicle in this mode
-    void update() override;
-
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-
-    // steering requires velocity but not position
-    bool requires_position() const override { return false; }
-    bool requires_velocity() const override { return true; }
-
-    // return desired lateral acceleration
-    float get_desired_lat_accel() const override { return _desired_lat_accel; }
-
-private:
-
-    float _desired_lat_accel;   // desired lateral acceleration calculated from pilot steering input
 };
 
 class ModeInitializing : public Mode

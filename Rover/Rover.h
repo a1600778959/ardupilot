@@ -90,7 +90,6 @@ public:
     friend class ModeGuided;
     friend class ModeHold;
     friend class ModeLoiter;
-    friend class ModeSteering;
     friend class ModeManual;
     friend class ModeRTL;
     friend class ModeSmartRTL;
@@ -228,7 +227,6 @@ private:
     ModeGuided mode_guided;
     ModeAuto mode_auto;
     ModeLoiter mode_loiter;
-    ModeSteering mode_steering;
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
     ModeAoafllow mode_aoafollow; // <- 新增此行

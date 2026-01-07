@@ -166,7 +166,6 @@ bool Rover::gcs_mode_enabled(const Mode::Number mode_num) const
     // List of modes that can be blocked, index is bit number in parameter bitmask
     static const uint8_t mode_list [] {
         (uint8_t)Mode::Number::MANUAL,
-        (uint8_t)Mode::Number::STEERING,
         (uint8_t)Mode::Number::LOITER,
         (uint8_t)Mode::Number::SIMPLE,
         (uint8_t)Mode::Number::CIRCLE,

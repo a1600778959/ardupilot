@@ -47,7 +47,6 @@ void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwit
     case AUX_FUNC::SAVE_WP:
     case AUX_FUNC::SIMPLE:
     case AUX_FUNC::SMART_RTL:
-    case AUX_FUNC::STEERING:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -152,12 +151,7 @@ bool RC_Channel_Rover::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
     case AUX_FUNC::MANUAL:
         do_aux_function_change_mode(rover.mode_manual, ch_flag);
         break;
-
-    // set mode to Steering
-    case AUX_FUNC::STEERING:
-        do_aux_function_change_mode(rover.mode_steering, ch_flag);
-        break;
-
+        
     // set mode to Hold
     case AUX_FUNC::HOLD:
         do_aux_function_change_mode(rover.mode_hold, ch_flag);

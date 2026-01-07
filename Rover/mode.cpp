@@ -465,9 +465,6 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::MANUAL:
         ret = &mode_manual;
         break;
-    case Mode::Number::STEERING:
-        ret = &mode_steering;
-        break;
     case Mode::Number::HOLD:
         ret = &mode_hold;
         break;

@@ -148,7 +148,6 @@ public:
         USER_FUNC3 =          49, // user function #3
         LEARN_CRUISE =        50, // learn cruise throttle (Rover)
         MANUAL       =        51, // manual mode
-        STEERING     =        53, // steering mode
         HOLD         =        54, // hold mode
         GUIDED       =        55, // guided mode
         LOITER       =        56, // loiter mode
