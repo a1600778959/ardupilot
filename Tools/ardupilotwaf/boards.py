@@ -596,23 +596,8 @@ def get_chibios_board_cls(ctx, name, hwdef):
     newclass.hwdef = hwdef
     return newclass
 
-def add_dynamic_boards_esp32():
-    '''add boards based on existance of hwdef.dat in subdirectories for ESP32'''
-    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ESP32/hwdef'))
-    for d in dirlist:
-        if d in _board_classes.keys():
-            continue
-        hwdef = os.path.join(dirname, d, 'hwdef.dat')
-        if os.path.exists(hwdef):
-            mcu_esp32s3 = True if (d[0:7] == "esp32s3") else False
-            if mcu_esp32s3:
-                newclass = type(d, (esp32s3,), {'name': d})
-            else:
-                newclass = type(d, (esp32,), {'name': d})
-
 def get_boards_names():
     add_dynamic_boards_chibios()
-    add_dynamic_boards_esp32()
 
     return sorted(list(_board_classes.keys()), key=str.lower)
 
