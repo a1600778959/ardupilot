@@ -133,6 +133,8 @@ public:
     // return true if we have a range finder with the specified orientation
     bool has_orientation(enum Rotation orientation) const;
 
+    void handle_msg(const mavlink_message_t &msg);
+
     // find first range finder instance with the specified orientation
     AP_RangeFinder_Backend *find_instance(enum Rotation orientation) const;
 
@@ -162,7 +164,6 @@ public:
     uint8_t range_valid_count_orient(enum Rotation orientation) const;
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
     uint32_t last_reading_ms(enum Rotation orientation) const;
-
     // get temperature reading in C.  returns true on success and populates temp argument
     bool get_temp(enum Rotation orientation, float &temp) const;
 

@@ -451,6 +451,16 @@ bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
     return backend->get_temp(temp);
 }
 
+void RangeFinder::handle_msg(const mavlink_message_t &msg)
+{
+    uint8_t i;
+    for (i=0; i<num_instances; i++) {
+        if ((drivers[i] != nullptr) && ((Type)params[i].type.get() != Type::NONE)) {
+          drivers[i]->handle_msg(msg);
+        }
+    }
+}
+
 #if HAL_LOGGING_ENABLED
 // Write an RFND (rangefinder) packet
 void RangeFinder::Log_RFND() const

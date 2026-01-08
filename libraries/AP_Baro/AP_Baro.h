@@ -247,19 +247,7 @@ private:
 
     // bitmask values for GND_PROBE_EXT
     enum {
-        PROBE_BMP085=(1<<0),
-        PROBE_BMP280=(1<<1),
-        PROBE_MS5611=(1<<2),
-        PROBE_MS5607=(1<<3),
-        PROBE_MS5637=(1<<4),
-        PROBE_FBM320=(1<<5),
-        PROBE_DPS280=(1<<6),
-        PROBE_LPS25H=(1<<7),
-        PROBE_KELLER=(1<<8),
-        PROBE_MS5837=(1<<9),
-        PROBE_BMP388=(1<<10),
         PROBE_SPL06 =(1<<11),
-        PROBE_BMP581=(1<<13),
     };
     
 #if HAL_BARO_WIND_COMP_ENABLED

@@ -32,22 +32,9 @@
 #include <AP_HAL/I2CDevice.h>
 
 #include "AP_Baro_SITL.h"
-#include "AP_Baro_BMP085.h"
-#include "AP_Baro_BMP280.h"
-#include "AP_Baro_BMP388.h"
-#include "AP_Baro_BMP581.h"
 #include "AP_Baro_SPL06.h"
-#include "AP_Baro_KellerLD.h"
-#include "AP_Baro_MS5611.h"
-#include "AP_Baro_ICM20789.h"
-#include "AP_Baro_LPS2XH.h"
-#include "AP_Baro_FBM320.h"
-#include "AP_Baro_DPS280.h"
-#include "AP_Baro_Dummy.h"
 #include "AP_Baro_DroneCAN.h"
 #include "AP_Baro_ExternalAHRS.h"
-#include "AP_Baro_ICP101XX.h"
-#include "AP_Baro_ICP201XX.h"
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Arming/AP_Arming.h>
@@ -563,128 +550,10 @@ void AP_Baro::init(void)
 #if defined(HAL_BARO_PROBE_LIST)
     // probe list from BARO lines in hwdef.dat
     HAL_BARO_PROBE_LIST;
-#elif AP_FEATURE_BOARD_DETECT
-    switch (AP_BoardConfig::get_board_type()) {
-    case AP_BoardConfig::PX4_BOARD_PX4V1:
-#if AP_BARO_MS56XX_ENABLED && defined(HAL_BARO_MS5611_I2C_BUS)
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(GET_I2C_DEVICE(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR))));
-#endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK:
-    case AP_BoardConfig::PX4_BOARD_PHMINI:
-    case AP_BoardConfig::PX4_BOARD_AUAV21:
-    case AP_BoardConfig::PX4_BOARD_PH2SLIM:
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-#endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
-    case AP_BoardConfig::PX4_BOARD_SP01:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-#endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_MINDPXV2:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-#endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_AEROFC:
-#if AP_BARO_MS56XX_ENABLED
-#ifdef HAL_BARO_MS5607_I2C_BUS
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(GET_I2C_DEVICE(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)),
-                                          AP_Baro_MS56XX::BARO_MS5607));
-#endif
-#endif  // AP_BARO_MS56XX_ENABLED
-        break;
-
-    case AP_BoardConfig::VRX_BOARD_BRAIN54:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
-#ifdef HAL_BARO_MS5611_SPI_IMU_NAME
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_IMU_NAME))));
-#endif
-#endif  // AP_BARO_MS56XX_ENABLED
-        break;
-
-    case AP_BoardConfig::VRX_BOARD_BRAIN51:
-    case AP_BoardConfig::VRX_BOARD_BRAIN52:
-    case AP_BoardConfig::VRX_BOARD_BRAIN52E:
-    case AP_BoardConfig::VRX_BOARD_CORE10:
-    case AP_BoardConfig::VRX_BOARD_UBRAIN51:
-    case AP_BoardConfig::VRX_BOARD_UBRAIN52:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-#endif  // AP_BARO_MS56XX_ENABLED
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PCNC1:
-#if AP_BARO_ICM20789_ENABLED
-        ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
-                                            std::move(GET_I2C_DEVICE(1, 0x63)),
-                                            std::move(hal.spi->get_device(HAL_INS_MPU60x0_NAME))));
-#endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_FMUV5:
-    case AP_BoardConfig::PX4_BOARD_FMUV6:
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-#endif
-        break;
-
-    default:
-        break;
-    }
-#elif HAL_BARO_DEFAULT == HAL_BARO_LPS25H_IMU_I2C
-	ADD_BACKEND(AP_Baro_LPS2XH::probe_InvensenseIMU(*this,
-                                                    std::move(GET_I2C_DEVICE(HAL_BARO_LPS25H_I2C_BUS, HAL_BARO_LPS25H_I2C_ADDR)),
-                                                    HAL_BARO_LPS25H_I2C_IMU_ADDR));
-#elif HAL_BARO_DEFAULT == HAL_BARO_20789_I2C_I2C
-    ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
-                                        std::move(GET_I2C_DEVICE(HAL_BARO_20789_I2C_BUS, HAL_BARO_20789_I2C_ADDR_PRESS)),
-                                        std::move(GET_I2C_DEVICE(HAL_BARO_20789_I2C_BUS, HAL_BARO_20789_I2C_ADDR_ICM))));
-#elif HAL_BARO_DEFAULT == HAL_BARO_20789_I2C_SPI
-    ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
-                                        std::move(GET_I2C_DEVICE(HAL_BARO_20789_I2C_BUS, HAL_BARO_20789_I2C_ADDR_PRESS)),
-                                        std::move(hal.spi->get_device("icm20789"))));
 #endif
 
     // can optionally have baro on I2C too
     if (_ext_bus >= 0) {
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5837_I2C_ADDR)), AP_Baro_MS56XX::BARO_MS5837));
-#endif
-#if AP_BARO_KELLERLD_ENABLED
-        ADD_BACKEND(AP_Baro_KellerLD::probe(*this,
-                                          std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_KELLERLD_I2C_ADDR))));
-#endif
-#else
-#if AP_BARO_MS56XX_ENABLED
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
-#endif
-#endif
     }
 
 #if AP_BARO_PROBE_EXTERNAL_I2C_BUSES
@@ -736,51 +605,12 @@ void AP_Baro::_probe_i2c_barometers(void)
         AP_Baro_Backend* (*probefn)(AP_Baro&, AP_HAL::OwnPtr<AP_HAL::Device>);
         uint8_t addr;
     } baroprobespec[] {
-#if AP_BARO_BMP085_ENABLED
-        { PROBE_BMP085, AP_Baro_BMP085::probe, HAL_BARO_BMP085_I2C_ADDR },
-#endif
-#if AP_BARO_BMP280_ENABLED
-        { PROBE_BMP280, AP_Baro_BMP280::probe, HAL_BARO_BMP280_I2C_ADDR },
-        { PROBE_BMP280, AP_Baro_BMP280::probe, HAL_BARO_BMP280_I2C_ADDR2 },
-#endif
+
 #if AP_BARO_SPL06_ENABLED
         { PROBE_SPL06, AP_Baro_SPL06::probe, HAL_BARO_SPL06_I2C_ADDR },
         { PROBE_SPL06, AP_Baro_SPL06::probe, HAL_BARO_SPL06_I2C_ADDR2 },
 #endif
-#if AP_BARO_BMP388_ENABLED
-        { PROBE_BMP388, AP_Baro_BMP388::probe, HAL_BARO_BMP388_I2C_ADDR },
-        { PROBE_BMP388, AP_Baro_BMP388::probe, HAL_BARO_BMP388_I2C_ADDR2 },
-#endif
-#if AP_BARO_BMP581_ENABLED
-        { PROBE_BMP581, AP_Baro_BMP581::probe, HAL_BARO_BMP581_I2C_ADDR },
-        { PROBE_BMP581, AP_Baro_BMP581::probe, HAL_BARO_BMP581_I2C_ADDR2 },
-#endif
-#if AP_BARO_MS56XX_ENABLED
-        { PROBE_MS5611, AP_Baro_MS56XX::probe_5611, HAL_BARO_MS5611_I2C_ADDR },
-        { PROBE_MS5611, AP_Baro_MS56XX::probe_5611, HAL_BARO_MS5611_I2C_ADDR2 },
-        { PROBE_MS5607, AP_Baro_MS56XX::probe_5607, HAL_BARO_MS5607_I2C_ADDR },
-        { PROBE_MS5637, AP_Baro_MS56XX::probe_5637, HAL_BARO_MS5637_I2C_ADDR },
-#endif
-#if AP_BARO_FBM320_ENABLED
-        { PROBE_FBM320, AP_Baro_FBM320::probe, HAL_BARO_FBM320_I2C_ADDR },
-        { PROBE_FBM320, AP_Baro_FBM320::probe, HAL_BARO_FBM320_I2C_ADDR2 },
-#endif
-#if AP_BARO_DPS280_ENABLED
-        { PROBE_DPS280, AP_Baro_DPS280::probe_280, HAL_BARO_DPS280_I2C_ADDR },
-        { PROBE_DPS280, AP_Baro_DPS280::probe_280, HAL_BARO_DPS280_I2C_ADDR2 },
-#endif
-#if AP_BARO_LPS2XH_ENABLED
-        { PROBE_LPS25H, AP_Baro_LPS2XH::probe, HAL_BARO_LPS25H_I2C_ADDR },
-#endif
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-#if AP_BARO_KELLERLD_ENABLED
-        { PROBE_KELLER, AP_Baro_KellerLD::probe, HAL_BARO_KELLERLD_I2C_ADDR },
-#endif
-#if AP_BARO_MS56XX_ENABLED
-        { PROBE_MS5837, AP_Baro_MS56XX::probe_5837, HAL_BARO_MS5837_I2C_ADDR },
-#endif
-#endif  // APM_BUILD_TYPE(APM_BUILD_ArduSub)
     };
 
     for (const auto &spec : baroprobespec) {
