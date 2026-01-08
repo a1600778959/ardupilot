@@ -30,7 +30,7 @@
 #include "AP_InertialSensor.h"
 
 #ifndef HAL_INS_HIGHRES_SAMPLE
-#define HAL_INS_HIGHRES_SAMPLE 0
+#define HAL_INS_HIGHRES_SAMPLE 1
 #endif
 
 class AuxiliaryBus;
@@ -107,42 +107,8 @@ public:
       calibration values invalid then this number must be changed.
      */
     enum DevTypes {
-        DEVTYPE_BMI160       = 0x09,
-        DEVTYPE_L3G4200D     = 0x10,
-        DEVTYPE_ACC_LSM303D  = 0x11,
-        DEVTYPE_ACC_BMA180   = 0x12,
-        DEVTYPE_ACC_MPU6000  = 0x13,
-        DEVTYPE_ACC_MPU9250  = 0x16,
-        DEVTYPE_ACC_IIS328DQ = 0x17,
-        DEVTYPE_ACC_LSM9DS1  = 0x18,
-        DEVTYPE_GYR_MPU6000  = 0x21,
-        DEVTYPE_GYR_L3GD20   = 0x22,
-        DEVTYPE_GYR_MPU9250  = 0x24,
-        DEVTYPE_GYR_I3G4250D = 0x25,
-        DEVTYPE_GYR_LSM9DS1  = 0x26,
-        DEVTYPE_INS_ICM20789 = 0x27,
-        DEVTYPE_INS_ICM20689 = 0x28,
-        DEVTYPE_INS_BMI055   = 0x29,
-        DEVTYPE_SITL         = 0x2A,
-        DEVTYPE_INS_BMI088   = 0x2B,
-        DEVTYPE_INS_ICM20948 = 0x2C,
-        DEVTYPE_INS_ICM20648 = 0x2D,
-        DEVTYPE_INS_ICM20649 = 0x2E,
-        DEVTYPE_INS_ICM20602 = 0x2F,
-        DEVTYPE_INS_ICM20601 = 0x30,
-        DEVTYPE_INS_ADIS1647X = 0x31,
-        DEVTYPE_SERIAL       = 0x32,
-        DEVTYPE_INS_ICM40609 = 0x33,
+        DEVTYPE_SERIAL = 0x32,
         DEVTYPE_INS_ICM42688 = 0x34,
-        DEVTYPE_INS_ICM42605 = 0x35,
-        DEVTYPE_INS_ICM40605 = 0x36,
-        DEVTYPE_INS_IIM42652 = 0x37,
-        DEVTYPE_BMI270       = 0x38,
-        DEVTYPE_INS_BMI085   = 0x39,
-        DEVTYPE_INS_ICM42670 = 0x3A,
-        DEVTYPE_INS_ICM45686 = 0x3B,
-        DEVTYPE_INS_SCHA63T  = 0x3C,
-        DEVTYPE_INS_IIM42653 = 0x3D,
     };
 
 protected:

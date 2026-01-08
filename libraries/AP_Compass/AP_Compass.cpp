@@ -18,7 +18,6 @@
 #include "AP_Compass_config.h"
 
 #include "AP_Compass_SITL.h"
-#include "AP_Compass_AK8963.h"
 #include "AP_Compass_Backend.h"
 #include "AP_Compass_BMM150.h"
 #include "AP_Compass_BMM350.h"
@@ -29,7 +28,6 @@
 #include "AP_Compass_LSM303D.h"
 #include "AP_Compass_LSM9DS1.h"
 #include "AP_Compass_LIS3MDL.h"
-#include "AP_Compass_AK09916.h"
 #include "AP_Compass_QMC5883L.h"
 #if AP_COMPASS_DRONECAN_ENABLED
 #include "AP_Compass_DroneCAN.h"
