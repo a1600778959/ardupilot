@@ -3470,11 +3470,6 @@ function battery:get_cycle_count(instance) end
 ---@return number|nil -- temperature if available
 function battery:get_temperature(instance) end
 
--- returns true if too much power is being drawn from the battery being monitored.
----@param instance integer -- battery instance
----@return boolean -- true if in overpower condition
-function battery:overpower_detected(instance) end
-
 -- Returns true if any of the batteries being monitored have triggered a failsafe.
 ---@return boolean -- true if any battery has failsafed
 function battery:has_failsafed() end

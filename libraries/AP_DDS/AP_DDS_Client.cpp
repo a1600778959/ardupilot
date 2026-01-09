@@ -377,7 +377,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_
         msg.power_supply_status = 0; //POWER_SUPPLY_STATUS_UNKNOWN
     }
 
-    msg.power_supply_health = (battery.overpower_detected(instance)) ? 4 : 1; //POWER_SUPPLY_HEALTH_OVERVOLTAGE or POWER_SUPPLY_HEALTH_GOOD
+    msg.power_supply_health = 1; //POWER_SUPPLY_HEALTH_OVERVOLTAGE or POWER_SUPPLY_HEALTH_GOOD
 
     msg.power_supply_technology = 0; //POWER_SUPPLY_TECHNOLOGY_UNKNOWN
 
