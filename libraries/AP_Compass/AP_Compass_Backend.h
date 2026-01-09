@@ -49,29 +49,8 @@ public:
       calibration values invalid then this number must be changed.
      */
     enum DevTypes {
-        DEVTYPE_HMC5883_OLD = 0x01,
-        DEVTYPE_HMC5883 = 0x07,
-        DEVTYPE_LSM303D = 0x02,
-        DEVTYPE_AK8963  = 0x04,
-        DEVTYPE_BMM150  = 0x05,
-        DEVTYPE_LSM9DS1 = 0x06,
-        DEVTYPE_LIS3MDL = 0x08,
-        DEVTYPE_AK09916 = 0x09,
         DEVTYPE_IST8310 = 0x0A,
-        DEVTYPE_ICM20948 = 0x0B,
-        DEVTYPE_MMC3416 = 0x0C,
-        DEVTYPE_QMC5883L = 0x0D,
-        DEVTYPE_MAG3110  = 0x0E,
         DEVTYPE_SITL  = 0x0F,
-        DEVTYPE_IST8308 = 0x10,
-        DEVTYPE_RM3100 = 0x11,
-        DEVTYPE_RM3100_2 = 0x12, // unused, past mistake
-        DEVTYPE_MMC5983 = 0x13,
-        DEVTYPE_AK09918 = 0x14,
-        DEVTYPE_AK09915 = 0x15,
-    	DEVTYPE_QMC5883P = 0x16,
-        DEVTYPE_BMM350 = 0x17,
-        DEVTYPE_IIS2MDC = 0x18,
     };
 
 #if AP_COMPASS_EXTERNALAHRS_ENABLED

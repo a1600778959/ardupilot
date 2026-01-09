@@ -675,7 +675,6 @@ protected:
     // message sending functions:
     bool try_send_mission_message(enum ap_message id);
     void send_hwstatus();
-    void handle_data_packet(const mavlink_message_t &msg);
 
     // these two methods are called after current_loc is updated:
     virtual int32_t global_position_int_alt() const;

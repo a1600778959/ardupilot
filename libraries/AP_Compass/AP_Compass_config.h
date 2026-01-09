@@ -50,16 +50,6 @@
 #define AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED AP_COMPASS_BACKEND_DEFAULT_ENABLED
 #endif
 
-// this define dictates whether we iterate over the external i2c
-// busses looking for BMM150.  Ordinarily this should be true, but
-// SkyViper specifies its BMM150 and thus does not need to probe.
-// This is an interim arrangement until PCNC1 is eliminated as an
-// auto-detect board.
-
-#ifndef AP_COMPASS_IIS2MDC_ENABLED
-#define AP_COMPASS_IIS2MDC_ENABLED 0
-#endif
-
 #ifndef AP_COMPASS_IST8310_ENABLED
 #define AP_COMPASS_IST8310_ENABLED AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED
 #endif

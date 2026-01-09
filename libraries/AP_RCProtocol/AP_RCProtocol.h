@@ -81,9 +81,6 @@ public:
 #if AP_RCPROTOCOL_FDM_ENABLED
         FDM = 18,
 #endif
-#if AP_RCPROTOCOL_RADIO_ENABLED
-        RADIO = 19,
-#endif
         NONE    //last enum always is None
     };
 
@@ -178,9 +175,6 @@ public:
 #endif
 #if AP_RCPROTOCOL_FDM_ENABLED
         case FDM:
-#endif
-#if AP_RCPROTOCOL_RADIO_ENABLED
-        case RADIO:
 #endif
         case NONE:
             return false;

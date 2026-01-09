@@ -5,11 +5,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AC_PID/AC_PI.h>
-#include <AP_Radio/AP_Radio_config.h>
-
-#if AP_RADIO_ENABLED
-#include <AP_Radio/AP_Radio.h>
-#endif
 
 extern "C" typedef int (*main_fn_t)(int argc, char **);
 
@@ -291,11 +286,6 @@ private:
         float temperature;
         AP_Int8 imu_arming_temperature_margin_low;
     } heater;
-#endif
-
-#if AP_RADIO_ENABLED
-    // direct attached radio
-    AP_Radio _radio;
 #endif
 
 #if AP_RTC_ENABLED
