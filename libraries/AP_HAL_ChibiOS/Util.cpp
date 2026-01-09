@@ -42,12 +42,6 @@
 #include <AP_Logger/AP_Logger.h>
 #endif
 
-#if HAL_WITH_IO_MCU
-#include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_IOMCU/AP_IOMCU.h>
-extern AP_IOMCU iomcu;
-#endif
-
 #if AP_SIGNED_FIRMWARE && !defined(HAL_BOOTLOADER_BUILD)
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #endif
@@ -662,10 +656,6 @@ void Util::uart_info(ExpandingString &str)
             uart->uart_info(str, sys_uart_stats.serial[i], dt_ms);
         }
     }
-#if HAL_WITH_IO_MCU
-    str.printf("IOMCU   ");
-    uart_io.uart_info(str, sys_uart_stats.io, dt_ms);
-#endif
 }
 
 // Log UART message for each serial port
@@ -684,10 +674,6 @@ void Util::uart_log()
             uart->log_stats(i, log_uart_stats.serial[i], dt_ms);
         }
     }
-#if HAL_WITH_IO_MCU
-    // Use magic instance 100 for IOMCU
-    uart_io.log_stats(100, log_uart_stats.io, dt_ms);
-#endif
 }
 #endif // HAL_LOGGING_ENABLED
 #endif // HAL_UART_STATS_ENABLED

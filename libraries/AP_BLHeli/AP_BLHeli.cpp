@@ -1075,13 +1075,6 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
     }
 #endif // HAL_GCS_ENABLED
 
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
-        // with IOMCU the local (FMU) channels start at 8
-        chan_offset = 8;
-    }
-#endif
-
     mask |= uint32_t(channel_mask.get());
 
     /*

@@ -1359,13 +1359,6 @@ function winch:relax() end
 function winch:healthy() end
 
 -- desc
-iomcu = {}
-
--- Check if the IO is healthy
----@return boolean
-function iomcu:healthy() end
-
--- desc
 compass = {}
 
 -- Check if the compass is healthy

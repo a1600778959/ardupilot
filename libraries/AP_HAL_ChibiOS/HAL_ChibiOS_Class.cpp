@@ -130,12 +130,6 @@ static ChibiOS::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
 static ChibiOS::WSPIDeviceManager wspiDeviceManager;
 #endif
 
-#if HAL_WITH_IO_MCU
-HAL_UART_IO_DRIVER;
-#include <AP_IOMCU/AP_IOMCU.h>
-AP_IOMCU iomcu(uart_io);
-#endif
-
 HAL_ChibiOS::HAL_ChibiOS() :
     AP_HAL::HAL(
         &serial0Driver,
@@ -269,20 +263,17 @@ static void main_loop()
 #endif
 
 #if !defined(DISABLE_WATCHDOG)
-#ifdef IOMCU_FW
-    stm32_watchdog_init();
-#elif !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BOOTLOADER_BUILD)
 #if !defined(HAL_EARLY_WATCHDOG_INIT)
     // setup watchdog to reset if main loop stops
     if (AP_BoardConfig::watchdog_enabled()) {
         stm32_watchdog_init();
     }
 #endif
-
     if (hal.util->was_watchdog_reset()) {
         INTERNAL_ERROR(AP_InternalError::error_t::watchdog_reset);
     }
-#endif // IOMCU_FW
+#endif
 #endif // DISABLE_WATCHDOG
 
     schedulerInstance.watchdog_pat();

@@ -23,12 +23,6 @@
 
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 
-#if HAL_WITH_IO_MCU
-#include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_IOMCU/AP_IOMCU.h>
-extern AP_IOMCU iomcu;
-#endif
-
 #include <AP_Math/AP_Math.h>
 
 #ifndef HAL_NO_UARTDRIVER
@@ -159,13 +153,7 @@ void RCInput::_timer_tick(void)
 
 #endif  // AP_RCPROTOCOL_ENABLED
 
-#if HAL_WITH_IO_MCU
-    uint32_t now = AP_HAL::millis();
-    const bool have_iocmu_rc = (_rcin_last_iomcu_ms != 0 && now - _rcin_last_iomcu_ms < 400);
-    if (!have_iocmu_rc) {
-        _rcin_last_iomcu_ms = 0;
-    }
-#elif AP_RCPROTOCOL_ENABLED
+#if AP_RCPROTOCOL_ENABLED
     const bool have_iocmu_rc = false;
 #endif
 
@@ -185,22 +173,6 @@ void RCInput::_timer_tick(void)
     }
 #endif // AP_RCPROTOCOL_ENABLED
 
-#if HAL_WITH_IO_MCU
-    {
-        WITH_SEMAPHORE(rcin_mutex);
-        if (AP_BoardConfig::io_enabled() &&
-            iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
-            _rcin_timestamp_last_signal = last_iomcu_us;
-            _rcin_last_iomcu_ms = now;
-#ifndef HAL_NO_UARTDRIVER
-            rc_protocol = iomcu.get_rc_protocol();
-            _rssi = iomcu.get_RSSI();
-            source = RCSource::IOMCU;
-#endif
-        }
-    }
-#endif
-
 #ifndef HAL_NO_UARTDRIVER
     if (rc_protocol && (rc_protocol != last_protocol || source != last_source)) {
         last_protocol = rc_protocol;
@@ -218,15 +190,6 @@ void RCInput::_timer_tick(void)
  */
 bool RCInput::rc_bind(int dsmMode)
 {
-#if HAL_WITH_IO_MCU
-    {
-        WITH_SEMAPHORE(rcin_mutex);
-        if (AP_BoardConfig::io_enabled()) {
-            iomcu.bind_dsm(dsmMode);
-        }
-    }
-#endif
-
 #if AP_RCPROTOCOL_ENABLED
     // ask AP_RCProtocol to start a bind
     AP::RC().start_bind();

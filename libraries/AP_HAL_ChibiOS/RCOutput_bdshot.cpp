@@ -23,11 +23,6 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#if HAL_WITH_IO_MCU
-#include <AP_IOMCU/AP_IOMCU.h>
-extern AP_IOMCU iomcu;
-#endif
-
 #if defined(IOMCU_FW)
 #undef INTERNAL_ERROR
 #define INTERNAL_ERROR(x) do {} while (0)
@@ -44,12 +39,6 @@ extern const AP_HAL::HAL& hal;
  */
 void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 {
-#if HAL_WITH_IO_MCU_BIDIR_DSHOT
-    const uint32_t iomcu_mask = ((1U<<chan_offset)-1);
-    if (iomcu_dshot && (mask & iomcu_mask)) {
-        iomcu.set_bidir_dshot_mask(mask & iomcu_mask);
-    }
-#endif
 #ifdef HAL_WITH_BIDIR_DSHOT
     const uint32_t local_mask = (mask >> chan_offset) & ~_bdshot.disabled_mask;
     _bdshot.mask = local_mask;
@@ -771,11 +760,6 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
     uint16_t value = (encodederpm & 0x000001ffU);               // 9bits
 #if HAL_WITH_ESC_TELEM
     uint8_t normalized_chan = chan;
-#if HAL_WITH_IO_MCU
-    if (iomcu_enabled) {
-        normalized_chan = chan + chan_offset;
-    }
-#endif
 #endif // HAL_WITH_ESC_TELEM: one can possibly imagine a FC with IOMCU but with ESC_TELEM compiled out...
 
     if (!(value & 0x100U) && (_dshot_esc_type == DSHOT_ESC_BLHELI_EDT || _dshot_esc_type == DSHOT_ESC_BLHELI_EDT_S)) {

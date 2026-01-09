@@ -752,11 +752,6 @@ singleton AP_Camera method set_camera_information depends AP_CAMERA_INFO_FROM_SC
 singleton AP_Camera method set_stream_information void uint8_t'skip_check mavlink_video_stream_information_t
 singleton AP_Camera method set_stream_information depends AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
-include AP_IOMCU/AP_IOMCU.h
-singleton AP_IOMCU depends HAL_WITH_IO_MCU
-singleton AP_IOMCU rename iomcu
-singleton AP_IOMCU method healthy boolean
-
 include AP_Compass/AP_Compass.h
 singleton Compass rename compass
 singleton Compass depends AP_COMPASS_ENABLED

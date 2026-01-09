@@ -32,11 +32,6 @@
 
 using namespace ChibiOS;
 
-#if HAL_WITH_IO_MCU
-#include <AP_IOMCU/AP_IOMCU.h>
-extern AP_IOMCU iomcu;
-#endif
-
 // GPIO pin table from hwdef.dat
 struct gpio_entry {
     uint8_t pin_num;
@@ -90,18 +85,6 @@ void GPIO::init()
 #if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !defined(HAL_BOOTLOADER_BUILD)
 #if HAL_WITH_IO_MCU || HAVE_GPIO_PINS
     uint8_t chan_offset = 0;
-#endif
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
-        uint8_t GPIO_mask = 0;
-        for (uint8_t i=0; i<8; i++) {
-            if (SRV_Channels::is_GPIO(i)) {
-                GPIO_mask |= 1U << i;
-            }
-        }
-        iomcu.set_GPIO_mask(GPIO_mask);
-        chan_offset = 8;
-    }
 #endif
     // auto-disable pins being used for PWM output
 #if HAVE_GPIO_PINS
@@ -241,11 +224,6 @@ uint8_t GPIO::read(uint8_t pin)
     if (g) {
         return palReadLine(g->pal_line);
     }
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
-        return iomcu.read_virtual_GPIO(pin);
-    }
-#endif
     return 0;
 }
 
@@ -264,11 +242,6 @@ void GPIO::write(uint8_t pin, uint8_t value)
         }
         return;
     }
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
-        iomcu.write_GPIO(pin, value);
-    }
-#endif
 }
 
 void GPIO::toggle(uint8_t pin)
@@ -278,11 +251,6 @@ void GPIO::toggle(uint8_t pin)
         palToggleLine(g->pal_line);
         return;
     }
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
-        iomcu.toggle_GPIO(pin);
-    }
-#endif
 }
 
 /* Alternative interface: */
@@ -292,11 +260,6 @@ AP_HAL::DigitalSource* GPIO::channel(uint16_t pin)
     if (g != nullptr) {
         return NEW_NOTHROW DigitalSource(g->pal_line);
     }
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
-        return NEW_NOTHROW IOMCU_DigitalSource(pin);
-    }
-#endif
     return nullptr;
 }
 
@@ -422,22 +385,6 @@ void DigitalSource::toggle()
     palToggleLine(line);
 }
 
-#if HAL_WITH_IO_MCU
-IOMCU_DigitalSource::IOMCU_DigitalSource(uint8_t _pin) :
-    pin(_pin)
-{}
-
-void IOMCU_DigitalSource::write(uint8_t value)
-{
-    iomcu.write_GPIO(pin, value);
-}
-
-void IOMCU_DigitalSource::toggle()
-{
-    iomcu.toggle_GPIO(pin);
-}
-#endif // HAL_WITH_IO_MCU
-
 static void pal_interrupt_cb(void *arg)
 {
     if (arg != nullptr) {
@@ -534,11 +481,6 @@ bool GPIO::valid_pin(uint8_t pin) const
     if (gpio_by_pin_num(pin) != nullptr) {
         return true;
     }
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
-        return true;
-    }
-#endif
     return false;
 }
 
@@ -548,18 +490,6 @@ bool GPIO::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
 {
 #if HAL_WITH_IO_MCU || HAVE_GPIO_PINS
     uint8_t fmu_chan_offset = 0;
-#endif
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
-        // check if this is one of the main pins
-        uint8_t main_servo_ch = pin;
-        if (iomcu.convert_pin_number(main_servo_ch)) {
-            servo_ch = main_servo_ch;
-            return true;
-        }
-        // with IOMCU the local (FMU) channels start at 8
-        fmu_chan_offset = 8;
-    }
 #endif
 
 #if HAVE_GPIO_PINS

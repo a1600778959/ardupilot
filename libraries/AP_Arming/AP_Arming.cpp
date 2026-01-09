@@ -188,11 +188,6 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     AP_GROUPEND
 };
 
-#if HAL_WITH_IO_MCU
-#include <AP_IOMCU/AP_IOMCU.h>
-extern AP_IOMCU iomcu;
-#endif
-
 #pragma GCC diagnostic push
 #if defined (__clang__)
 #pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
@@ -974,13 +969,6 @@ bool AP_Arming::servo_checks(bool report) const
             }
         }
     }
-
-#if HAL_WITH_IO_MCU
-    if (!iomcu.healthy() && AP_BoardConfig::io_enabled()) {
-        check_failed(report, "IOMCU is unhealthy");
-        check_passed = false;
-    }
-#endif
 
     return check_passed;
 #else
