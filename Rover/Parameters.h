@@ -9,7 +9,6 @@
 #include "AP_Rally.h"
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_Stats/AP_Stats.h>
-#include "AP_Torqeedo/AP_Torqeedo.h"
 
 #define AP_PARAM_VEHICLE_NAME rover
 
@@ -390,11 +389,6 @@ public:
 
     // FS options
     AP_Int32 fs_options;
-
-#if HAL_TORQEEDO_ENABLED
-    // torqeedo motor driver
-    AP_Torqeedo torqeedo;
-#endif
 
     // position controller
     AR_PosControl pos_control;

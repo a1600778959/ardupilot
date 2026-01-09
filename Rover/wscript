@@ -20,7 +20,7 @@ def build(bld):
             #'AP_Follow',
             #'AP_WindVane',
             'AR_Motors',
-            'AP_Torqeedo',
+            #'AP_Torqeedo',
             #'AC_PrecLand',
             #'AP_IRLock',
             'AP_AOA',

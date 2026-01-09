@@ -47,7 +47,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
@@ -205,7 +204,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 154:ArmDisarm with Quadplane AirMode (4.2 and higher)
     // @Values{Rover}: 155:Set steering trim to current servo and RC
     // @Values{Plane}: 155:Set roll pitch and yaw trim to current servo and RC
-    // @Values{Rover}: 156:Torqeedo Clear Err
     // @Values{Plane}: 157:Force FS Action to FBWA
     // @Values{Copter, Plane}: 158:Optflow Calibration
     // @Values{Copter}: 159:Force IS_Flying
@@ -649,9 +647,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if AP_AHRS_ENABLED
     case AUX_FUNC::EKF_SOURCE_SET:
 #endif
-#if HAL_TORQEEDO_ENABLED
-    case AUX_FUNC::TORQEEDO_CLEAR_ERR:
-#endif
 #if AP_SCRIPTING_ENABLED
     case AUX_FUNC::SCRIPTING_1:
     case AUX_FUNC::SCRIPTING_2:
@@ -767,9 +762,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #endif
 #if AP_BATTERY_ENABLED
     { AUX_FUNC::BATTERY_MPPT_ENABLE,"Battery MPPT Enable"},
-#endif
-#if HAL_TORQEEDO_ENABLED
-    { AUX_FUNC::TORQEEDO_CLEAR_ERR, "Torqeedo Clear Err"},
 #endif
     { AUX_FUNC::EMERGENCY_LANDING_EN, "Emergency Landing"},
     { AUX_FUNC::WEATHER_VANE_ENABLE, "Weathervane"},
@@ -1431,19 +1423,6 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         break;
     }
 #endif  // AP_AHRS_ENABLED
-
-#if HAL_TORQEEDO_ENABLED
-    // clear torqeedo error
-    case AUX_FUNC::TORQEEDO_CLEAR_ERR: {
-        if (ch_flag == AuxSwitchPos::HIGH) {
-            AP_Torqeedo *torqeedo = AP_Torqeedo::get_singleton();
-            if (torqeedo != nullptr) {
-                torqeedo->clear_motor_error();
-            }
-        }
-        break;
-    }
-#endif
 
 #if AP_SCRIPTING_ENABLED
     case AUX_FUNC::SCRIPTING_1:

@@ -65,11 +65,6 @@ void Rover::init_ardupilot()
     // init wheel encoders
     g2.wheel_encoder.init();
 
-#if HAL_TORQEEDO_ENABLED
-    // init torqeedo motor driver
-    g2.torqeedo.init();
-#endif
-
 #if AP_OPTICALFLOW_ENABLED
     // initialise optical flow sensor
     optflow.init(MASK_LOG_OPTFLOW);

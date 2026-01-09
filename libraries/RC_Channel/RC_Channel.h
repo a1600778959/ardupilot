@@ -210,7 +210,6 @@ public:
         ARMDISARM =          153, // arm or disarm vehicle
         ARMDISARM_AIRMODE =  154, // arm or disarm vehicle enabling airmode
         TRIM_TO_CURRENT_SERVO_RC = 155, // trim to current servo and RC
-        TORQEEDO_CLEAR_ERR = 156, // clear torqeedo error
         EMERGENCY_LANDING_EN = 157, //Force long FS action to FBWA for landing out of range
         OPTFLOW_CAL =        158, // optical flow calibration
         FORCEFLYING =        159, // enable or disable land detection for GPS based manual modes preventing land detection and maintainting set_throttle_mix_max

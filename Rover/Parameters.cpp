@@ -600,12 +600,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 48, ParametersG2, fs_options, 0),
 
-#if HAL_TORQEEDO_ENABLED
-    // @Group: TRQ
-    // @Path: ../libraries/AP_Torqeedo/AP_Torqeedo.cpp
-    AP_SUBGROUPINFO(torqeedo, "TRQ", 49, ParametersG2, AP_Torqeedo),
-#endif
-
     // @Group: PSC
     // @Path: ../libraries/APM_Control/AR_PosControl.cpp
     AP_SUBGROUPINFO(pos_control, "PSC", 51, ParametersG2, AR_PosControl),
