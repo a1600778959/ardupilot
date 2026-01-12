@@ -19,7 +19,6 @@
 #include <AP_Common/Bitmask.h>
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
-#include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 
 #include "SRV_Channel_config.h"
 
@@ -613,10 +612,6 @@ private:
     // support for BLHeli protocol
     AP_BLHeli blheli;
 #endif
-
-#if AP_FETTEC_ONEWIRE_ENABLED
-    AP_FETtecOneWire fetteconwire;
-#endif  // AP_FETTEC_ONEWIRE_ENABLED
 
     // mask of disabled channels
     static uint32_t disabled_mask;

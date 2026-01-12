@@ -43,7 +43,6 @@
 #include <AP_Relay/AP_Relay.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Button/AP_Button.h>
-#include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -1257,24 +1256,6 @@ bool AP_Arming::fence_checks(bool display_failure)
 }
 #endif  // AP_FENCE_ENABLED
 
-#if AP_FETTEC_ONEWIRE_ENABLED
-bool AP_Arming::fettec_checks(bool display_failure) const
-{
-    const AP_FETtecOneWire *f = AP_FETtecOneWire::get_singleton();
-    if (f == nullptr) {
-        return true;
-    }
-
-    // check ESCs are ready
-    char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-    if (!f->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-        check_failed(ARMING_CHECK_ALL, display_failure, "FETtec: %s", fail_msg);
-        return false;
-    }
-    return true;
-}
-#endif  // AP_FETTEC_ONEWIRE_ENABLED
-
 #if AP_ARMING_AUX_AUTH_ENABLED
 // request an auxiliary authorisation id.  This id should be used in subsequent calls to set_aux_auth_passed/failed
 // returns true on success
@@ -1491,9 +1472,6 @@ bool AP_Arming::pre_arm_checks(bool report)
 #endif
 #if HAL_PROXIMITY_ENABLED
         &  proximity_checks(report)
-#endif
-#if AP_FETTEC_ONEWIRE_ENABLED
-        &  fettec_checks(report)
 #endif
 #if AP_ARMING_AUX_AUTH_ENABLED
         &  aux_auth_checks(report)
