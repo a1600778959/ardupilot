@@ -51,23 +51,8 @@ public:
 #if AP_PROXIMITY_MAV_ENABLED
         MAV     = 2,
 #endif
-#if AP_PROXIMITY_TERARANGERTOWER_ENABLED
-        TRTOWER = 3,
-#endif
 #if AP_PROXIMITY_RANGEFINDER_ENABLED
         RangeFinder = 4,
-#endif
-#if AP_PROXIMITY_RPLIDARA2_ENABLED
-        RPLidarA2 = 5,
-#endif
-#if AP_PROXIMITY_TERARANGERTOWEREVO_ENABLED
-        TRTOWEREVO = 6,
-#endif
-#if AP_PROXIMITY_LIGHTWARE_SF40C_ENABLED
-        SF40C = 7,
-#endif
-#if AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
-        SF45B = 8,
 #endif
 #if AP_PROXIMITY_SITL_ENABLED
         SITL    = 10,
@@ -75,23 +60,11 @@ public:
 #if AP_PROXIMITY_AIRSIMSITL_ENABLED
         AirSimSITL = 12,
 #endif
-#if AP_PROXIMITY_CYGBOT_ENABLED
-        CYGBOT_D1 = 13,
-#endif
 #if AP_PROXIMITY_DRONECAN_ENABLED
         DroneCAN = 14,
 #endif
 #if AP_PROXIMITY_SCRIPTING_ENABLED
         Scripting = 15,
-#endif
-#if AP_PROXIMITY_LD06_ENABLED
-        LD06 = 16,
-#endif
-#if AP_PROXIMITY_MR72_ENABLED
-        MR72 = 17,
-#endif
-#if AP_PROXIMITY_HEXSOONRADAR_ENABLED
-        Hexsoon_Radar = 18,
 #endif
     };
 
