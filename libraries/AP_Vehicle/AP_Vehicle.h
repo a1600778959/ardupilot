@@ -62,8 +62,6 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
-#include <AP_IBus_Telem/AP_IBus_Telem.h>
-
 class AP_DDS_Client;
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
@@ -330,10 +328,6 @@ protected:
     virtual const AP_Int32 &get_log_bitmask() { return bitmask_unused; }
     virtual const struct LogStructure *get_log_structures() const { return nullptr; }
     virtual uint8_t get_num_log_structures() const { return 0; }
-#endif
-
-#if AP_IBUS_TELEM_ENABLED
-    AP_IBus_Telem ibus_telem;
 #endif
 
 #if AP_RSSI_ENABLED
