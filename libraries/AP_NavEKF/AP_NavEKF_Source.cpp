@@ -307,13 +307,9 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
             case SourceXY::GPS:
                 gps_required = true;
                 break;
-            case SourceXY::BEACON:
-                beacon_required = true;
-                break;
             case SourceXY::EXTNAV:
                 visualodom_required = true;
                 break;
-            case SourceXY::OPTFLOW:
             case SourceXY::WHEEL_ENCODER:
             default:
                 // invalid posxy value
@@ -328,16 +324,12 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
             case SourceXY::GPS:
                 gps_required = true;
                 break;
-            case SourceXY::OPTFLOW:
-                optflow_required = true;
-                break;
             case SourceXY::EXTNAV:
                 visualodom_required = true;
                 break;
             case SourceXY::WHEEL_ENCODER:
                 wheelencoder_required = true;
                 break;
-            case SourceXY::BEACON:
             default:
                 // invalid velxy value
                 hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELXY", (int)i+1);
@@ -354,9 +346,6 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
                 break;
             case SourceZ::GPS:
                 gps_required = true;
-                break;
-            case SourceZ::BEACON:
-                beacon_required = true;
                 break;
             case SourceZ::EXTNAV:
                 visualodom_required = true;
@@ -381,7 +370,6 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
                 break;
             case SourceZ::BARO:
             case SourceZ::RANGEFINDER:
-            case SourceZ::BEACON:
             default:
                 // invalid velz value
                 hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELZ", (int)i+1);
@@ -422,11 +410,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
     }
 
     if (beacon_required) {
-#if AP_BEACON_ENABLED
-        const bool beacon_available = (dal.beacon() != nullptr && dal.beacon()->enabled());
-#else
         const bool beacon_available = false;
-#endif
         if (!beacon_available) {
             hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "Beacon");
             return false;

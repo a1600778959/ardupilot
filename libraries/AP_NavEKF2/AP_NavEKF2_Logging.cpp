@@ -203,58 +203,6 @@ void NavEKF2_core::Log_Write_Quaternion(uint64_t time_us) const
     AP::logger().WriteBlock(&pktq1, sizeof(pktq1));
 }
 
-#if AP_BEACON_ENABLED
-void NavEKF2_core::Log_Write_Beacon(uint64_t time_us)
-{
-    if (core_index != frontend->primary) {
-        // log only primary instance for now
-        return;
-    }
-
-    if (AP::beacon() == nullptr) {
-        return;
-    }
-
-    if (!statesInitialised || N_beacons == 0) {
-        return;
-    }
-
-    // Ensure that beacons are not skipped due to calling this
-    // function at a rate lower than the updates
-    if (rngBcnFuseDataReportIndex >= N_beacons) {
-        rngBcnFuseDataReportIndex = 0;
-    }
-
-    const rngBcnFusionReport_t &report = rngBcnFusionReport[rngBcnFuseDataReportIndex];
-
-    if (report.rng <= 0.0f) {
-        rngBcnFuseDataReportIndex++;
-        return;
-    }
-
-    struct log_NKF0 pkt0 = {
-        LOG_PACKET_HEADER_INIT(LOG_NKF0_MSG),
-        time_us : time_us,
-        core    : DAL_CORE(core_index),
-        ID : rngBcnFuseDataReportIndex,
-        rng : (int16_t)(100*report.rng),
-        innov : (int16_t)(100*report.innov),
-        sqrtInnovVar : (uint16_t)(100*safe_sqrt(report.innovVar)),
-        testRatio : (uint16_t)(100*constrain_ftype(report.testRatio,0.0f,650.0f)),
-        beaconPosN : (int16_t)(100*report.beaconPosNED.x),
-        beaconPosE : (int16_t)(100*report.beaconPosNED.y),
-        beaconPosD : (int16_t)(100*report.beaconPosNED.z),
-        offsetHigh : (int16_t)(100*bcnPosOffsetMax),
-        offsetLow : (int16_t)(100*bcnPosOffsetMin),
-        posN : 0,
-        posE : 0,
-        posD : 0
-    };
-    AP::logger().WriteBlock(&pkt0, sizeof(pkt0));
-    rngBcnFuseDataReportIndex++;
-}
-#endif  // AP_BEACON_ENABLED
-
 void NavEKF2_core::Log_Write_Timing(uint64_t time_us)
 {
     // log EKF timing statistics every 5s
@@ -319,11 +267,6 @@ void NavEKF2_core::Log_Write(uint64_t time_us)
 
     Log_Write_Quaternion(time_us);
     Log_Write_GSF(time_us);
-
-#if AP_BEACON_ENABLED
-    // write range beacon fusion debug packet if the range value is non-zero
-    Log_Write_Beacon(time_us);
-#endif
 
     Log_Write_Timing(time_us);
 }

@@ -19,8 +19,6 @@ public:
         // BARO = 1 (not applicable)
         // RANGEFINDER = 2 (not applicable)
         GPS = 3,
-        BEACON = 4,
-        OPTFLOW = 5,
         EXTNAV = 6,
         WHEEL_ENCODER = 7
     };
@@ -30,7 +28,6 @@ public:
         BARO = 1,
         RANGEFINDER = 2,
         GPS = 3,
-        BEACON = 4,
         // OPTFLOW = 5 (not applicable, optical flow can be used for terrain alt but not relative or absolute alt)
         EXTNAV = 6
         // WHEEL_ENCODER = 7 (not applicable)

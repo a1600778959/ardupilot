@@ -266,9 +266,6 @@ void NavEKF2_core::InitialiseVariables()
     varInnovRngBcn = 0.0f;
     innovRngBcn = 0.0f;
     memset(&lastTimeRngBcn_ms, 0, sizeof(lastTimeRngBcn_ms));
-#if AP_BEACON_ENABLED
-    rngBcnDataToFuse = false;
-#endif
     beaconVehiclePosNED.zero();
     beaconVehiclePosErr = 1.0f;
     rngBcnLast3DmeasTime_ms = 0;
@@ -577,11 +574,6 @@ void NavEKF2_core::UpdateFilter(bool predict)
         // and use the yaw estimate to reset the main EKF yaw if requested
         // Muat be run after SelectVelPosFusion() so that fresh GPS data is available
         runYawEstimatorCorrection();
-
-#if AP_BEACON_ENABLED
-        // Update states using range beacon data
-        SelectRngBcnFusion();
-#endif
 
         // Update states using airspeed data
         SelectTasFusion();

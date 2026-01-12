@@ -19,14 +19,10 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
         case AP_NavEKF_Source::SourceXY::GPS:
             velResetSource = resetDataSource::GPS;
             break;
-        case AP_NavEKF_Source::SourceXY::BEACON:
-            velResetSource = resetDataSource::RNGBCN;
-            break;
         case AP_NavEKF_Source::SourceXY::EXTNAV:
             velResetSource = resetDataSource::EXTNAV;
             break;
         case AP_NavEKF_Source::SourceXY::NONE:
-        case AP_NavEKF_Source::SourceXY::OPTFLOW:
         case AP_NavEKF_Source::SourceXY::WHEEL_ENCODER:
             // unhandled sources so stick with the default
             break;
@@ -99,14 +95,10 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
         case AP_NavEKF_Source::SourceXY::GPS:
             posResetSource = resetDataSource::GPS;
             break;
-        case AP_NavEKF_Source::SourceXY::BEACON:
-            posResetSource = resetDataSource::RNGBCN;
-            break;
         case AP_NavEKF_Source::SourceXY::EXTNAV:
             posResetSource = resetDataSource::EXTNAV;
             break;
         case AP_NavEKF_Source::SourceXY::NONE:
-        case AP_NavEKF_Source::SourceXY::OPTFLOW:
         case AP_NavEKF_Source::SourceXY::WHEEL_ENCODER:
             // invalid sources so stick with the default
             break;
@@ -144,15 +136,6 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             stateStruct.position.xy() += gps_corrected.vel.xy()*0.001*tdiff;
             // set the variances using the position measurement noise parameter
             P[7][7] = P[8][8] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
-#if EK3_FEATURE_BEACON_FUSION
-        } else if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::RNGBCN) {
-            // use the range beacon data as a second preference
-            stateStruct.position.x = rngBcn.receiverPos.x;
-            stateStruct.position.y = rngBcn.receiverPos.y;
-            // set the variances from the beacon alignment filter
-            P[7][7] = rngBcn.receiverPosCov[0][0];
-            P[8][8] = rngBcn.receiverPosCov[1][1];
-#endif
 #if EK3_FEATURE_EXTERNAL_NAV
         } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::EXTNAV) {
             // use external nav data as the third preference
@@ -1222,10 +1205,6 @@ void NavEKF3_core::selectHeightForFusion()
         activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
     } else if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {
         activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
-#if EK3_FEATURE_BEACON_FUSION
-    } else if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BEACON) && validOrigin && rngBcn.goodToAlign) {
-        activeHgtSource = AP_NavEKF_Source::SourceZ::BEACON;
-#endif
 #if EK3_FEATURE_EXTERNAL_NAV
     } else if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::EXTNAV) && extNavDataIsFresh) {
         activeHgtSource = AP_NavEKF_Source::SourceZ::EXTNAV;
@@ -1235,16 +1214,7 @@ void NavEKF3_core::selectHeightForFusion()
     // Use Baro alt as a fallback if we lose range finder, GPS, external nav or Beacon
     bool lostRngHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) && !rangeFinderDataIsFresh);
     bool lostGpsHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000 || !gpsAccuracyGoodForAltitude));
-#if EK3_FEATURE_BEACON_FUSION
-    bool lostRngBcnHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) && ((imuSampleTime_ms - rngBcn.dataDelayed.time_ms) > 2000));
-#endif
-    bool fallback_to_baro =
-        lostRngHgt
-        || lostGpsHgt
-#if EK3_FEATURE_BEACON_FUSION
-        || lostRngBcnHgt
-#endif
-        ;
+    bool fallback_to_baro = lostRngHgt || lostGpsHgt;
 #if EK3_FEATURE_EXTERNAL_NAV
     bool lostExtNavHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV) && !extNavDataIsFresh);
     fallback_to_baro |= lostExtNavHgt;

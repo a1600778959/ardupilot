@@ -6,7 +6,6 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/AP_HAL_Boards.h>
-#include <AP_Beacon/AP_Beacon_config.h>
 #include <AP_AHRS/AP_AHRS_config.h>
 
 // define for when to include all features
@@ -25,11 +24,6 @@
 // drag fusion on 2M boards
 #ifndef EK3_FEATURE_DRAG_FUSION
 #define EK3_FEATURE_DRAG_FUSION EK3_FEATURE_ALL || BOARD_FLASH_SIZE > 1024
-#endif
-
-// Beacon Fusion if beacon data available
-#ifndef EK3_FEATURE_BEACON_FUSION
-#define EK3_FEATURE_BEACON_FUSION AP_BEACON_ENABLED
 #endif
 
 #ifndef EK3_FEATURE_POSITION_RESET

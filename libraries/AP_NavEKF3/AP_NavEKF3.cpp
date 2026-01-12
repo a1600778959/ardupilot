@@ -1663,10 +1663,6 @@ void NavEKF3::convert_parameters()
             // EK3_ALT_SOURCE == 2 (GPS)
             AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::GPS);
             break;
-        case 3:
-            // EK3_ALT_SOURCE == 3 (Beacon)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::BEACON);
-            break;
         case 4:
             // EK3_ALT_SOURCE == 4 (ExtNav)
             AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::EXTNAV);
@@ -1692,11 +1688,6 @@ void NavEKF3::convert_parameters()
         break;
     }
 
-    // if GPS and optical flow enabled set EK3_SRC2_VELXY to optical flow
-    // EK3_SRC_OPTIONS should default to 1 meaning both GPS and optical flow velocities will be fused
-    if (dal.opticalflow_enabled() && (!found_gps_type || (gps_type_old.get() <= 2))) {
-        AP_Param::set_and_save_by_name("EK3_SRC2_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::OPTFLOW);
-    }
 }
 
 // Set to true if the terrain underneath is stable enough to be used as a height reference

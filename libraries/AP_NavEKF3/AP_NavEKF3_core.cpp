@@ -119,12 +119,6 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
 #endif
-    // Note: range beacon data is read one beacon at a time and can arrive at a high rate
-#if EK3_FEATURE_BEACON_FUSION
-    if(dal.beacon() && !rngBcn.storedRange.init(imu_buffer_length+1)) {
-        return false;
-    }
-#endif
 #if EK3_FEATURE_EXTERNAL_NAV
     if (frontend->sources.ext_nav_enabled() && !storedExtNav.init(extnav_buffer_length)) {
         return false;
@@ -331,11 +325,6 @@ void NavEKF3_core::InitialiseVariables()
     posOffsetNED.zero();
     ZERO_FARRAY(velPosObs);
 
-    // range beacon fusion variables
-#if EK3_FEATURE_BEACON_FUSION
-    rngBcn.InitialiseVariables();
-#endif  // EK3_FEATURE_BEACON_FUSION
-
 #if EK3_FEATURE_BODY_ODOM
     // body frame displacement fusion
     memset((void *)&bodyOdmDataNew, 0, sizeof(bodyOdmDataNew));
@@ -377,9 +366,6 @@ void NavEKF3_core::InitialiseVariables()
     storedRange.reset();
 #endif
     storedOutput.reset();
-#if EK3_FEATURE_BEACON_FUSION
-    rngBcn.storedRange.reset();
-#endif
 #if EK3_FEATURE_BODY_ODOM
     storedBodyOdm.reset();
     storedWheelOdm.reset();
@@ -636,11 +622,6 @@ void NavEKF3_core::UpdateFilter(bool predict)
         // Muat be run after SelectVelPosFusion() so that fresh GPS data is available
         runYawEstimatorCorrection();
 
-#if EK3_FEATURE_BEACON_FUSION
-        // Update states using range beacon data
-        SelectRngBcnFusion();
-#endif
-
 #if EK3_FEATURE_BODY_ODOM
         // Update states using body frame odometry data
         SelectBodyOdomFusion();
@@ -761,12 +742,6 @@ void NavEKF3_core::UpdateStrapdownEquationsNED()
     // limit states to protect against divergence
     ConstrainStates();
 
-#if EK3_FEATURE_BEACON_FUSION
-    // If main filter velocity states are valid, update the range beacon receiver position states
-    if (filterStatus.flags.horiz_vel) {
-        rngBcn.receiverPos += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
-    }
-#endif
 }
 
 /*

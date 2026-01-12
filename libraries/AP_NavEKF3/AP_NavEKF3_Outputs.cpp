@@ -86,7 +86,7 @@ float NavEKF3_core::errorScore() const
 bool NavEKF3_core::getHeightControlLimit(float &height) const
 {
     // only ask for limiting if we are doing optical flow navigation
-    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
+    if ((PV_AidingMode == AID_RELATIVE) && flowDataValid) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
 #if AP_RANGEFINDER_ENABLED
         const auto *_rng = dal.rangefinder();
@@ -259,13 +259,6 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
                 const Location &gpsloc = gps.location(selected_gps);
                 posNE = public_origin.get_distance_NE_ftype(gpsloc).tofloat();
                 return false;
-#if EK3_FEATURE_BEACON_FUSION
-            } else if (rngBcn.alignmentStarted) {
-                // If we are attempting alignment using range beacon data, then report the position
-                posNE.x = rngBcn.receiverPos.x;
-                posNE.y = rngBcn.receiverPos.y;
-                return false;
-#endif
             } else {
                 // If no GPS fix is available, all we can do is provide the last known position
                 posNE = outputDataNew.position.xy().tofloat();
@@ -510,18 +503,6 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
         variances = extNavVelVarInnov.tofloat();
         return true;
 #endif // EK3_FEATURE_EXTERNAL_NAV
-    case AP_NavEKF_Source::SourceXY::OPTFLOW:
-        // check for timeouts
-        if (dal.millis() - flowInnovTime_ms > 500) {
-            return false;
-        }
-        innovations.x = flowInnov[0];
-        innovations.y = flowInnov[1];
-        innovations.z = 0;
-        variances.x = flowVarInnov[0];
-        variances.y = flowVarInnov[1];
-        variances.z = 0;
-        return true;
     default:
         // variances are not available for this source
         return false;

@@ -88,11 +88,6 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
         _rangefinder->start_frame();
     }
 #endif
-#if AP_BEACON_ENABLED
-    if (_beacon) {
-        _beacon->start_frame();
-    }
-#endif
 
     // populate some derivative values:
     _micros = _RFRH.time_us;
@@ -128,13 +123,6 @@ void AP_DAL::init_sensors(void)
     auto *rng = AP::rangefinder();
     if (rng && rng->num_sensors() > 0) {
         alloc_failed |= (_rangefinder = NEW_NOTHROW AP_DAL_RangeFinder) == nullptr;
-    }
-#endif
-
-#if AP_BEACON_ENABLED
-    auto *bcn = AP::beacon();
-    if (bcn != nullptr && bcn->enabled()) {
-        alloc_failed |= (_beacon = NEW_NOTHROW AP_DAL_Beacon) == nullptr;
     }
 #endif
 

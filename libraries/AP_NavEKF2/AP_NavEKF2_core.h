@@ -30,7 +30,6 @@
 #include <AP_NavEKF/AP_NavEKF_core_common.h>
 #include <AP_NavEKF/EKF_Buffer.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Beacon/AP_Beacon_config.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
 
@@ -581,9 +580,6 @@ private:
     // check for new airspeed data and update stored measurements if available
     void readAirSpdData();
 
-    // check for new range beacon data and update stored measurements if available
-    void readRngBcnData();
-
     // determine when to perform fusion of GPS position and  velocity measurements
     void SelectVelPosFusion();
 
@@ -1016,11 +1012,7 @@ private:
     ftype varInnovRngBcn;               // range beacon observation innovation variance (m^2)
     ftype innovRngBcn;                  // range beacon observation innovation (m)
     uint32_t lastTimeRngBcn_ms[10];     // last time we received a range beacon measurement (msec)
-#if AP_BEACON_ENABLED
-    bool rngBcnDataToFuse;              // true when there is new range beacon data to fuse
-#else
     const bool rngBcnDataToFuse = false;              // true when there is new range beacon data to fuse
-#endif
     Vector3F beaconVehiclePosNED;       // NED position estimate from the beacon system (NED)
     ftype beaconVehiclePosErr;          // estimated position error from the beacon system (m)
     uint32_t rngBcnLast3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
@@ -1189,7 +1181,6 @@ private:
     void Log_Write_NKF4(uint64_t time_us) const;
     void Log_Write_NKF5(uint64_t time_us) const;
     void Log_Write_Quaternion(uint64_t time_us) const;
-    void Log_Write_Beacon(uint64_t time_us);
     void Log_Write_Timing(uint64_t time_us);
     void Log_Write_GSF(uint64_t time_us) const;
 };

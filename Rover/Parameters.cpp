@@ -398,13 +398,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(afs, "AFS_", 5, ParametersG2, AP_AdvancedFailsafe),
 #endif
 
-#if AP_BEACON_ENABLED
-    // @Group: BCN
-    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
-    AP_SUBGROUPINFO(beacon, "BCN", 6, ParametersG2, AP_Beacon),
-#endif
-
-
     // @Group: MOT_
     // @Path: ../libraries/AR_Motors/AP_MotorsUGV.cpp
     AP_SUBGROUPINFO(motors, "MOT_", 8, ParametersG2, AP_MotorsUGV),
@@ -670,9 +663,6 @@ ParametersG2::ParametersG2(void)
     :
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     afs(),
-#endif
-#if AP_BEACON_ENABLED
-    beacon(),
 #endif
     wheel_rate_control(wheel_encoder),
     motors(wheel_rate_control),

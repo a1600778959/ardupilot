@@ -5,7 +5,6 @@
 #include "AP_DAL_GPS.h"
 #include "AP_DAL_RangeFinder.h"
 #include "AP_DAL_Compass.h"
-#include "AP_DAL_Beacon.h"
 
 #include "LogStructure.h"
 
@@ -136,12 +135,6 @@ public:
     }
 #endif
 
-#if AP_BEACON_ENABLED
-    AP_DAL_Beacon *beacon() {
-        return _beacon;
-    }
-#endif
-
     AP_DAL_Compass &compass() { return _compass; }
 
     // this replaces AP::ahrs()->EAS2TAS(), which should probably go
@@ -267,20 +260,8 @@ public:
     }
 
     void handle_message(const log_RBCH &msg) {
-#if AP_BEACON_ENABLED
-        if (_beacon == nullptr) {
-            _beacon = NEW_NOTHROW AP_DAL_Beacon;
-        }
-        _beacon->handle_message(msg);
-#endif
     }
     void handle_message(const log_RBCI &msg) {
-#if AP_BEACON_ENABLED
-        if (_beacon == nullptr) {
-            _beacon = NEW_NOTHROW AP_DAL_Beacon;
-        }
-        _beacon->handle_message(msg);
-#endif
     }
     void handle_message(const log_RVOH &msg) {
     }
@@ -332,9 +313,6 @@ private:
     AP_DAL_RangeFinder *_rangefinder;
 #endif
     AP_DAL_Compass _compass;
-#if AP_BEACON_ENABLED
-    AP_DAL_Beacon *_beacon;
-#endif
 
     static bool logging_started;
     static bool force_write;

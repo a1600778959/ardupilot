@@ -593,13 +593,6 @@ private:
         uint8_t     sensor_idx;     // integer either 0 or 1 uniquely identifying up to two range sensors
     };
 
-    struct rng_bcn_elements : EKF_obs_element_t {
-        ftype       rng;            // range measurement to each beacon (m)
-        Vector3F    beacon_posNED;  // NED position of the beacon (m)
-        ftype       rngErr;         // range measurement error 1-std (m)
-        uint8_t     beacon_ID;      // beacon identification number
-    };
-
     struct tas_elements : EKF_obs_element_t {
         ftype       tas;            // true airspeed measurement (m/sec)
         ftype       tasVariance;    // variance of true airspeed measurement (m/sec)^2
@@ -669,8 +662,6 @@ private:
     enum class resetDataSource {
         DEFAULT=0,      // Use data source selected by reset function internal rules
         GPS=1,          // Use GPS
-        RNGBCN=2,       // Use beacon range data
-        FLOW=3,         // Use optical flow rates
         BARO=4,         // Use Baro height
         MAG=5,          // Use magnetometer data
         RNGFND=6,       // Use rangefinder data
@@ -715,17 +706,6 @@ private:
 
     // fuse body frame velocity measurements
     void FuseBodyVel();
-
-#if EK3_FEATURE_BEACON_FUSION
-    // fuse range beacon measurements
-    void FuseRngBcn();
-#endif
-
-    // use range beacon measurements to calculate a static position
-    void FuseRngBcnStatic();
-
-    // calculate the offset from EKF vertical position datum to the range beacon system datum
-    void CalcRangeBeaconPosDownOffset(ftype obsVar, Vector3F &vehiclePosNED, bool aligning);
 
     // fuse magnetometer measurements
     void FuseMagnetometer();
@@ -789,18 +769,8 @@ private:
     // check for new airspeed data and update stored measurements if available
     void readAirSpdData();
 
-#if EK3_FEATURE_BEACON_FUSION
-    // check for new range beacon data and update stored measurements if available
-    void readRngBcnData();
-#endif
-
     // determine when to perform fusion of GPS position and  velocity measurements
     void SelectVelPosFusion();
-
-#if EK3_FEATURE_BEACON_FUSION
-    // determine when to perform fusion of range measurements take relative to a beacon at a known NED position
-    void SelectRngBcnFusion();
-#endif
 
     // determine when to perform fusion of magnetometer measurements
     void SelectMagFusion();
@@ -1316,69 +1286,6 @@ private:
     yaw_elements yawAngDataDelayed;     // GPS yaw angle at the fusion time horizon
     yaw_elements yawAngDataStatic;      // yaw angle (regardless of yaw source) when the vehicle was last on ground and not moving
 
-    // Range Beacon Sensor Fusion
-#if EK3_FEATURE_BEACON_FUSION
-    class BeaconFusion {
-    public:
-        BeaconFusion(AP_DAL &_dal) :
-            dal{_dal}
-            {}
-
-        void InitialiseVariables();
-
-        EKF_obs_buffer_t<rng_bcn_elements> storedRange; // Beacon range buffer
-        rng_bcn_elements dataDelayed; // Range beacon data at the fusion time horizon
-        uint32_t lastPassTime_ms;     // time stamp when the range beacon measurement last passed innovation consistency checks (msec)
-        ftype testRatio;              // Innovation test ratio for range beacon measurements
-        bool health;                  // boolean true if range beacon measurements have passed innovation consistency check
-        ftype varInnov;               // range beacon observation innovation variance (m^2)
-        ftype innov;                  // range beacon observation innovation (m)
-        uint32_t lastTime_ms[4];      // last time we received a range beacon measurement (msec)
-        bool dataToFuse;              // true when there is new range beacon data to fuse
-        Vector3F vehiclePosNED;       // NED position estimate from the beacon system (NED)
-        ftype vehiclePosErr;          // estimated position error from the beacon system (m)
-        uint32_t last3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
-        bool goodToAlign;             // true when the range beacon systems 3D fix can be used to align the filter
-        uint8_t lastChecked;          // index of the last range beacon checked for data
-        Vector3F receiverPos;               // receiver NED position (m) - alignment 3 state filter
-        ftype receiverPosCov[3][3];         // Receiver position covariance (m^2) - alignment 3 state filter (
-        bool alignmentStarted;        // True when the initial position alignment using range measurements has started
-        bool alignmentCompleted;      // True when the initial position alignment using range measurements has finished
-        uint8_t lastIndex;            // Range beacon index last read -  used during initialisation of the 3-state filter
-        Vector3F posSum;              // Sum of range beacon NED position (m) - used during initialisation of the 3-state filter
-        uint8_t numMeas;                 // Number of beacon measurements - used during initialisation of the 3-state filter
-        ftype sum;                       // Sum of range measurements (m) - used during initialisation of the 3-state filter
-        uint8_t N;                  // Number of range beacons in use
-        ftype maxPosD;                   // maximum position of all beacons in the down direction (m)
-        ftype minPosD;                   // minimum position of all beacons in the down direction (m)
-        bool usingMinHypothesis;            // true when the min beacon constellation offset hypothesis is being used
-
-        ftype posDownOffsetMax;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
-        ftype posOffsetMaxVar;           // Variance of the PosDownOffsetMax state (m)
-        ftype maxOffsetStateChangeFilt;     // Filtered magnitude of the change in PosOffsetHigh
-
-        ftype posDownOffsetMin;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
-        ftype posOffsetMinVar;           // Variance of the PosDownOffsetMin state (m)
-        ftype minOffsetStateChangeFilt;     // Filtered magnitude of the change in PosOffsetLow
-
-        Vector3F posOffsetNED;           // NED position of the beacon origin in earth frame (m)
-        bool originEstInit;              // True when the beacon origin has been initialised
-
-        // Range Beacon Fusion Debug Reporting
-        uint8_t fuseDataReportIndex;// index of range beacon fusion data last reported
-        struct FusionReport {
-            ftype rng;          // measured range to beacon (m)
-            ftype innov;        // range innovation (m)
-            ftype innovVar;     // innovation variance (m^2)
-            ftype testRatio;    // innovation consistency test ratio
-            Vector3F beaconPosNED; // beacon NED position
-        } *fusionReport;
-        uint8_t numFusionReports;
-
-        AP_DAL &dal;
-    } rngBcn{dal};
-#endif  // if EK3_FEATURE_BEACON_FUSION
-
 #if EK3_FEATURE_DRAG_FUSION
     // drag fusion for multicopter wind estimation
     EKF_obs_buffer_t<drag_elements> storedDrag;
@@ -1592,7 +1499,6 @@ private:
     void Log_Write_XKF5(uint64_t time_us) const;
     void Log_Write_XKFS(uint64_t time_us) const;
     void Log_Write_Quaternion(uint64_t time_us) const;
-    void Log_Write_Beacon(uint64_t time_us);
     void Log_Write_BodyOdom(uint64_t time_us);
     void Log_Write_State_Variances(uint64_t time_us);
     void Log_Write_Timing(uint64_t time_us);
