@@ -44,7 +44,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Arming/AP_Arming.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AC_Fence/AC_Fence.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -657,9 +656,6 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
 #endif
-#if AP_OPTICALFLOW_CALIBRATOR_ENABLED
-    case AUX_FUNC::OPTFLOW_CAL:
-#endif
     case AUX_FUNC::TURBINE_START:
 #if COMPASS_CAL_ENABLED
     case AUX_FUNC::MAG_CAL:
@@ -1270,22 +1266,6 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using EKF Source Set %u", uint8_t(source_set)+1);
         break;
     }
-
-#if AP_OPTICALFLOW_CALIBRATOR_ENABLED
-    case AUX_FUNC::OPTFLOW_CAL: {
-        AP_OpticalFlow *optflow = AP::opticalflow();
-        if (optflow == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "OptFlow Cal: failed sensor not enabled");
-            break;
-        }
-        if (ch_flag == AuxSwitchPos::HIGH) {
-            optflow->start_calibration();
-        } else {
-            optflow->stop_calibration();
-        }
-        break;
-    }
-#endif
 
 #if AP_INERTIALSENSOR_KILL_IMU_ENABLED
     case AUX_FUNC::KILL_IMU1:

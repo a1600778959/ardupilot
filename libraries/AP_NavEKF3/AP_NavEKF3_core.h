@@ -268,19 +268,6 @@ public:
     // reporting via ahrs.use_compass()
     bool use_compass(void) const;
 
-    // write the raw optical flow measurements
-    // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
-    // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.
-    // rawGyroRates are the sensor rotation rates in rad/sec measured by the sensors internal gyro
-    // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
-    // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
-    // posOffset is the XYZ flow sensor position in the body frame in m
-    // heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
-    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride);
-
-    // retrieve latest corrected optical flow samples (used for calibration)
-    bool getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const;
-
     /*
      * Write body frame linear and angular displacement measurements from a visual odometry sensor
      *
@@ -874,11 +861,6 @@ private:
     // Calculate weighting that is applied to IMU1 accel data to blend data from IMU's 1 and 2
     void calcIMU_Weighting(ftype K1, ftype K2);
 
-#if EK3_FEATURE_OPTFLOW_FUSION
-    // return true if the filter is ready to start using optical flow measurements for position and velocity estimation
-    bool readyToUseOptFlow(void) const;
-#endif
-
     // return true if the filter is ready to start using body frame odometry measurements
     bool readyToUseBodyOdm(void) const;
 
@@ -887,23 +869,11 @@ private:
 
     // return true if we should use the range finder sensor
     bool useRngFinder(void) const;
-
-#if EK3_FEATURE_OPTFLOW_FUSION
-    // determine when to perform fusion of optical flow measurements
-    void SelectFlowFusion();
-#endif
-
     // determine when to perform fusion of body frame odometry measurements
     void SelectBodyOdomFusion();
 
     // Estimate terrain offset using a single state EKF
     void EstimateTerrainOffset(const of_elements &ofDataDelayed);
-
-#if EK3_FEATURE_OPTFLOW_FUSION
-    // fuse optical flow measurements into the main filter
-    // really_fuse should be true to actually fuse into the main filter, false to only calculate variances
-    void FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse);
-#endif
 
     // Control filter mode changes
     void controlFilterModes();
@@ -945,11 +915,6 @@ private:
     // Read the range finder and take new measurements if available
     // Apply a median filter to range finder data
     void readRangeFinder();
-
-#if EK3_FEATURE_OPTFLOW_FUSION
-    // check if the vehicle has taken off during optical flow navigation by looking at inertial and range finder data
-    void detectOptFlowTakeoff(void);
-#endif
 
     // align the NE earth magnetic field states with the published declination
     void alignMagStateDeclination();
@@ -1196,9 +1161,6 @@ private:
     bool motorsArmed;               // true when the motors have been armed
     bool prevMotorsArmed;           // value of motorsArmed from previous frame
     bool posVelFusionDelayed;       // true when the position and velocity fusion has been delayed
-#if EK3_FEATURE_OPTFLOW_FUSION
-    bool optFlowFusionDelayed;      // true when the optical flow fusion has been delayed
-#endif
     bool airSpdFusionDelayed;       // true when the air speed fusion has been delayed
     bool sideSlipFusionDelayed;     // true when the sideslip fusion has been delayed
     bool airDataFusionWindOnly;     // true when  sideslip and airspeed fusion is only allowed to modify the wind states
@@ -1273,14 +1235,10 @@ private:
     Vector2F auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
-    uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
     Vector2 flowVarInnov;           // optical flow innovations variances (rad/sec)^2
     Vector2 flowInnov;              // optical flow LOS innovations (rad/sec)
     uint32_t flowInnovTime_ms;      // system time that optical flow innovations and variances were recorded (to detect timeouts)
-#if EK3_FEATURE_OPTFLOW_FUSION
-    ftype Popt;                     // Optical flow terrain height state covariance (m^2)
-#endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
     ftype prevPosE;                 // east position at last measurement

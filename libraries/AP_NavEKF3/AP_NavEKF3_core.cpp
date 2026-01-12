@@ -39,11 +39,10 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
 
     // find the maximum time delay for all potential sensors
     uint16_t maxTimeDelay_ms = MAX(frontend->_hgtDelay_ms ,
-            MAX(frontend->_flowDelay_ms ,
                 MAX(frontend->_rngBcnDelay_ms ,
                     MAX(frontend->magDelay_ms ,
                         (uint16_t)(EKF_TARGET_DT_MS)
-                                  ))));
+                                  )));
 
     // GPS sensing can have large delays and should not be included if disabled
     if (frontend->sources.usingGPS()) {
@@ -194,7 +193,6 @@ void NavEKF3_core::InitialiseVariables()
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
     flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;
-    flowMeaTime_ms = 0;
     prevFlowFuseTime_ms = 0;
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
@@ -232,9 +230,6 @@ void NavEKF3_core::InitialiseVariables()
     memset(&nextP[0][0], 0, sizeof(nextP));
     flowDataValid = false;
     rangeDataToFuse  = false;
-#if EK3_FEATURE_OPTFLOW_FUSION
-    Popt = 0.0f;
-#endif
     terrainState = 0.0f;
     prevPosN = stateStruct.position.x;
     prevPosE = stateStruct.position.y;
@@ -303,9 +298,6 @@ void NavEKF3_core::InitialiseVariables()
     ZERO_FARRAY(statesArray);
     memset(&vertCompFiltState, 0, sizeof(vertCompFiltState));
     posVelFusionDelayed = false;
-#if EK3_FEATURE_OPTFLOW_FUSION
-    optFlowFusionDelayed = false;
-#endif
     flowFusionActive = false;
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
@@ -594,13 +586,6 @@ void NavEKF3_core::CovarianceInit()
     // wind velocities
     P[22][22] = 0.0f;
     P[23][23]  = P[22][22];
-
-
-#if EK3_FEATURE_OPTFLOW_FUSION
-    // optical flow ground height covariance
-    Popt = 0.25f;
-#endif
-
 }
 
 /********************************************************
@@ -654,11 +639,6 @@ void NavEKF3_core::UpdateFilter(bool predict)
 #if EK3_FEATURE_BEACON_FUSION
         // Update states using range beacon data
         SelectRngBcnFusion();
-#endif
-
-#if EK3_FEATURE_OPTFLOW_FUSION
-        // Update states using optical flow data
-        SelectFlowFusion();
 #endif
 
 #if EK3_FEATURE_BODY_ODOM

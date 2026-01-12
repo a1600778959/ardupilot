@@ -2275,23 +2275,9 @@ bool AP_AHRS::get_filter_status(nav_filter_status &status) const
     return false;
 }
 
-// write optical flow data to EKF
-void  AP_AHRS::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
-{
-#if HAL_NAVEKF2_AVAILABLE
-    EKF2.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
-#endif
-#if EK3_FEATURE_OPTFLOW_FUSION
-    EKF3.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
-#endif
-}
-
 // retrieve latest corrected optical flow samples (used for calibration)
 bool AP_AHRS::getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const
 {
-#if EK3_FEATURE_OPTFLOW_FUSION
-    return EKF3.getOptFlowSample(timeStamp_ms, flowRate, bodyRate, losPred);
-#endif
     return false;
 }
 

@@ -187,19 +187,6 @@ public:
     // reporting via ahrs.use_compass()
     bool use_compass(void) const;
 
-    // write the raw optical flow measurements
-    // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
-    // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.
-    // rawGyroRates are the sensor rotation rates in rad/sec measured by the sensors internal gyro
-    // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
-    // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
-    // posOffset is the XYZ flow sensor position in the body frame in m
-    // heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
-    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride);
-
-    // retrieve latest corrected optical flow samples (used for calibration)
-    bool getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const;
-
     /*
      * Write body frame linear and angular displacement measurements from a visual odometry sensor
      *
@@ -407,11 +394,7 @@ private:
     AP_Int16  _tasInnovGate;        // Percentage number of standard deviations applied to true airspeed innovation consistency check
     AP_Int8  _magCal;               // Sets activation condition for in-flight magnetometer calibration
     AP_Int8 _gpsGlitchRadiusMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal position before GPS glitch is declared : m
-    AP_Float _flowNoise;            // optical flow rate measurement noise
-    AP_Int16  _flowInnovGate;       // Percentage number of standard deviations applied to optical flow innovation consistency check
-    AP_Int8  _flowDelay_ms;         // effective average delay of optical flow measurements rel to IMU (msec)
     AP_Int16  _rngInnovGate;        // Percentage number of standard deviations applied to range finder innovation consistency check
-    AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
     AP_Float _rngNoise;             // Range finder noise : m
     AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
     AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF3 for
@@ -432,7 +415,6 @@ private:
     AP_Float _visOdmVelErrMax;      // Observation 1-STD velocity error assumed for visual odometry sensor at lowest reported quality (m/s)
     AP_Float _visOdmVelErrMin;      // Observation 1-STD velocity error assumed for visual odometry sensor at highest reported quality (m/s)
     AP_Float _wencOdmVelErr;        // Observation 1-STD velocity error assumed for wheel odometry sensor (m/s)
-    AP_Int8  _flowUse;              // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
     AP_Int8 _gsfRunMask;            // mask controlling which EKF3 instances run a separate EKF-GSF yaw estimator

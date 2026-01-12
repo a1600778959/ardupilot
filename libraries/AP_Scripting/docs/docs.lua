@@ -2390,22 +2390,6 @@ function esc_telem:set_rpm_scale(esc_index, scale_factor) end
 function esc_telem:get_last_telem_data_ms(esc_index) end
 
 -- desc
-optical_flow = {}
-
--- desc
----@return integer
-function optical_flow:quality() end
-
--- desc
----@return boolean
-function optical_flow:healthy() end
-
--- desc
----@return boolean
-function optical_flow:enabled() end
-
-
--- desc
 baro = {}
 
 -- get external temperature in degrees C

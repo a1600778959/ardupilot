@@ -39,7 +39,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Mission/AP_Mission_ChangeDetector.h>
 #include <AR_WPNav/AR_WPNav_OA.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #include <AP_AOA/AP_AOAFilter.h>           //添加AOA头文件
 #include <AP_AOA/AP_AOAPID.h>              //添加AOAPID头文件
@@ -138,10 +137,6 @@ private:
     // external control implementation
 #if AP_EXTERNAL_CONTROL_ENABLED
     AP_ExternalControl_Rover external_control;
-#endif
-
-#if AP_OPTICALFLOW_ENABLED
-    AP_OpticalFlow optflow;
 #endif
 
     // GCS handling

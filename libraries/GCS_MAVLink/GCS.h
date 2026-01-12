@@ -364,7 +364,6 @@ public:
 #if AP_MAVLINK_BATTERY2_ENABLED
     void send_battery2();
 #endif
-    void send_opticalflow();
     virtual void send_attitude() const;
     virtual void send_attitude_quaternion() const;
     void send_autopilot_version() const;
@@ -662,8 +661,6 @@ protected:
     MAV_RESULT handle_can_forward(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 #endif
     void handle_can_frame(const mavlink_message_t &msg) const;
-
-    void handle_optical_flow(const mavlink_message_t &msg);
 
     void handle_manual_control(const mavlink_message_t &msg);
     void handle_radio_rc_channels(const mavlink_message_t &msg);

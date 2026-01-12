@@ -299,44 +299,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RNG_I_GATE", 19, NavEKF3, _rngInnovGate, 500),
 
-    // Optical flow measurement parameters
-
-    // @Param: MAX_FLOW
-    // @DisplayName: Maximum valid optical flow rate
-    // @Description: This sets the magnitude maximum optical flow rate in rad/sec that will be accepted by the filter
-    // @Range: 1.0 4.0
-    // @Increment: 0.1
-    // @User: Advanced
-    // @Units: rad/s
-    AP_GROUPINFO("MAX_FLOW", 20, NavEKF3, _maxFlowRate, 2.5f),
-
-    // @Param: FLOW_M_NSE
-    // @DisplayName: Optical flow measurement noise (rad/s)
-    // @Description: This is the RMS value of noise and errors in optical flow measurements. Increasing it reduces the weighting on these measurements.
-    // @Range: 0.05 1.0
-    // @Increment: 0.05
-    // @User: Advanced
-    // @Units: rad/s
-    AP_GROUPINFO("FLOW_M_NSE", 21, NavEKF3, _flowNoise, FLOW_M_NSE_DEFAULT),
-
-    // @Param: FLOW_I_GATE
-    // @DisplayName: Optical Flow measurement gate size
-    // @Description: This sets the percentage number of standard deviations applied to the optical flow innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 100 1000
-    // @Increment: 25
-    // @User: Advanced
-    AP_GROUPINFO("FLOW_I_GATE", 22, NavEKF3, _flowInnovGate, FLOW_I_GATE_DEFAULT),
-
-    // @Param: FLOW_DELAY
-    // @DisplayName: Optical Flow measurement delay (msec)
-    // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
-    // @Range: 0 250
-    // @Increment: 10
-    // @User: Advanced
-    // @Units: ms
-    // @RebootRequired: True
-    AP_GROUPINFO("FLOW_DELAY", 23, NavEKF3, _flowDelay_ms, FLOW_MEAS_DELAY),
-
     // State and Covariance Predition Parameters
 
     // @Param: GYRO_P_NSE
@@ -581,14 +543,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @User: Advanced
     // @Units: m/s
     AP_GROUPINFO("WENC_VERR", 53, NavEKF3, _wencOdmVelErr, 0.1f),
-
-    // @Param: FLOW_USE
-    // @DisplayName: Optical flow use bitmask
-    // @Description: Controls if the optical flow data is fused into the 24-state navigation estimator OR the 1-state terrain height estimator.
-    // @User: Advanced
-    // @Values: 0:None,1:Navigation,2:Terrain
-    // @RebootRequired: True
-    AP_GROUPINFO("FLOW_USE", 54, NavEKF3, _flowUse, FLOW_USE_DEFAULT),
 
     // @Param: HRT_FILT
     // @DisplayName: Height rate filter crossover frequency
@@ -1549,37 +1503,6 @@ bool NavEKF3::configuredToUseGPSForPosXY(void) const
     // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = do not use GPS
     return  (sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS);
 }
-
-// write the raw optical flow measurements
-// rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
-// rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.
-// rawGyroRates are the sensor rotation rates in rad/sec measured by the sensors internal gyro
-// The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
-// msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
-// posOffset is the XYZ flow sensor position in the body frame in m
-// heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
-#if EK3_FEATURE_OPTFLOW_FUSION
-void NavEKF3::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
-{
-    dal.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
-
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
-        }
-    }
-}
-
-// retrieve latest corrected optical flow samples (used for calibration)
-bool NavEKF3::getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const
-{
-    // return optical flow samples from primary core
-    if (core) {
-        return core[primary].getOptFlowSample(timeStamp_ms, flowRate, bodyRate, losPred);
-    }
-    return false;
-}
-#endif  // EK3_FEATURE_OPTFLOW_FUSION
 
 // write yaw angle sensor measurements
 void NavEKF3::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type)

@@ -416,13 +416,6 @@ singleton AP_Baro method get_altitude float
 singleton AP_Baro method healthy boolean uint8_t'skip_check
 singleton AP_Baro method get_altitude_difference float float'skip_check float'skip_check
 
-include AP_OpticalFlow/AP_OpticalFlow.h
-singleton AP_OpticalFlow depends AP_OPTICALFLOW_ENABLED
-singleton AP_OpticalFlow rename optical_flow
-singleton AP_OpticalFlow method enabled boolean
-singleton AP_OpticalFlow method healthy boolean
-singleton AP_OpticalFlow method quality uint8_t
-
 include AP_ESC_Telem/AP_ESC_Telem.h
 
 userdata AP_ESC_Telem_Backend::TelemetryData depends (HAL_WITH_ESC_TELEM == 1)

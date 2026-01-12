@@ -29,7 +29,6 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
@@ -1022,9 +1021,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION, MSG_VIDEO_STREAM_INFORMATION},
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 #endif // AP_CAMERA_ENABLED
-#if AP_OPTICALFLOW_ENABLED
-        { MAVLINK_MSG_ID_OPTICAL_FLOW,          MSG_OPTICAL_FLOW},
-#endif
 #if COMPASS_CAL_ENABLED
         { MAVLINK_MSG_ID_MAG_CAL_PROGRESS,      MSG_MAG_CAL_PROGRESS},
         { MAVLINK_MSG_ID_MAG_CAL_REPORT,        MSG_MAG_CAL_REPORT},
@@ -2652,47 +2648,6 @@ MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32
     return MAV_RESULT_DENIED;
 }
 
-#if AP_OPTICALFLOW_ENABLED
-/*
-  send OPTICAL_FLOW message
- */
-void GCS_MAVLINK::send_opticalflow()
-{
-    const AP_OpticalFlow *optflow = AP::opticalflow();
-
-    // exit immediately if no optical flow sensor or not healthy
-    if (optflow == nullptr ||
-        !optflow->healthy()) {
-        return;
-    }
-
-    // get rates from sensor
-    const Vector2f &flowRate = optflow->flowRate();
-    const Vector2f &bodyRate = optflow->bodyRate();
-
-    float hagl = 0;
-#if AP_AHRS_ENABLED
-    if (!AP::ahrs().get_hagl(hagl)) {
-        hagl = 0;
-    }
-#endif
-
-    // populate and send message
-    mavlink_msg_optical_flow_send(
-        chan,
-        AP_HAL::millis(),
-        0, // sensor id is zero
-        flowRate.x,
-        flowRate.y,
-        flowRate.x - bodyRate.x,
-        flowRate.y - bodyRate.y,
-        optflow->quality(),
-        hagl,  // ground distance (in meters) set to zero
-        flowRate.x,
-        flowRate.y);
-}
-#endif  // AP_OPTICALFLOW_ENABLED
-
 /*
   send AUTOPILOT_VERSION packet
  */
@@ -3661,18 +3616,6 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
 }
 #endif  // AP_RC_CHANNEL_ENABLED
 
-#if AP_OPTICALFLOW_ENABLED
-void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t &msg)
-{
-    AP_OpticalFlow *optflow = AP::opticalflow();
-    if (optflow == nullptr) {
-        return;
-    }
-    optflow->handle_msg(msg);
-}
-#endif
-
-
 #if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
 /*
   handle MAV_CMD_FIXED_MAG_CAL_YAW
@@ -3952,13 +3895,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 #endif
-
-#if AP_OPTICALFLOW_ENABLED
-    case MAVLINK_MSG_ID_OPTICAL_FLOW:
-        handle_optical_flow(msg);
-        break;
-#endif
-
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
         handle_distance_sensor(msg);
         break;
@@ -5416,13 +5352,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
         send_local_position();
-        break;
-#endif
-
-#if AP_OPTICALFLOW_ENABLED
-    case MSG_OPTICAL_FLOW:
-        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        send_opticalflow();
         break;
 #endif
 

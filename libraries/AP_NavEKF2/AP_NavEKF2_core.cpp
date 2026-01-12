@@ -138,7 +138,6 @@ void NavEKF2_core::InitialiseVariables()
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
     flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;
-    flowMeaTime_ms = 0;
     prevFlowFuseTime_ms = 0;
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
@@ -583,9 +582,6 @@ void NavEKF2_core::UpdateFilter(bool predict)
         // Update states using range beacon data
         SelectRngBcnFusion();
 #endif
-
-        // Update states using optical flow data
-        SelectFlowFusion();
 
         // Update states using airspeed data
         SelectTasFusion();

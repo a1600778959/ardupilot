@@ -4,7 +4,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_NavEKF3/AP_NavEKF3_feature.h>
@@ -73,9 +72,6 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.touchdown_expected = ahrs.get_touchdown_expected();
     _RFRN.available_memory = hal.util->available_memory();
     _RFRN.ahrs_trim = ahrs.get_trim();
-#if AP_OPTICALFLOW_ENABLED
-    _RFRN.opticalflow_enabled = AP::opticalflow() && AP::opticalflow()->enabled();
-#endif
     _RFRN.wheelencoder_enabled = AP::wheelencoder() && (AP::wheelencoder()->num_sensors() > 0);
     _RFRN.ekf_type = ahrs.get_ekf_type();
     WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
@@ -316,21 +312,6 @@ bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
     return (_RFRF.core_slow & mask) != 0;
 }
 
-// log optical flow data
-void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
-{
-    end_frame();
-
-    const log_ROFH old = _ROFH;
-    _ROFH.rawFlowQuality = rawFlowQuality;
-    _ROFH.rawFlowRates = rawFlowRates;
-    _ROFH.rawGyroRates = rawGyroRates;
-    _ROFH.msecFlowMeas = msecFlowMeas;
-    _ROFH.posOffset = posOffset;
-    _ROFH.heightOverride = heightOverride;
-    WRITE_REPLAY_BLOCK_IFCHANGED(ROFH, _ROFH, old);
-}
-
 // log external navigation data
 void AP_DAL::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
@@ -440,18 +421,6 @@ void AP_DAL::handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
     if (frame_types & uint8_t(AP_DAL::FrameType::LogWriteEKF3)) {
         ekf3.Log_Write();
     }
-}
-
-/*
-  handle optical flow message
- */
-void AP_DAL::handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
-{
-    _ROFH = msg;
-    ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride);
-#if EK3_FEATURE_OPTFLOW_FUSION
-    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride);
-#endif
 }
 
 /*

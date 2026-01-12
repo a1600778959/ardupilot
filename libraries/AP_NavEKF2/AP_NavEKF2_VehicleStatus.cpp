@@ -414,22 +414,3 @@ void NavEKF2_core::setTerrainHgtStable(bool val)
 {
     terrainHgtStable = val;
 }
-
-// Detect takeoff for optical flow navigation
-void NavEKF2_core::detectOptFlowTakeoff(void)
-{
-    if (!onGround && !takeOffDetected && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
-        // we are no longer confidently on the ground so check the range finder and gyro for signs of takeoff
-        const auto &ins = dal.ins();
-        Vector3f angRateVec;
-        Vector3f gyroBias;
-        getGyroBias(gyroBias);
-        angRateVec = ins.get_gyro(gyro_index_active) - gyroBias;
-
-        takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f)));
-    } else if (onGround) {
-        // we are confidently on the ground so set the takeoff detected status to false
-        takeOffDetected = false;
-    }
-}
-

@@ -202,16 +202,6 @@ public:
     // reporting via ahrs.use_compass()
     bool use_compass(void) const;
 
-    // write the raw optical flow measurements
-    // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
-    // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.
-    // rawGyroRates are the sensor rotation rates in rad/sec measured by the sensors internal gyro
-    // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
-    // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
-    // posOffset is the XYZ flow sensor position in the body frame in m
-    // heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
-    void  writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride);
-
     /*
         Returns the following data for debugging range beacon fusion
         ID : beacon identifier
@@ -654,20 +644,11 @@ private:
     // Calculate weighting that is applied to IMU1 accel data to blend data from IMU's 1 and 2
     void calcIMU_Weighting(ftype K1, ftype K2);
 
-    // return true if optical flow data is available
-    bool optFlowDataPresent(void) const;
-
     // return true if we should use the range finder sensor
     bool useRngFinder(void) const;
 
-    // determine when to perform fusion of optical flow measurements
-    void SelectFlowFusion();
-
     // Estimate terrain offset using a single state EKF
     void EstimateTerrainOffset();
-
-    // fuse optical flow measurements into the main filter
-    void FuseOptFlow();
 
     // Control filter mode changes
     void controlFilterModes();
@@ -978,7 +959,6 @@ private:
     Vector2F auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
-    uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
     Matrix3F Tbn_flow;              // transformation matrix from body to nav axes at the middle of the optical flow sample period
     Vector2 varInnovOptFlow;        // optical flow innovations variances (rad/sec)^2

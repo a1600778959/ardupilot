@@ -15,7 +15,6 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_GPS/AP_GPS.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -292,17 +291,6 @@ void GCS::update_sensor_status_flags()
         if (!fence->sys_status_failed()) {
             control_sensors_health |= MAV_SYS_STATUS_GEOFENCE;
         }
-    }
-#endif
-
-#if AP_OPTICALFLOW_ENABLED
-    const AP_OpticalFlow *optflow = AP::opticalflow();
-    if (optflow && optflow->enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-    if (optflow && optflow->healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
 

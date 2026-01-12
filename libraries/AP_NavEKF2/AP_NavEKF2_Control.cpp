@@ -165,7 +165,7 @@ void NavEKF2_core::setAidingMode()
         bool canUseExtNav = readyToUseExtNav();
         if(canUseGPS || canUseRangeBeacon || canUseExtNav) {
             PV_AidingMode = AID_ABSOLUTE;
-        } else if (optFlowDataPresent() && (frontend->_flowUse == FLOW_USE_NAV) && filterIsStable) {
+        } else if ((frontend->_flowUse == FLOW_USE_NAV) && filterIsStable) {
             PV_AidingMode = AID_RELATIVE;
         }
         }
@@ -249,7 +249,7 @@ void NavEKF2_core::setAidingMode()
             tasTimeout = true;
             gpsNotAvailable = true;
         } else if (posAidLossCritical) {
-            if ((frontend->_flowUse == FLOW_USE_NAV) && optFlowDataPresent() && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
+            if ((frontend->_flowUse == FLOW_USE_NAV) && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
                 PV_AidingMode = AID_NONE;
             }
             // if the loss of position is critical, declare all sources of position aiding as being timed out
@@ -371,12 +371,6 @@ bool NavEKF2_core::useRngFinder(void) const
 {
     // TO-DO add code to set this based in setting of optical flow use parameter and presence of sensor
     return true;
-}
-
-// return true if optical flow data is available
-bool NavEKF2_core::optFlowDataPresent(void) const
-{
-    return (imuSampleTime_ms - flowMeaTime_ms < 200);
 }
 
 // return true if the filter to be ready to use gps

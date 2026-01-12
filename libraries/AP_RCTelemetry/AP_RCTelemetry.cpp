@@ -215,9 +215,6 @@ void AP_RCTelemetry::check_sensor_status_flags(void)
         } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_LASER_POSITION) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad LiDAR Health");
             check_sensor_status_timer = now;
-        } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW) > 0) {
-            queue_message(MAV_SEVERITY_CRITICAL, "Bad OptFlow Health");
-            check_sensor_status_timer = now;
         } else if ((_sensor_status_flags & MAV_SYS_STATUS_TERRAIN) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad or No Terrain Data");
             check_sensor_status_timer = now;
