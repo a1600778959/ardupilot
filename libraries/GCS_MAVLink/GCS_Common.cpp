@@ -2571,10 +2571,6 @@ void GCS::setup_uarts()
         create_gcs_mavlink_backend(chan_parameters[i], *uart);
     }
 
-#if AP_LTM_TELEM_ENABLED
-    ltm_telemetry.init();
-#endif
-
 }
 
 #if AP_BATTERY_ENABLED && AP_MAVLINK_BATTERY2_ENABLED

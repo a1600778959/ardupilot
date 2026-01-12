@@ -16,7 +16,6 @@
 #include "MAVLink_routing.h"
 #include <AP_RTC/JitterCorrection.h>
 #include <AP_Common/Bitmask.h>
-#include <AP_LTM_Telem/AP_LTM_Telem.h>
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -1165,11 +1164,6 @@ public:
     void setup_uarts();
 
     bool out_of_time() const;
-
-#if AP_LTM_TELEM_ENABLED
-    // LTM backend
-    AP_LTM_Telem ltm_telemetry;
-#endif
 
     // install an alternative protocol handler
     bool install_alternative_protocol(mavlink_channel_t chan, GCS_MAVLINK::protocol_handler_fn_t handler);
