@@ -80,18 +80,6 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("DELAY_MS", 5, AP_GPS::Params, delay_ms, 0),
 
-#if AP_GPS_SBF_ENABLED
-    // @Param: COM_PORT
-    // @DisplayName: GPS physical COM port
-    // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Advanced
-    // @Values: 0:COM1(RS232) on GSOF, 1:COM2(TTL) on GSOF
-    // @RebootRequired: True
-    AP_GROUPINFO("COM_PORT", 6, AP_GPS::Params, com_port, HAL_GPS_COM_PORT_DEFAULT),
-#endif
-
 #if GPS_MOVING_BASELINE
     // @Group: MB_
     // @Path: MovingBase.cpp

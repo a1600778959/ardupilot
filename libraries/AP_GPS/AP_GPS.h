@@ -84,21 +84,14 @@ public:
     
     // GPS driver types
     enum GPS_Type {
-        GPS_TYPE_NONE  = 0,
-        GPS_TYPE_AUTO  = 1,
-        GPS_TYPE_UBLOX = 2,
+        GPS_TYPE_NONE = 0,
+        GPS_TYPE_AUTO = 1,
         // GPS_TYPE_MTK   = 3,  // driver removed
         // GPS_TYPE_MTK19 = 4,  // driver removed
-        GPS_TYPE_NMEA  = 5,
-        GPS_TYPE_SIRF  = 6,
-        GPS_TYPE_HIL   = 7,
-        GPS_TYPE_SBP   = 8,
+        GPS_TYPE_NMEA = 5,
+        GPS_TYPE_SIRF = 6,
+        GPS_TYPE_HIL = 7,
         GPS_TYPE_UAVCAN = 9,
-        GPS_TYPE_SBF   = 10,
-        GPS_TYPE_GSOF  = 11,
-        GPS_TYPE_ERB = 13,
-        GPS_TYPE_MAV = 14,
-        GPS_TYPE_NOVA = 15,
         GPS_TYPE_HEMI = 16, // hemisphere NMEA
         GPS_TYPE_UBLOX_RTK_BASE = 17,
         GPS_TYPE_UBLOX_RTK_ROVER = 18,
@@ -108,7 +101,6 @@ public:
         GPS_TYPE_UAVCAN_RTK_ROVER = 23,
         GPS_TYPE_UNICORE_NMEA = 24,
         GPS_TYPE_UNICORE_MOVINGBASE_NMEA = 25,
-        GPS_TYPE_SBF_DUAL_ANTENNA = 26,
 #if HAL_SIM_GPS_ENABLED
         GPS_TYPE_SITL = 100,
 #endif
@@ -679,23 +671,8 @@ private:
         uint8_t current_baud;
         uint32_t probe_baud;
         bool auto_detected_baud;
-#if AP_GPS_UBLOX_ENABLED
-        struct UBLOX_detect_state ublox_detect_state;
-#endif
-#if AP_GPS_SIRF_ENABLED
-        struct SIRF_detect_state sirf_detect_state;
-#endif
 #if AP_GPS_NMEA_ENABLED
         struct NMEA_detect_state nmea_detect_state;
-#endif
-#if AP_GPS_SBP_ENABLED
-        struct SBP_detect_state sbp_detect_state;
-#endif
-#if AP_GPS_SBP2_ENABLED
-        struct SBP2_detect_state sbp2_detect_state;
-#endif
-#if AP_GPS_ERB_ENABLED
-        struct ERB_detect_state erb_detect_state;
 #endif
     } detect_state[GPS_MAX_RECEIVERS];
 
