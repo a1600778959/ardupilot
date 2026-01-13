@@ -126,9 +126,6 @@ bool AP_Arming_Rover::arm(AP_Arming::Method method, const bool do_arming_checks)
     // Set the SmartRTL home location. If activated, SmartRTL will ultimately try to land at this point
     rover.g2.smart_rtl.set_home(true);
 
-    // initialize simple mode heading
-    rover.mode_simple.init_heading();
-
     update_soft_armed();
 
     send_arm_disarm_statustext("Throttle armed");

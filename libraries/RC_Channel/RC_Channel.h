@@ -152,7 +152,6 @@ public:
         GUIDED       =        55, // guided mode
         LOITER       =        56, // loiter mode
         CLEAR_WP     =        58, // clear waypoints
-        SIMPLE       =        59, // simple mode
         ZIGZAG       =        60, // zigzag mode
         ZIGZAG_SaveWP =       61, // zigzag save waypoint
         COMPASS_LEARN =       62, // learn compass offsets

@@ -45,7 +45,6 @@ void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwit
     case AUX_FUNC::RTL:
     case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
     case AUX_FUNC::SAVE_WP:
-    case AUX_FUNC::SIMPLE:
     case AUX_FUNC::SMART_RTL:
         break;
     default:
@@ -180,11 +179,6 @@ bool RC_Channel_Rover::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
     // Set mode to LOITER
     case AUX_FUNC::LOITER:
         do_aux_function_change_mode(rover.mode_loiter, ch_flag);
-        break;
-
-    // set mode to Simple
-    case AUX_FUNC::SIMPLE:
-        do_aux_function_change_mode(rover.mode_simple, ch_flag);
         break;
 
     case AUX_FUNC::CIRCLE:

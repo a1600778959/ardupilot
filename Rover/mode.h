@@ -15,7 +15,6 @@ public:
         MANUAL       = 0,
         HOLD         = 4,
         LOITER       = 5,
-        SIMPLE       = 7,
         CIRCLE       = 9,
         AUTO         = 10,
         RTL          = 11,
@@ -793,27 +792,4 @@ public:
     bool attitude_stabilized() const override { return false; }
 protected:
     bool _enter() override { return false; };
-};
-
-class ModeSimple : public Mode
-{
-public:
-
-    Number mode_number() const override { return Number::SIMPLE; }
-    const char *name4() const override { return "SMPL"; }
-
-    // methods that affect movement of the vehicle in this mode
-    void update() override;
-    void init_heading();
-
-    // simple type enum used for SIMPLE_TYPE parameter
-    enum simple_type {
-        Simple_InitialHeading = 0,
-        Simple_CardinalDirections = 1,
-    };
-
-private:
-
-    float _initial_heading_cd;  // vehicle heading (in centi-degrees) at moment vehicle was armed
-    float _desired_heading_cd;  // latest desired heading (in centi-degrees) from pilot
 };
