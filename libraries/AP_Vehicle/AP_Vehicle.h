@@ -49,7 +49,6 @@
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_Networking/AP_Networking.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
-#include <AP_TemperatureSensor/AP_TemperatureSensor.h>
 #include <SITL/SITL.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
@@ -386,10 +385,6 @@ protected:
 
 #if AP_FENCE_ENABLED
     AC_Fence fence;
-#endif
-
-#if AP_TEMPERATURE_SENSOR_ENABLED
-    AP_TemperatureSensor temperature_sensor;
 #endif
 
 #if AP_SCRIPTING_ENABLED

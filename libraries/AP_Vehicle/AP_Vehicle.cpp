@@ -64,12 +64,6 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(opendroneid, "DID_", 15, AP_Vehicle, AP_OpenDroneID),
 #endif
 
-#if AP_TEMPERATURE_SENSOR_ENABLED
-    // @Group: TEMP
-    // @Path: ../AP_TemperatureSensor/AP_TemperatureSensor.cpp
-    AP_SUBGROUPINFO(temperature_sensor, "TEMP", 16, AP_Vehicle, AP_TemperatureSensor),
-#endif
-
 #if HAL_NMEA_OUTPUT_ENABLED
     // @Group: NMEA_
     // @Path: ../AP_NMEA_Output/AP_NMEA_Output.cpp
@@ -361,10 +355,6 @@ void AP_Vehicle::setup()
     opendroneid.init();
 #endif
 
-#if AP_TEMPERATURE_SENSOR_ENABLED
-    temperature_sensor.init();
-#endif
-
 #if HAL_NMEA_OUTPUT_ENABLED
     nmea.init();
 #endif
@@ -490,9 +480,6 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if AP_NETWORKING_ENABLED
     SCHED_TASK_CLASS(AP_Networking, &vehicle.networking,    update,                   10,  50, 238),
-#endif
-#if AP_TEMPERATURE_SENSOR_ENABLED
-    SCHED_TASK_CLASS(AP_TemperatureSensor, &vehicle.temperature_sensor, update,        5, 50, 242),
 #endif
 #if HAL_INS_ACCELCAL_ENABLED
     SCHED_TASK(accel_cal_update,                                                      10, 100, 245),

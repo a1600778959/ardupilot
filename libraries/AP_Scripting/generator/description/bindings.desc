@@ -866,12 +866,6 @@ singleton AP_Networking method get_netmask_active uint32_t
 singleton AP_Networking method get_gateway_active uint32_t
 singleton AP_Networking method address_to_str string uint32_t'skip_check
 
--- ----AP_TemperatureSensor Library----
-include AP_TemperatureSensor/AP_TemperatureSensor.h
-singleton AP_TemperatureSensor depends AP_TEMPERATURE_SENSOR_ENABLED
-singleton AP_TemperatureSensor rename temperature_sensor
-singleton AP_TemperatureSensor method get_temperature boolean float'Null uint8_t'skip_check
-
 -- simulator only bindings
 include SITL/SITL.h depends AP_SIM_ENABLED
 singleton SITL::SIM depends AP_SIM_ENABLED
