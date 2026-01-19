@@ -51,12 +51,6 @@ public:
 #if AP_RCPROTOCOL_SUMD_ENABLED
         SUMD       =  5,
 #endif
-#if AP_RCPROTOCOL_SRXL_ENABLED
-        SRXL       =  6,
-#endif
-#if AP_RCPROTOCOL_SRXL2_ENABLED
-        SRXL2      =  7,
-#endif
 #if AP_RCPROTOCOL_ST24_ENABLED
         ST24       =  9,
 #endif
@@ -151,12 +145,6 @@ public:
 #endif
 #if AP_RCPROTOCOL_SUMD_ENABLED
         case SUMD:
-#endif
-#if AP_RCPROTOCOL_SRXL_ENABLED
-        case SRXL:
-#endif
-#if AP_RCPROTOCOL_SRXL2_ENABLED
-        case SRXL2:
 #endif
 #if AP_RCPROTOCOL_ST24_ENABLED
         case ST24:

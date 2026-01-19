@@ -26,8 +26,6 @@
 #include "AP_RCProtocol_IBUS.h"
 #include "AP_RCProtocol_SBUS.h"
 #include "AP_RCProtocol_SUMD.h"
-#include "AP_RCProtocol_SRXL.h"
-#include "AP_RCProtocol_SRXL2.h"
 #include "AP_RCProtocol_ST24.h"
 #include "AP_RCProtocol_DroneCAN.h"
 #include "AP_RCProtocol_GHST.h"
@@ -62,14 +60,8 @@ void AP_RCProtocol::init()
 #if AP_RCPROTOCOL_SUMD_ENABLED
     backend[AP_RCProtocol::SUMD] = NEW_NOTHROW AP_RCProtocol_SUMD(*this);
 #endif
-#if AP_RCPROTOCOL_SRXL_ENABLED
-    backend[AP_RCProtocol::SRXL] = NEW_NOTHROW AP_RCProtocol_SRXL(*this);
-#endif
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
     backend[AP_RCProtocol::SBUS_NI] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, false, 100000);
-#endif
-#if AP_RCPROTOCOL_SRXL2_ENABLED
-    backend[AP_RCProtocol::SRXL2] = NEW_NOTHROW AP_RCProtocol_SRXL2(*this);
 #endif
 #if AP_RCPROTOCOL_ST24_ENABLED
     backend[AP_RCProtocol::ST24] = NEW_NOTHROW AP_RCProtocol_ST24(*this);
@@ -559,14 +551,6 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_SUMD_ENABLED
     case SUMD:
         return "SUMD";
-#endif
-#if AP_RCPROTOCOL_SRXL_ENABLED
-    case SRXL:
-        return "SRXL";
-#endif
-#if AP_RCPROTOCOL_SRXL2_ENABLED
-    case SRXL2:
-        return "SRXL2";
 #endif
 #if AP_RCPROTOCOL_ST24_ENABLED
     case ST24:
