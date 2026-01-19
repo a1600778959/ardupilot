@@ -42,7 +42,6 @@
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_Relay/AP_Relay.h>
 #include <RC_Channel/RC_Channel.h>
-#include <AP_Button/AP_Button.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -1092,13 +1091,6 @@ bool AP_Arming::system_checks(bool report)
 #if AP_RELAY_ENABLED
         auto *relay = AP::relay();
         if (relay && !relay->arming_checks(sizeof(buffer), buffer)) {
-            check_failed(ARMING_CHECK_PARAMETERS, report, "%s", buffer);
-            return false;
-        }
-#endif
-#if HAL_BUTTON_ENABLED
-        const auto &button = AP::button();
-        if (!button.arming_checks(sizeof(buffer), buffer)) {
             check_failed(ARMING_CHECK_PARAMETERS, report, "%s", buffer);
             return false;
         }

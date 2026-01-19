@@ -513,36 +513,11 @@ singleton AP_RPM rename RPM
 singleton AP_RPM depends AP_RPM_ENABLED
 singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
 
-include AP_Button/AP_Button.h
-singleton AP_Button depends HAL_BUTTON_ENABLED == 1
-singleton AP_Button rename button
-singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
-
 include AP_Notify/ScriptingLED.h depends AP_NOTIFY_SCRIPTING_LED_ENABLED
 include AP_Notify/AP_Notify_config.h
 singleton ScriptingLED depends AP_NOTIFY_SCRIPTING_LED_ENABLED
 singleton ScriptingLED rename LED
 singleton ScriptingLED method get_rgb void uint8_t'Ref uint8_t'Ref uint8_t'Ref
-
-include ../ArduPlane/quadplane.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-singleton QuadPlane rename quadplane
-singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane) && HAL_QUADPLANE_ENABLED
-singleton QuadPlane method in_vtol_mode boolean
-singleton QuadPlane method in_assisted_flight boolean
-singleton QuadPlane method abort_landing boolean
-singleton QuadPlane method in_vtol_land_descent boolean
-
-include ../ArduSub/Sub.h depends APM_BUILD_TYPE(APM_BUILD_ArduSub)
-singleton Sub rename sub
-singleton Sub depends APM_BUILD_TYPE(APM_BUILD_ArduSub)
-singleton Sub method get_and_clear_button_count uint8_t uint8_t 1 4
-singleton Sub method is_button_pressed boolean uint8_t 1 4
-singleton Sub method rangefinder_alt_ok boolean
-singleton Sub method rangefinder_alt_ok depends AP_RANGEFINDER_ENABLED
-singleton Sub method get_rangefinder_target_cm float
-singleton Sub method get_rangefinder_target_cm depends AP_RANGEFINDER_ENABLED
-singleton Sub method set_rangefinder_target_cm boolean float'skip_check
-singleton Sub method set_rangefinder_target_cm depends AP_RANGEFINDER_ENABLED
 
 include AC_AttitudeControl/AC_AttitudeControl_Multi_6DoF.h depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 singleton AC_AttitudeControl_Multi_6DoF depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
@@ -670,11 +645,6 @@ singleton AP::fwversion() field minor uint8_t read
 singleton AP::fwversion() field patch uint8_t read
 singleton AP::fwversion() field fw_hash_str string read
 singleton AP::fwversion() field fw_hash_str rename hash
-
-include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float'Ref
-singleton AC_AttitudeControl method get_att_error_angle_deg float
 
 include AC_AttitudeControl/AC_PosControl.h depends APM_BUILD_COPTER_OR_HELI
 singleton AC_PosControl depends APM_BUILD_COPTER_OR_HELI

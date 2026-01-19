@@ -70,7 +70,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_RSSI',
     #'AP_Mount',
     'AP_Module',
-    'AP_Button',
+    #'AP_Button',
     #'AP_ICEngine',
     'AP_Networking',
     #'AP_Frsky_Telem',

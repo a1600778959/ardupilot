@@ -30,7 +30,6 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_CANManager/AP_CANManager.h>
-#include <AP_Button/AP_Button.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #include <AP_GPS/AP_GPS.h>
@@ -312,9 +311,6 @@ protected:
 #endif
 #if AP_INERTIALSENSOR_ENABLED
     AP_InertialSensor ins;
-#endif
-#if HAL_BUTTON_ENABLED
-    AP_Button button;
 #endif
 #if AP_RANGEFINDER_ENABLED
     RangeFinder rangefinder;

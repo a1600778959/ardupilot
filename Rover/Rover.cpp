@@ -114,9 +114,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200, 114),
 #endif
-#if HAL_BUTTON_ENABLED
-    SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200, 117),
-#endif
     SCHED_TASK(cruise_learn_update,    50,    200, 126),
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
