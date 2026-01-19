@@ -153,24 +153,6 @@ void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float
         return;
     }
 
-    // check if this obstacle needs to be rejected from DB because of low altitude near home
-#if APM_BUILD_COPTER_OR_HELI
-    if (!is_zero(_min_alt)) { 
-        Vector3f current_pos;
-        if (!AP::ahrs().get_relative_position_NED_home(current_pos)) {
-            // we do not know where the vehicle is
-            return;
-        }
-        if (current_pos.xy().length() < AP_OADATABASE_DISTANCE_FROM_HOME) {
-            // vehicle is within a small radius of home 
-            if (-current_pos.z < _min_alt) {
-                // vehicle is below the minimum alt
-                return;
-            }
-        }
-    }
-#endif
-    
     // ignore objects that are far away
     if ((_dist_max > 0.0f) && (distance > _dist_max)) {
         return;

@@ -44,30 +44,10 @@
 
 extern const AP_HAL::HAL& hal;
 
-
-
-#if APM_BUILD_COPTER_OR_HELI
-#define DEFAULT_GYRO_FILTER  20
-#define DEFAULT_ACCEL_FILTER 20
-#define DEFAULT_STILL_THRESH 2.5f
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
 #define DEFAULT_GYRO_FILTER  4
 #define DEFAULT_ACCEL_FILTER 10
 #define DEFAULT_STILL_THRESH 0.1f
-#else
-#define DEFAULT_GYRO_FILTER  20
-#define DEFAULT_ACCEL_FILTER 20
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) && CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    // In steady-state level flight on SITL Plane, especially while the motor is off, the INS system
-    // returns ins.is_still()==true. Baseline vibes while airborne are unrealistically low: around 0.07.
-    // A real aircraft would be experiencing micro turbulence and be rocking around a tiny bit. Therefore,
-    // for Plane SIM the vibe threshold needs to be a little lower. Since plane.is_flying() uses
-    // ins.is_still() during gps loss to detect if we're flying, we want to make sure we are not "perfectly"
-    // still in the air like we are on the ground.
-    #define DEFAULT_STILL_THRESH 0.05f
-#else
-    #define DEFAULT_STILL_THRESH 0.1f
-#endif
 #endif
 
 #if defined(STM32H7) || defined(STM32F7)
@@ -1004,25 +984,6 @@ AP_InertialSensor::init(uint16_t loop_rate)
         }
         notch.num_calculated_notch_frequencies = 1;
         notch.num_dynamic_notches = 1;
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-        if (notch.params.hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
-#if HAL_GYROFFT_ENABLED
-            if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
-                notch.num_dynamic_notches = AP_HAL::DSP::MAX_TRACKED_PEAKS; // only 3 peaks supported currently
-            } else
-#endif
-            {
-                AP_Motors *motors = AP::motors();
-                if (motors != nullptr) {
-                    // Always have at least one notch, this allows the filter to alocate and then be expanded at runtime if the number of motors is changed
-                    // Never have more than INS_MAX_NOTCHES
-                    notch.num_dynamic_notches = MAX(MIN(__builtin_popcount(motors->get_motor_mask()), INS_MAX_NOTCHES), 1);
-                }
-            }
-            // avoid harmonics unless actually configured by the user
-            notch.params.set_default_harmonics(1);
-        }
-#endif
     }
 #endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
@@ -1351,21 +1312,6 @@ void AP_InertialSensor::periodic()
 bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, Vector3f &trim)
 {
     Rotation rotation = ROTATION_NONE;
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    AP_AHRS_View *view = AP::ahrs().get_view();
-    if (view != nullptr) {
-        // Use pitch to guess which axis the user is trying to trim
-        // 5 deg buffer to favor normal AHRS and avoid floating point funny business
-        if (fabsf(view->pitch) < (fabsf(AP::ahrs().get_pitch())+radians(5)) ) {
-            // user is trying to calibrate view
-            rotation = view->get_rotation();
-            if (!is_zero(view->get_pitch_trim())) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Cannot calibrate with Q_TRIM_PITCH set");
-                return false;
-            }
-        }
-    }
-#endif
 
     Vector3f newtrim = trim;
     switch (rotation) {

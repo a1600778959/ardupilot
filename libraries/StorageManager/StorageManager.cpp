@@ -60,17 +60,10 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
   On Pixhawk this gives 718 waypoints, 46 rally points and 70 fence points
  */
 const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
-#if !APM_BUILD_COPTER_OR_HELI
     { StorageParam,   0,     1280}, // 0x500 parameter bytes
     { StorageMission, 1280,  2506},
     { StorageRally,   3786,   150}, // 10 rally points
     { StorageFence,   3936,   160}, // 20 fence points
-#else
-    { StorageParam,   0,     1536}, // 0x600 param bytes
-    { StorageMission, 1536,  2422},
-    { StorageRally,   3958,    90}, // 6 rally points
-    { StorageFence,   4048,    48}, // 6 fence points
-#endif
 #if STORAGE_NUM_AREAS >= 10
     { StorageParam,   4096,  1280},
     { StorageRally,   5376,   300},

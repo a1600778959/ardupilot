@@ -5,7 +5,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #ifndef AC_FENCE_DUMMY_METHODS_ENABLED
-#define AC_FENCE_DUMMY_METHODS_ENABLED  (!(APM_BUILD_TYPE(APM_BUILD_Rover) | APM_BUILD_COPTER_OR_HELI | APM_BUILD_TYPE(APM_BUILD_ArduPlane) | APM_BUILD_TYPE(APM_BUILD_ArduSub) | (AP_FENCE_ENABLED == 1)))
+#define AC_FENCE_DUMMY_METHODS_ENABLED  (!(APM_BUILD_TYPE(APM_BUILD_Rover) | (AP_FENCE_ENABLED == 1)))
 #endif
 
 #if !AC_FENCE_DUMMY_METHODS_ENABLED
@@ -19,8 +19,6 @@ extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AC_FENCE_TYPE_DEFAULT AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON
-#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define AC_FENCE_TYPE_DEFAULT AC_FENCE_TYPE_POLYGON
 #else
 #define AC_FENCE_TYPE_DEFAULT AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON
 #endif
@@ -34,13 +32,8 @@ extern const AP_HAL::HAL& hal;
 #define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
 #define AC_FENCE_MANUAL_RECOVERY_TIME_MIN           10000   // pilot has 10seconds to recover during which time the autopilot will not attempt to re-take control
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE     100.0   // after fence is broken we recreate the fence 100m further out
-#define AC_FENCE_OPTIONS_DEFAULT                   OPTIONS::DISABLE_MODE_CHANGE
-#else
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0   // after fence is broken we recreate the fence 20m further out
 #define AC_FENCE_OPTIONS_DEFAULT                   0
-#endif
 
 //#define AC_FENCE_DEBUG
 

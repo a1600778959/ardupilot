@@ -187,48 +187,6 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation, float pitch_trim_deg)
  */
 void AP_AHRS::update_AOA_SSA(void)
 {
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    const uint32_t now = AP_HAL::millis();
-    if (now - _last_AOA_update_ms < 50) {
-        // don't update at more than 20Hz
-        return;
-    }
-    _last_AOA_update_ms = now;
-    
-    Vector3f aoa_velocity, aoa_wind;
-
-    // get velocity and wind
-    if (get_velocity_NED(aoa_velocity) == false) {
-        return;
-    }
-
-    aoa_wind = wind_estimate();
-
-    // Rotate vectors to the body frame and calculate velocity and wind
-    const Matrix3f &rot = get_rotation_body_to_ned();
-    aoa_velocity = rot.mul_transpose(aoa_velocity);
-    aoa_wind = rot.mul_transpose(aoa_wind);
-
-    // calculate relative velocity in body coordinates
-    aoa_velocity = aoa_velocity - aoa_wind;
-    const float vel_len = aoa_velocity.length();
-
-    // do not calculate if speed is too low
-    if (vel_len < 2.0) {
-        _AOA = 0;
-        _SSA = 0;
-        return;
-    }
-
-    // Calculate AOA and SSA
-    if (aoa_velocity.x > 0) {
-        _AOA = degrees(atanf(aoa_velocity.z / aoa_velocity.x));
-    } else {
-        _AOA = 0;
-    }
-
-    _SSA = degrees(safe_asin(aoa_velocity.y / vel_len));
-#endif
 }
 
 // rotate a 2D vector from earth frame to body frame

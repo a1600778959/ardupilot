@@ -328,8 +328,6 @@ private:
     void Write_Baro(void);
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
 
-    void update_field_elevation();
-
     // atmosphere model functions
     float get_altitude_difference_extended(float base_pressure, float pressure) const;
     float get_EAS2TAS_extended(float pressure) const;

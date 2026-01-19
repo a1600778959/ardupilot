@@ -88,7 +88,7 @@ void GCS_MAVLINK::send_fence_status() const
 
     // report on Avoidance limiting
     uint8_t breach_mitigation = FENCE_MITIGATE_UNKNOWN;
-#if AP_AVOIDANCE_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if AP_AVOIDANCE_ENABLED
     const AC_Avoid* avoid =  AC_Avoid::get_singleton();
     if (avoid != nullptr) {
         if (avoid->limits_active()) {

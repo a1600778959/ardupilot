@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("MASK",  1, AP_BLHeli, channel_mask, 0),
 
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
     // @Param: AUTO
     // @DisplayName: BLHeli pass-thru auto-enable for multicopter motors
     // @Description: If set to 1 this auto-enables BLHeli pass-thru support for all multicopter motors
@@ -1111,7 +1111,7 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
         digital_mask = mask;
     }
 
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
     /*
       plane and copter can use AP_Motors to get an automatic mask
      */

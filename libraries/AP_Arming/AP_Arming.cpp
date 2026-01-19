@@ -67,30 +67,17 @@
 #define AP_ARMING_MAGFIELD_ERROR_THRESHOLD 100
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-  #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMONLY
-#else
-  #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMDISARM
-#endif
+#define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMDISARM
 
 // find a default value for ARMING_NEED_POS parameter, and determine
 // whether the parameter should be shown:
 #ifndef AP_ARMING_NEED_LOC_PARAMETER_ENABLED
-// determine whether ARMING_NEED_POS is shown:
-#if APM_BUILD_COPTER_OR_HELI
-#define AP_ARMING_NEED_LOC_PARAMETER_ENABLED 1
-#else
 #define AP_ARMING_NEED_LOC_PARAMETER_ENABLED 0
-#endif  // build types
 #endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
 
 // if ARMING_NEED_POS is shown, determine what its default should be:
 #if AP_ARMING_NEED_LOC_PARAMETER_ENABLED
-#if APM_BUILD_COPTER_OR_HELI
-#define AP_ARMING_NEED_LOC_DEFAULT 0
-#else
 #error "Unable to find value for AP_ARMING_NEED_LOC_DEFAULT"
-#endif  // APM_BUILD_TYPE
 #endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
 
 #ifndef PREARM_DISPLAY_PERIOD
@@ -537,11 +524,9 @@ bool AP_Arming::compass_checks(bool report)
             return false;
         }
         // check compass learning is on or offsets have been set
-#if !APM_BUILD_COPTER_OR_HELI && !APM_BUILD_TYPE(APM_BUILD_Blimp)
         // check compass offsets have been set if learning is off
         // copter and blimp always require configured compasses
         if (!_compass.learn_offsets_enabled())
-#endif
         {
             char failure_msg[100] = {};
             if (!_compass.configured(failure_msg, ARRAY_SIZE(failure_msg))) {
@@ -1416,14 +1401,6 @@ bool AP_Arming::estop_checks(bool display_failure)
 
 bool AP_Arming::pre_arm_checks(bool report)
 {
-#if !APM_BUILD_COPTER_OR_HELI
-    if (armed || arming_required() == Required::NO) {
-        // if we are already armed or don't need any arming checks
-        // then skip the checks
-        return true;
-    }
-#endif
-
     bool checks_result = hardware_safety_check(report)
 #if HAL_HAVE_IMU_HEATER
         &  heater_min_temperature_checks(report)

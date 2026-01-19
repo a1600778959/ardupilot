@@ -6,12 +6,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_DAL/AP_DAL.h>
 
-// minimum GPS horizontal speed required to use GPS ground course for yaw alignment (m/s)
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-  #define GPS_VEL_YAW_ALIGN_MIN_SPD 5.0F
-#else
-  #define GPS_VEL_YAW_ALIGN_MIN_SPD 1.0F
-#endif
+#define GPS_VEL_YAW_ALIGN_MIN_SPD 1.0F
+
 
 /********************************************************
 *                   RESET FUNCTIONS                     *
@@ -62,15 +58,9 @@ void NavEKF3_core::controlMagYawReset()
     bool finalResetRequest = false;
     bool interimResetRequest = false;
     if (flightResetAllowed && !assume_zero_sideslip()) {
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-        // for sub, we'd like to be far enough away from metal structures like docks and vessels
-        // diving 0.5m is reasonable for both open water and pools
-        finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) > EKF3_MAG_FINAL_RESET_ALT_SUB;
-#else
         // check that we have reached a height where ground magnetic interference effects are insignificant
         // and can perform a final reset of the yaw and field states
         finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) < -EKF3_MAG_FINAL_RESET_ALT;
-#endif
 
         // check for increasing height
         bool hgtIncreasing = (posDownAtLastMagReset-stateStruct.position.z) > 0.5f;

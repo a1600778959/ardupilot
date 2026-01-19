@@ -883,7 +883,7 @@ void RC_Channel::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
 
 void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)
 {
-#if AP_AVOIDANCE_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if AP_AVOIDANCE_ENABLED
     AC_Avoid *avoid = AP::ac_avoid();
     if (avoid == nullptr) {
         return;
