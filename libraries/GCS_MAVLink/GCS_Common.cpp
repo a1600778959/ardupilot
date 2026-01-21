@@ -39,7 +39,6 @@
 #include <AP_RTC/AP_RTC.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_RCTelemetry/AP_Spektrum_Telem.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Proximity/AP_Proximity.h>
@@ -2319,18 +2318,6 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
     }
 #endif
 
-#if HAL_SPEKTRUM_TELEM_ENABLED
-    AP_Spektrum_Telem* spektrum = AP::spektrum_telem();
-    if (spektrum != nullptr) {
-        spektrum->queue_message(severity, first_piece_of_text);
-    }
-#endif
-#if HAL_CRSF_TELEM_ENABLED
-    AP_CRSF_Telem* crsf = AP::crsf_telem();
-    if (crsf != nullptr) {
-        crsf->queue_message(severity, first_piece_of_text);
-    }
-#endif
     AP_Notify *notify = AP_Notify::get_singleton();
     if (notify) {
         notify->send_text(first_piece_of_text);
