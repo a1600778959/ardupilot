@@ -33,9 +33,6 @@ class AP_RCProtocol {
 public:
 
     enum rcprotocol_t {
-#if AP_RCPROTOCOL_PPMSUM_ENABLED
-        PPMSUM     =  0,
-#endif
 #if AP_RCPROTOCOL_IBUS_ENABLED
         IBUS       =  1,
 #endif
@@ -45,35 +42,14 @@ public:
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
         SBUS_NI    =  3,
 #endif
-#if AP_RCPROTOCOL_DSM_ENABLED
-        DSM        =  4,
-#endif
-#if AP_RCPROTOCOL_SUMD_ENABLED
-        SUMD       =  5,
-#endif
-#if AP_RCPROTOCOL_ST24_ENABLED
-        ST24       =  9,
-#endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
         FASTSBUS   = 12,
 #endif
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
         DRONECAN   = 13,
 #endif
-#if AP_RCPROTOCOL_GHST_ENABLED
-        GHST       = 14,
-#endif
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
         MAVLINK_RADIO = 15,
-#endif
-#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
-        JOYSTICK_SFML = 16,
-#endif
-#if AP_RCPROTOCOL_UDP_ENABLED
-        UDP = 17,
-#endif
-#if AP_RCPROTOCOL_FDM_ENABLED
-        FDM = 18,
 #endif
         NONE    //last enum always is None
     };
@@ -121,9 +97,6 @@ public:
     // for protocols without strong CRCs we require 3 good frames to lock on
     bool requires_3_frames(enum rcprotocol_t p) {
         switch (p) {
-#if AP_RCPROTOCOL_DSM_ENABLED
-        case DSM:
-#endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
         case FASTSBUS:
 #endif
@@ -133,36 +106,15 @@ public:
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
         case SBUS_NI:
 #endif
-#if AP_RCPROTOCOL_PPMSUM_ENABLED
-        case PPMSUM:
-#endif
-#if AP_RCPROTOCOL_GHST_ENABLED
-        case GHST:
-#endif
             return true;
 #if AP_RCPROTOCOL_IBUS_ENABLED
         case IBUS:
-#endif
-#if AP_RCPROTOCOL_SUMD_ENABLED
-        case SUMD:
-#endif
-#if AP_RCPROTOCOL_ST24_ENABLED
-        case ST24:
 #endif
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
         case DRONECAN:
 #endif
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
         case MAVLINK_RADIO:
-#endif
-#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
-        case JOYSTICK_SFML:
-#endif
-#if AP_RCPROTOCOL_UDP_ENABLED
-        case UDP:
-#endif
-#if AP_RCPROTOCOL_FDM_ENABLED
-        case FDM:
 #endif
         case NONE:
             return false;

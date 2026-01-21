@@ -602,10 +602,6 @@ bool RC_Channel::debounce_completed(int8_t position)
     return false;
 }
 
-//
-// support for auxiliary switches:
-//
-
 // init_aux_switch_function - initialize aux functions
 void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
 {
