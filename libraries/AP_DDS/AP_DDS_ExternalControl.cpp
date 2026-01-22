@@ -96,9 +96,6 @@ bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Locatio
     case 6: // FRAME_GLOBAL_REL_ALT
         frame_out = Location::AltFrame::ABOVE_HOME;
         break;
-    case 11: // FRAME_GLOBAL_TERRAIN_ALT
-        frame_out = Location::AltFrame::ABOVE_TERRAIN;
-        break;
     default:
         return false;
     }

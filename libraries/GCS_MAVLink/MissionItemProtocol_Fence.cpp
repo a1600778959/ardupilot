@@ -101,9 +101,7 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::convert_MISSION_ITEM_INT_to_AC_Pol
     if (mission_item_int.frame != MAV_FRAME_GLOBAL &&
         mission_item_int.frame != MAV_FRAME_GLOBAL_INT &&
         mission_item_int.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
-        mission_item_int.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
-        mission_item_int.frame != MAV_FRAME_GLOBAL_TERRAIN_ALT &&
-        mission_item_int.frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
+        mission_item_int.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
         return MAV_MISSION_UNSUPPORTED_FRAME;
     }
 

@@ -53,33 +53,9 @@ public:
     float get_throttle() const { return _throttle; }
     void set_throttle(float throttle);
 
-    // get or set roll as a value from -1 to 1
-    float get_roll() const { return _roll; }
-    void set_roll(float roll);
-
-    // get or set pitch as a value from -1 to 1
-    float get_pitch() const { return _pitch; }
-    void set_pitch(float pitch);
-
-    // get or set walking_height as a value from -1 to 1
-    float get_walking_height() const { return _walking_height; }
-    void set_walking_height(float walking_height);
-
     // get or set lateral input as a value from -100 to +100
     float get_lateral() const { return _lateral; }
     void set_lateral(float lateral);
-
-    // set or get mainsail input as a value from 0 to 100
-    void set_mainsail(float mainsail);
-    float get_mainsail() const { return _mainsail; }
-
-    // set or get wingsail input as a value from -100 to 100
-    void set_wingsail(float wingsail);
-    float get_wingsail() const { return _wingsail; }
-
-    // set or get mast rotation input as a value from -100 to 100
-    void set_mast_rotation(float mast_rotation);
-    float get_mast_rotation() const { return _mast_rotation; }
 
     // get slew limited throttle
     // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
@@ -211,13 +187,7 @@ private:
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _throttle_prev; // throttle input from previous iteration
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
-    float   _lateral;  // requested lateral input as a value from -100 to +100
-    float   _roll;      // requested roll as a value from -1 to +1
-    float   _pitch;     // requested pitch as a value from -1 to +1
-    float   _walking_height; // requested height as a value from -1 to +1   
-    float   _mainsail;  // requested mainsail input as a value from 0 to 100
-    float   _wingsail;  // requested wing sail input as a value in the range +- 100
-    float   _mast_rotation;  // requested mast rotation input as a value in the range +- 100
+    float   _lateral;  // requested lateral input as a value from -100 to +100 
     uint32_t _motor_mask;   // mask of motors configured with pwm_type
     frame_type _frame_type; // frame type requested at initialisation
 

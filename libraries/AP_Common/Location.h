@@ -23,8 +23,7 @@ public:
     enum class AltFrame {
         ABSOLUTE = 0,
         ABOVE_HOME = 1,
-        ABOVE_ORIGIN = 2,
-        ABOVE_TERRAIN = 3
+        ABOVE_ORIGIN = 2
     };
 
     /// constructors

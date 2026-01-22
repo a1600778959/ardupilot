@@ -210,14 +210,9 @@ public:
 
     // control outputs enumeration
     enum class ControlOutput {
-        Roll = 1,
-        Pitch = 2,
         Throttle = 3,
         Yaw = 4,
         Lateral = 5,
-        MainSail = 6,
-        WingSail = 7,
-        Walking_Height = 8,
         Last_ControlOutput  // place new values before this
     };
 

@@ -37,7 +37,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_Relay/AP_Relay.h>
@@ -1034,13 +1033,6 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 
-#if AP_TERRAIN_AVAILABLE
-        const AP_Terrain *terrain = AP_Terrain::get_singleton();
-        if ((terrain != nullptr) && terrain->init_failed()) {
-            check_failed(ARMING_CHECK_SYSTEM, report, "Terrain out of memory");
-            return false;
-        }
-#endif
 #if AP_SCRIPTING_ENABLED
         const AP_Scripting *scripting = AP_Scripting::get_singleton();
         if ((scripting != nullptr) && !scripting->arming_checks(sizeof(buffer), buffer)) {
@@ -1110,33 +1102,8 @@ bool AP_Arming::terrain_checks(bool report) const
     if (!terrain_database_required()) {
         return true;
     }
-
-#if AP_TERRAIN_AVAILABLE
-
-    const AP_Terrain *terrain = AP_Terrain::get_singleton();
-    if (terrain == nullptr) {
-        // this is also a system error, and it is already complaining
-        // about it.
-        return false;
-    }
-
-    if (!terrain->enabled()) {
-        check_failed(ARMING_CHECK_PARAMETERS, report, "terrain disabled");
-        return false;
-    }
-
-    char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-    if (!terrain->pre_arm_checks(fail_msg, sizeof(fail_msg))) {
-        check_failed(ARMING_CHECK_PARAMETERS, report, "%s", fail_msg);
-        return false;
-    }
-
-    return true;
-
-#else
     check_failed(ARMING_CHECK_PARAMETERS, report, "terrain required but disabled");
     return false;
-#endif
 }
 
 
@@ -1592,17 +1559,6 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     AP_GyroFFT *fft = AP::fft();
     if (fft != nullptr) {
         fft->prepare_for_arming();
-    }
-#endif
-
-#if AP_TERRAIN_AVAILABLE
-    if (armed) {
-        // tell terrain we have just armed, so it can setup
-        // a reference location for terrain adjustment
-        auto *terrain = AP::terrain();
-        if (terrain != nullptr) {
-            terrain->set_reference_location();
-        }
     }
 #endif
 

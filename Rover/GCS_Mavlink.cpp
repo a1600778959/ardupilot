@@ -920,8 +920,6 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
     case MAV_FRAME_GLOBAL_INT:
     case MAV_FRAME_GLOBAL_RELATIVE_ALT:
     case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
-    case MAV_FRAME_GLOBAL_TERRAIN_ALT:
-    case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
         break;
 
     default:

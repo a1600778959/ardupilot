@@ -1004,10 +1004,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_RANGEFINDER,           MSG_RANGEFINDER},
 #endif
         { MAVLINK_MSG_ID_DISTANCE_SENSOR,       MSG_DISTANCE_SENSOR},
-#if AP_TERRAIN_AVAILABLE
-        { MAVLINK_MSG_ID_TERRAIN_REQUEST,       MSG_TERRAIN_REQUEST},
-        { MAVLINK_MSG_ID_TERRAIN_REPORT,        MSG_TERRAIN_REPORT},
-#endif
 #if AP_MAVLINK_BATTERY2_ENABLED
         { MAVLINK_MSG_ID_BATTERY2,              MSG_BATTERY2},
 #endif
@@ -5994,10 +5990,6 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME
     case MAV_FRAME_GLOBAL_RELATIVE_ALT: // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
     case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
         frame = Location::AltFrame::ABOVE_HOME;
-        return true;
-    case MAV_FRAME_GLOBAL_TERRAIN_ALT:
-    case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
-        frame = Location::AltFrame::ABOVE_TERRAIN;
         return true;
     case MAV_FRAME_GLOBAL:
     case MAV_FRAME_GLOBAL_INT:

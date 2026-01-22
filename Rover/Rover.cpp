@@ -219,15 +219,6 @@ bool Rover::set_desired_speed(float speed)
 bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value)
 {
     switch (control_output) {
-    case AP_Vehicle::ControlOutput::Roll:
-        control_value = constrain_float(g2.motors.get_roll(), -1.0f, 1.0f);
-        return true;
-    case AP_Vehicle::ControlOutput::Pitch:
-        control_value = constrain_float(g2.motors.get_pitch(), -1.0f, 1.0f);
-        return true;
-    case AP_Vehicle::ControlOutput::Walking_Height:
-        control_value = constrain_float(g2.motors.get_walking_height(), -1.0f, 1.0f);
-        return true;
     case AP_Vehicle::ControlOutput::Throttle:
         control_value = constrain_float(g2.motors.get_throttle() * 0.01f, -1.0f, 1.0f);
         return true;
@@ -236,12 +227,6 @@ bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &
         return true;
     case AP_Vehicle::ControlOutput::Lateral:
         control_value = constrain_float(g2.motors.get_lateral() * 0.01f, -1.0f, 1.0f);
-        return true;
-    case AP_Vehicle::ControlOutput::MainSail:
-        control_value = constrain_float(g2.motors.get_mainsail() * 0.01f, -1.0f, 1.0f);
-        return true;
-    case AP_Vehicle::ControlOutput::WingSail:
-        control_value = constrain_float(g2.motors.get_wingsail() * 0.01f, -1.0f, 1.0f);
         return true;
     default:
         return false;

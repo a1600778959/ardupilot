@@ -7,7 +7,6 @@
 #ifndef HAL_BOOTLOADER_BUILD
 
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Terrain/AP_Terrain.h>
 
 /// constructors
 Location::Location()
@@ -72,12 +71,6 @@ void Location::set_alt_cm(int32_t alt_cm, AltFrame frame)
         case AltFrame::ABOVE_ORIGIN:
             origin_alt = true;
             break;
-        case AltFrame::ABOVE_TERRAIN:
-            // we mark it as a relative altitude, as it doesn't have
-            // home alt added
-            relative_alt = true;
-            terrain_alt = true;
-            break;
     }
 }
 
@@ -95,14 +88,6 @@ bool Location::change_alt_frame(AltFrame desired_frame)
 // get altitude frame
 Location::AltFrame Location::get_alt_frame() const
 {
-    if (terrain_alt) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        if (!relative_alt) {
-            AP_HAL::panic("terrain loc must be relative_alt1");
-        }
-#endif
-        return AltFrame::ABOVE_TERRAIN;
-    }
     if (origin_alt) {
         return AltFrame::ABOVE_ORIGIN;
     }
@@ -129,24 +114,6 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
     if (desired_frame == frame) {
         ret_alt_cm = alt;
         return true;
-    }
-
-    // check for terrain altitude
-    float alt_terr_cm = 0;
-    if (frame == AltFrame::ABOVE_TERRAIN || desired_frame == AltFrame::ABOVE_TERRAIN) {
-#if AP_TERRAIN_AVAILABLE
-        AP_Terrain *terrain = AP::terrain();
-        if (terrain == nullptr) {
-            return false;
-        }
-        if (!terrain->height_amsl(*this, alt_terr_cm)) {
-            return false;
-        }
-        // convert terrain alt to cm
-        alt_terr_cm *= 100.0f;
-#else
-        return false;
-#endif
     }
 
     // convert alt to absolute
@@ -179,9 +146,6 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 #else
             return false;
 #endif  // AP_AHRS_ENABLED
-        case AltFrame::ABOVE_TERRAIN:
-            alt_abs = alt + alt_terr_cm;
-            break;
     }
 
     // convert absolute to desired frame
@@ -213,9 +177,6 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 #else
             return false;
 #endif  // AP_AHRS_ENABLED
-        case AltFrame::ABOVE_TERRAIN:
-            ret_alt_cm = alt_abs - alt_terr_cm;
-            return true;
     }
     return false;  // LCOV_EXCL_LINE  - not reachable
 }

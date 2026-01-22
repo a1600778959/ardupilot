@@ -260,42 +260,6 @@ void AP_MotorsUGV::set_lateral(float lateral)
     _lateral = constrain_float(lateral, -100.0f, 100.0f);
 }
 
-// set roll input as a value from -1 to +1
-void AP_MotorsUGV::set_roll(float roll)
-{
-    _roll = constrain_float(roll, -1.0f, 1.0f);
-}
-
-// set pitch input as a value from -1 to +1
-void AP_MotorsUGV::set_pitch(float pitch)
-{
-    _pitch = constrain_float(pitch, -1.0f, 1.0f);
-}
-
-// set walking_height input as a value from -1 to +1
-void AP_MotorsUGV::set_walking_height(float walking_height)
-{
-    _walking_height = constrain_float(walking_height, -1.0f, 1.0f);
-}
-
-// set mainsail input as a value from 0 to 100
-void AP_MotorsUGV::set_mainsail(float mainsail)
-{
-    _mainsail = constrain_float(mainsail, 0.0f, 100.0f);
-}
-
-// set wingsail input as a value from -100 to 100
-void AP_MotorsUGV::set_wingsail(float wingsail)
-{
-    _wingsail = constrain_float(wingsail, -100.0f, 100.0f);
-}
-
-// set mast rotation input as a value from -100 to 100
-void AP_MotorsUGV::set_mast_rotation(float mast_rotation)
-{
-    _mast_rotation = constrain_float(mast_rotation, -100.0f, 100.0f);
-}
-
 // get slew limited throttle
 // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
 // same as private slew_limit_throttle method (see below) but does not update throttle state

@@ -20,7 +20,7 @@ userdata Location method get_bearing float Location
 userdata Location method get_distance_NED Vector3f Location
 userdata Location method get_distance_NE Vector2f Location
 userdata Location method get_alt_frame uint8_t
-userdata Location method change_alt_frame boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
+userdata Location method change_alt_frame boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_ORIGIN
 userdata Location method copy Location
 
 include AP_AHRS/AP_AHRS.h
@@ -262,17 +262,6 @@ singleton RangeFinder method get_pos_offset_orient Vector3f Rotation'enum ROTATI
 
 singleton RangeFinder method get_backend AP_RangeFinder_Backend uint8_t'skip_check
 
-include AP_Terrain/AP_Terrain.h
-
-singleton AP_Terrain depends defined(AP_TERRAIN_AVAILABLE) && AP_TERRAIN_AVAILABLE == 1
-singleton AP_Terrain rename terrain
-singleton AP_Terrain method enabled boolean
-singleton AP_Terrain enum TerrainStatusDisabled TerrainStatusUnhealthy TerrainStatusOK
-singleton AP_Terrain method status uint8_t
-singleton AP_Terrain method height_amsl boolean Location float'Null boolean
-singleton AP_Terrain method height_terrain_difference_home boolean float'Null boolean
-singleton AP_Terrain method height_above_terrain boolean float'Null boolean
-
 include AP_Relay/AP_Relay.h
 
 singleton AP_Relay depends AP_RELAY_ENABLED
@@ -318,7 +307,7 @@ singleton AP_Vehicle method get_mode uint8_t
 singleton AP_Vehicle method get_control_mode_reason uint8_t
 singleton AP_Vehicle method get_likely_flying boolean
 singleton AP_Vehicle method get_time_flying_ms uint32_t
-singleton AP_Vehicle method get_control_output boolean AP_Vehicle::ControlOutput'enum AP_Vehicle::ControlOutput::Roll ((uint32_t)AP_Vehicle::ControlOutput::Last_ControlOutput-1) float'Null
+singleton AP_Vehicle method get_control_output boolean AP_Vehicle::ControlOutput'enum AP_Vehicle::ControlOutput::Yaw ((uint32_t)AP_Vehicle::ControlOutput::Last_ControlOutput-1) float'Null
 singleton AP_Vehicle method start_takeoff boolean float (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
 singleton AP_Vehicle method set_target_location boolean Location
 singleton AP_Vehicle method get_target_location boolean Location'Null
