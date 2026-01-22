@@ -123,7 +123,6 @@ const struct MultiplierStructure log_Multipliers[] = {
 #define HEAD_BYTE2  0x95    // Decimal 149
 
 #include <AP_DAL/LogStructure.h>
-#include <AP_NavEKF2/LogStructure.h>
 #include <AP_NavEKF3/LogStructure.h>
 #include <AP_GPS/LogStructure.h>
 #include <AP_NavEKF/LogStructure.h>
@@ -1205,7 +1204,6 @@ LOG_STRUCTURE_FROM_ESC_TELEM \
       "PIDE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
 LOG_STRUCTURE_FROM_INERTIALSENSOR \
 LOG_STRUCTURE_FROM_DAL \
-LOG_STRUCTURE_FROM_NAVEKF2 \
 LOG_STRUCTURE_FROM_NAVEKF3 \
 LOG_STRUCTURE_FROM_NAVEKF \
 LOG_STRUCTURE_FROM_AHRS \

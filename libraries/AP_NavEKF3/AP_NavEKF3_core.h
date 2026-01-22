@@ -710,12 +710,6 @@ private:
     // fuse magnetometer measurements
     void FuseMagnetometer();
 
-    // fuse true airspeed measurements
-    void FuseAirspeed();
-
-    // fuse synthetic sideslip measurement of zero
-    void FuseSideslip();
-
     // zero specified range of rows in the state covariance matrix
     void zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last);
 
@@ -774,12 +768,6 @@ private:
 
     // determine when to perform fusion of magnetometer measurements
     void SelectMagFusion();
-
-    // determine when to perform fusion of true airspeed measurements
-    void SelectTasFusion();
-
-    // determine when to perform fusion of drag or synthetic sideslip measurements
-    void SelectBetaDragFusion();
 
     // force alignment of the yaw angle using GPS velocity data
     void realignYawGPS(bool emergency_reset);
@@ -983,7 +971,6 @@ private:
     bool EKFGSF_getYaw(ftype &yaw, ftype &yawVariance) const;
 
     // Fusion of body frame X and Y axis drag specific forces for multi-rotor wind estimation
-    void FuseDragForces();
     void SelectDragFusion();
     void SampleDragData(const imu_elements &imu);
 

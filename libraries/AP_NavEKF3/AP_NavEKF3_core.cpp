@@ -627,12 +627,6 @@ void NavEKF3_core::UpdateFilter(bool predict)
         SelectBodyOdomFusion();
 #endif
 
-        // Update states using airspeed data
-        SelectTasFusion();
-
-        // Update states using sideslip constraint assumption for fly-forward vehicles or body drag for multicopters
-        SelectBetaDragFusion();
-
         // Update the filter status
         updateFilterStatus();
 

@@ -6,7 +6,7 @@ def build(bld):
         name='AP_DAL' + '_libs',
         ap_vehicle='AP_DAL_Standalone',
         ap_libraries=[
-            'AP_NavEKF2',
+            #'AP_NavEKF2',
             'AP_NavEKF3',
             'AP_NavEKF',
             'AP_Common',

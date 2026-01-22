@@ -4,7 +4,6 @@
 //
 
 #include <AP_DAL/AP_DAL.h>
-#include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Logger/AP_Logger.h>
 
@@ -61,14 +60,11 @@ public:
 AP_HAL_DAL_Standalone _hal;
 const AP_HAL::HAL &hal = _hal;
 
-NavEKF2 navekf2;
 NavEKF3 navekf3;
 
 int main(int argc, const char *argv[])
 {
-    navekf2.InitialiseFilter();
     navekf3.InitialiseFilter();
-    navekf2.UpdateFilter();
     navekf3.UpdateFilter();
-    return navekf2.healthy() && navekf3.healthy()?0:1;
+    return navekf3.healthy()? 0 : 1;
 }

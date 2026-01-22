@@ -9,7 +9,6 @@
 #include <AP_NavEKF3/AP_NavEKF3_feature.h>
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
-#include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #endif
 
