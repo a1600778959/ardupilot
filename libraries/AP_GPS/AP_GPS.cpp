@@ -27,7 +27,6 @@
 #include <AP_RTC/AP_RTC.h>
 #include <climits>
 #include <AP_SerialManager/AP_SerialManager.h>
-#include "AP_GPS_Blended.h"
 #include "AP_GPS_NMEA.h"
 #include "AP_GPS_ExternalAHRS.h"
 #include "GPS_Backend.h"
@@ -47,12 +46,6 @@
 
 #if AP_GPS_RTCM_DECODE_ENABLED
 #include "RTCM3_Parser.h"
-#endif
-
-#if !AP_GPS_BLENDED_ENABLED
-#if defined(GPS_BLENDED_INSTANCE)
-#error GPS_BLENDED_INSTANCE should not be defined when AP_GPS_BLENDED_ENABLED is false
-#endif
 #endif
 
 #define GPS_RTK_INJECT_TO_ALL 127
@@ -193,23 +186,6 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // 19 was GPS_DELAY_MS2
 
-#if AP_GPS_BLENDED_ENABLED
-    // @Param: _BLEND_MASK
-    // @DisplayName: Multi GPS Blending Mask
-    // @Description: Determines which of the accuracy measures Horizontal position, Vertical Position and Speed are used to calculate the weighting on each GPS receiver when soft switching has been selected by setting GPS_AUTO_SWITCH to 2(Blend)
-    // @Bitmask: 0:Horiz Pos,1:Vert Pos,2:Speed
-    // @User: Advanced
-    AP_GROUPINFO("_BLEND_MASK", 20, AP_GPS, _blend_mask, 5),
-
-    // @Param: _BLEND_TC
-    // @DisplayName: Blending time constant
-    // @Description: Controls the slowest time constant applied to the calculation of GPS position and height offsets used to adjust different GPS receivers for steady state position differences.
-    // @Units: s
-    // @Range: 5.0 30.0
-    // @User: Advanced
-    // Had key 21, no longer used
-#endif
-
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
@@ -324,11 +300,6 @@ void AP_GPS::init()
             rate_ms.set(GPS_MAX_RATE_MS);
         }
     }
-
-    // create the blended instance if appropriate:
-#if AP_GPS_BLENDED_ENABLED
-    drivers[GPS_BLENDED_INSTANCE] = NEW_NOTHROW AP_GPS_Blended(*this, params[GPS_BLENDED_INSTANCE], state[GPS_BLENDED_INSTANCE], timing[GPS_BLENDED_INSTANCE]);
-#endif
 }
 
 void AP_GPS::convert_parameters()
@@ -378,11 +349,6 @@ void AP_GPS::convert_parameters()
 // GPS solution is treated as an additional sensor.
 uint8_t AP_GPS::num_sensors(void) const
 {
-#if AP_GPS_BLENDED_ENABLED
-    if (_output_is_blended) {
-        return num_instances+1;
-    }
-#endif
     return num_instances;
 }
 
@@ -944,31 +910,6 @@ void AP_GPS::update(void)
 #if GPS_MAX_RECEIVERS > 1
 void AP_GPS::update_primary(void)
 {
-#if AP_GPS_BLENDED_ENABLED
-    /*
-      if blending is requested, attempt to calculate weighting for
-      each GPS
-      we do not do blending if using moving baseline yaw as the rover is
-      significant lagged and gives no more information on position or
-      velocity
-    */
-    const bool using_moving_base = is_rtk_base(0) || is_rtk_base(1);
-    if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::BLEND && !using_moving_base) {
-        _output_is_blended = ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->calc_weights();
-    } else {
-        _output_is_blended = false;
-        ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->zero_health_counter();
-    }
-
-    if (_output_is_blended) {
-        // Use the weighting to calculate blended GPS states
-        ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->calc_state();
-        // set primary to the virtual instance
-        primary_instance = GPS_BLENDED_INSTANCE;
-        return;
-    }
-#endif //   AP_GPS_BLENDED_ENABLED
-
     // check the primary param is set to possible GPS
     int8_t primary_param = _primary.get();
     if ((primary_param < 0) || (primary_param>=GPS_MAX_RECEIVERS)) {
@@ -1006,43 +947,6 @@ void AP_GPS::update_primary(void)
             return;
         }
     }
-
-#if AP_GPS_BLENDED_ENABLED
-    // handling switching away from blended GPS
-    if (primary_instance == GPS_BLENDED_INSTANCE) {
-        primary_instance = 0;
-        for (uint8_t i=1; i<GPS_MAX_RECEIVERS; i++) {
-            // choose GPS with highest state or higher number of
-            // satellites. Reject a GPS with an old update time, as it
-            // may be the old timestamp that triggered the loss of
-            // blending
-            const uint32_t delay_threshold = 400;
-            const bool higher_status = state[i].status > state[primary_instance].status;
-            const bool old_data_primary = (now - state[primary_instance].last_gps_time_ms) > delay_threshold;
-            const bool old_data = (now - state[i].last_gps_time_ms) > delay_threshold;
-            const bool equal_status = state[i].status == state[primary_instance].status;
-            const bool more_sats = state[i].num_sats > state[primary_instance].num_sats;
-            if (old_data && !old_data_primary) {
-                // don't switch to a GPS that has not updated in 400ms
-                continue;
-            }
-            if (state[i].status < GPS_OK_FIX_3D) {
-                // don't use a GPS without 3D fix
-                continue;
-            }
-            // select the new GPS if the primary has old data, or new
-            // GPS either has higher status, or has the same status
-            // and more satellites
-            if ((old_data_primary && !old_data) ||
-                higher_status ||
-                (equal_status && more_sats)) {
-                primary_instance = i;
-            }
-        }
-        _last_instance_swap_ms = now;
-        return;
-    }
-#endif  // AP_GPS_BLENDED_ENABLED
 
     // Use primary if 3D fix or better
     if (((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::USE_PRIMARY_IF_3D_FIX) && (state[primary_param].status >= GPS_OK_FIX_3D)) {
@@ -1541,13 +1445,6 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
         return false;
     }
 
-#if AP_GPS_BLENDED_ENABLED
-    // return lag of blended GPS
-    if (instance == GPS_BLENDED_INSTANCE) {
-        return drivers[instance]->get_lag(lag_sec);
-    }
-#endif
-
     if (params[instance].delay_ms > 0) {
         // if the user has specified a non zero time delay, always return that value
         lag_sec = 0.001f * (float)params[instance].delay_ms;
@@ -1574,13 +1471,6 @@ const Vector3f &AP_GPS::get_antenna_offset(uint8_t instance) const
         // we have to return a reference so use instance 0
         return params[0].antenna_offset;
     }
-
-#if AP_GPS_BLENDED_ENABLED
-    if (instance == GPS_BLENDED_INSTANCE) {
-        // return an offset for the blended GPS solution
-        return ((AP_GPS_Blended*)drivers[instance])->get_antenna_offset();
-    }
-#endif
 
     return params[instance].antenna_offset;
 }
@@ -1666,14 +1556,6 @@ bool AP_GPS::pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
             }
         }
     }
-
-#if AP_GPS_BLENDED_ENABLED
-    if (!drivers[GPS_BLENDED_INSTANCE]->is_healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "GPS blending unhealthy");
-        return false;
-    }
-#endif
-
     return true;
 }
 

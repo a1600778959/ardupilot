@@ -51,19 +51,8 @@ class RTCM3_Parser;
 /// GPS driver main class
 class AP_GPS
 {
-    friend class AP_GPS_Blended;
-    friend class AP_GPS_ERB;
-    friend class AP_GPS_GSOF;
-    friend class AP_GPS_MAV;
     friend class AP_GPS_ExternalAHRS;
     friend class AP_GPS_NMEA;
-    friend class AP_GPS_NOVA;
-    friend class AP_GPS_PX4;
-    friend class AP_GPS_SBF;
-    friend class AP_GPS_SBP;
-    friend class AP_GPS_SBP2;
-    friend class AP_GPS_SIRF;
-    friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
     friend class AP_GPS_DroneCAN;
 
@@ -584,10 +573,6 @@ public:
     void clear_RTCMV3();
 #endif // GPS_MOVING_BASELINE
 
-#if !AP_GPS_BLENDED_ENABLED
-    uint8_t get_auto_switch_type() const { return _auto_switch; }
-#endif
-
 protected:
 
     // configuration parameters
@@ -724,10 +709,6 @@ private:
     //Inject a packet of raw binary to a GPS
     void inject_data(const uint8_t *data, uint16_t len);
     void inject_data(uint8_t instance, const uint8_t *data, uint16_t len);
-
-#if AP_GPS_BLENDED_ENABLED
-    bool _output_is_blended; // true when a blended GPS solution being output
-#endif
 
     bool should_log() const;
 

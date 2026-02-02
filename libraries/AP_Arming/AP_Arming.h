@@ -314,10 +314,6 @@ private:
 
     void update_arm_gpio();
 
-#if !AP_GPS_BLENDED_ENABLED
-    bool blending_auto_switch_checks(bool report);
-#endif
-
 #if AP_ARMING_CRASHDUMP_ACK_ENABLED
     struct CrashDump {
         void check_reset();
