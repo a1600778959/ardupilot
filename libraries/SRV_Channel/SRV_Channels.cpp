@@ -167,13 +167,6 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("_RATE",  18, SRV_Channels, default_rate, 50),
 
-
-#if AP_SBUSOUTPUT_ENABLED
-    // @Group: _SBUS_
-    // @Path: ../AP_SBusOut/AP_SBusOut.cpp
-    AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
-#endif
-
 #if HAL_SUPPORT_RCOUT_SERIAL
     // @Group: _BLH_
     // @Path: ../AP_BLHeli/AP_BLHeli.cpp
@@ -467,12 +460,6 @@ void SRV_Channels::cork()
 void SRV_Channels::push()
 {
     hal.rcout->push();
-
-#if AP_SBUSOUTPUT_ENABLED
-    // give sbus library a chance to update
-    sbus.update();
-#endif
-
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update
     blheli.update_telemetry();

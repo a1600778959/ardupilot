@@ -17,7 +17,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Bitmask.h>
-#include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 
 #include "SRV_Channel_config.h"
@@ -602,11 +601,6 @@ private:
     // this static arrangement is to avoid having static objects in AP_Param tables
     static SRV_Channel *channels;
     static SRV_Channels *_singleton;
-
-#if AP_SBUSOUTPUT_ENABLED
-    // support for SBUS protocol
-    AP_SBusOut sbus;
-#endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol
