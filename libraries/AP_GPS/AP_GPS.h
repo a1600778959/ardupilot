@@ -201,6 +201,7 @@ public:
         uint64_t last_corrected_gps_time_us;///< the system time we got the last corrected GPS timestamp, microseconds
         bool corrected_timestamp_updated;  ///< true if the corrected timestamp has been updated
         uint32_t lagged_sample_count;       ///< number of samples with 50ms more lag than expected
+        uint32_t agrica_count_s;      ///< number of times we've seen the AGRICA message from a u-blox receiver, which gives us confidence in the quality of the GPS time
 
         // all the following fields must only all be filled by RTK capable backend drivers
         uint32_t rtk_time_week_ms;         ///< GPS Time of Week of last baseline in milliseconds

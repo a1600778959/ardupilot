@@ -748,7 +748,9 @@ void AP_GPS::update_instance(uint8_t instance)
         }
 
         // delta will only be correct after parsing two messages
-        timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
+        // 修复gps连续agrica消息一直重置最新更新时间造成延时计算异常
+        timing[instance].delta_time_ms = (tnow - timing[instance].last_message_time_ms) / state[instance].agrica_count_s;
+        state[instance].agrica_count_s = 0;
         timing[instance].last_message_time_ms = tnow;
         // if GPS disabled for flight testing then don't update fix timing value
         if (state[instance].status >= GPS_OK_FIX_2D && !_force_disable_gps) {

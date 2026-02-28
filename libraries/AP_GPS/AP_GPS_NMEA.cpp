@@ -470,6 +470,7 @@ bool AP_GPS_NMEA::_term_complete()
                 state.have_speed_accuracy = true;
                 state.have_horizontal_accuracy = true;
                 state.have_vertical_accuracy = true;
+                state.agrica_count_s++;
                 check_new_itow(ag.itow, _sentence_length);
                 break;
             }
