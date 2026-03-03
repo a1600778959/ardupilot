@@ -238,6 +238,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE|AP_PARAM_FRAME_BLIMP),
 
+    AP_GROUPINFO("BRAKE",  7, RC_Channel, brake_ch, 0),
+
     AP_GROUPEND
 };
 
@@ -867,12 +869,14 @@ void RC_Channel::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
     switch (ch_flag) {
     case AuxSwitchPos::HIGH:
         AP::arming().arm(AP_Arming::Method::AUXSWITCH, true);
+        do_aux_function_relay(brake_ch, true);
         break;
     case AuxSwitchPos::MIDDLE:
         // nothing
         break;
     case AuxSwitchPos::LOW:
         AP::arming().disarm(AP_Arming::Method::AUXSWITCH);
+        do_aux_function_relay(brake_ch, false);
         break;
     }
 }

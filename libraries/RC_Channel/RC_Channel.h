@@ -354,6 +354,7 @@ private:
 
     AP_Int8     reversed;
     AP_Int16    dead_zone;
+    AP_Int8     brake_ch;
 
     ControlType type_in;
     int16_t     high_in;
