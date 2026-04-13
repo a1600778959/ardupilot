@@ -1433,6 +1433,27 @@ bool NavEKF3::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f
     return core[primary].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 }
 
+bool NavEKF3::getOrientationCovariance(Matrix3f &covariance) const
+{
+    if (core == nullptr) {
+        return false;
+    }
+
+    return core[primary].getOrientationCovariance(covariance);
+}
+
+bool NavEKF3::getImuNoiseVariances(Vector3f &gyro_variances, Vector3f &accel_variances) const
+{
+    if (core == nullptr) {
+        return false;
+    }
+
+    // These are EKF-configured IMU noise estimates, used as the covariance floor.
+    gyro_variances = Vector3f(sq(float(_gyrNoise)), sq(float(_gyrNoise)), sq(float(_gyrNoise)));
+    accel_variances = Vector3f(sq(float(_accNoise)), sq(float(_accNoise)), sq(float(_accNoise)));
+    return true;
+}
+
 // get a source's velocity innovations
 // returns true on success and results are placed in innovations and variances arguments
 bool NavEKF3::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const

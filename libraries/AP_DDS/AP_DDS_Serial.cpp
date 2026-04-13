@@ -15,8 +15,16 @@ bool AP_DDS_Client::serial_transport_open(uxrCustomTransport *t)
     if (dds_port == nullptr) {
         return false;
     }
-    // ensure we own the UART
-    dds_port->begin(0);
+
+    // Ensure the UART is actively configured with the SERIALx_BAUD value used
+    // for DDS (not only ownership transfer), so the transport matches agent baud.
+    const uint32_t dds_baud = serial_manager->find_baudrate(AP_SerialManager::SerialProtocol_DDS_XRCE, 0);
+    if (dds_baud == 0) {
+        return false;
+    }
+    dds_port->begin(dds_baud);
+    // Drop stale bytes from a previous session before starting framing again.
+    dds_port->discard_input();
     dds->serial.port = dds_port;
     return true;
 }
@@ -26,7 +34,13 @@ bool AP_DDS_Client::serial_transport_open(uxrCustomTransport *t)
  */
 bool AP_DDS_Client::serial_transport_close(uxrCustomTransport *t)
 {
-    // we don't actually close the UART
+    AP_DDS_Client *dds = (AP_DDS_Client *)t->args;
+    if (dds->serial.port != nullptr) {
+        // Drain pending TX as much as possible and clear stale RX bytes to reduce
+        // framing corruption after reconnect.
+        dds->serial.port->flush();
+        dds->serial.port->discard_input();
+    }
     return true;
 }
 
@@ -40,14 +54,40 @@ size_t AP_DDS_Client::serial_transport_write(uxrCustomTransport *t, const uint8_
         *error = EINVAL;
         return 0;
     }
-    ssize_t bytes_written = dds->serial.port->write(buf, len);
-    if (bytes_written <= 0) {
-        *error = 1;
-        return 0;
+
+    // Try hard to queue the whole framed message. Returning partial writes too
+    // often can leave truncated frames on the wire and trigger agent-side
+    // deserialization errors.
+    size_t total_written = 0;
+    const uint32_t start_ms = AP_HAL::millis();
+    const uint32_t write_timeout_ms = 100;
+
+    while (total_written < len) {
+        const uint32_t txspace = dds->serial.port->txspace();
+        if (txspace == 0) {
+            if ((AP_HAL::millis() - start_ms) >= write_timeout_ms) {
+                break;
+            }
+            hal.scheduler->delay_microseconds(100);
+            continue;
+        }
+
+        const size_t remaining = len - total_written;
+        const size_t chunk_len = ((size_t)txspace < remaining) ? (size_t)txspace : remaining;
+        const ssize_t n = dds->serial.port->write(buf + total_written, chunk_len);
+        if (n <= 0) {
+            if ((AP_HAL::millis() - start_ms) >= write_timeout_ms) {
+                break;
+            }
+            hal.scheduler->delay_microseconds(100);
+            continue;
+        }
+
+        total_written += (size_t)n;
     }
-    //! @todo populate the error code correctly
-    *error = 0;
-    return bytes_written;
+
+    *error = (total_written == len) ? 0 : 1;
+    return total_written;
 }
 
 /*
@@ -60,19 +100,21 @@ size_t AP_DDS_Client::serial_transport_read(uxrCustomTransport *t, uint8_t* buf,
         *error = EINVAL;
         return 0;
     }
+
     const uint32_t tstart = AP_HAL::millis();
     while (AP_HAL::millis() - tstart < uint32_t(timeout_ms) &&
            dds->serial.port->available() < len) {
         hal.scheduler->delay_microseconds(100); // TODO select or poll this is limiting speed (100us)
     }
-    ssize_t bytes_read = dds->serial.port->read(buf, len);
+    const ssize_t bytes_read = dds->serial.port->read(buf, len);
     if (bytes_read <= 0) {
         *error = 1;
         return 0;
     }
-    //! @todo Add error reporting
+
     *error = 0;
-    return bytes_read;
+    dds->note_transport_rx((size_t)bytes_read);
+    return (size_t)bytes_read;
 }
 
 /*

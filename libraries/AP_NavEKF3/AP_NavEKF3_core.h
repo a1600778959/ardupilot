@@ -257,8 +257,11 @@ public:
     // return the synthetic air data drag and sideslip innovations
     void getSynthAirDataInnovations(Vector2f &dragInnov, float &betaInnov) const;
 
-   // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
+    // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+
+    // return the EKF attitude covariance as roll/pitch/yaw covariance in rad^2
+    bool getOrientationCovariance(Matrix3f &covariance) const;
 
     // get a particular source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments

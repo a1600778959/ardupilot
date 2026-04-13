@@ -7,6 +7,9 @@
 #if AP_DDS_IMU_PUB_ENABLED
 #include "sensor_msgs/msg/Imu.h"
 #endif //AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_UWB_PUB_ENABLED
+#include "sensor_msgs/msg/uwb.h"
+#endif // AP_DDS_UWB_PUB_ENABLED
 
 #include "uxr/client/client.h"
 
@@ -30,6 +33,9 @@ enum class TopicIndex: uint8_t {
 #if AP_DDS_IMU_PUB_ENABLED
     IMU_PUB,
 #endif //AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_UWB_PUB_ENABLED
+    UWB_PUB,
+#endif // AP_DDS_UWB_PUB_ENABLED
 #if AP_DDS_LOCAL_POSE_PUB_ENABLED
     LOCAL_POSE_PUB,
 #endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
@@ -84,7 +90,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
             .durability = UXR_DURABILITY_VOLATILE,
             .reliability = UXR_RELIABILITY_RELIABLE,
             .history = UXR_HISTORY_KEEP_LAST,
-            .depth = 20,
+            .depth = 10,
         },
     },
 #endif // AP_DDS_TIME_PUB_ENABLED
@@ -102,7 +108,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
             .durability = UXR_DURABILITY_VOLATILE,
             .reliability = UXR_RELIABILITY_BEST_EFFORT,
             .history = UXR_HISTORY_KEEP_LAST,
-            .depth = 5,
+            .depth = 10,
         },
     },
 #endif // AP_DDS_NAVSATFIX_PUB_ENABLED
@@ -156,10 +162,30 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
             .durability = UXR_DURABILITY_VOLATILE,
             .reliability = UXR_RELIABILITY_BEST_EFFORT,
             .history = UXR_HISTORY_KEEP_LAST,
-            .depth = 5,
+            .depth = 10,
         },
     },
 #endif //AP_DDS_IMU_PUB_ENABLED
+
+#if AP_DDS_UWB_PUB_ENABLED
+    {
+        .topic_id = to_underlying(TopicIndex::UWB_PUB),
+        .pub_id = to_underlying(TopicIndex::UWB_PUB),
+        .sub_id = to_underlying(TopicIndex::UWB_PUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::UWB_PUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::UWB_PUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataWriter,
+        .topic_name = "rt/ap/uwb",
+        .type_name = "sensor_msgs::msg::dds_::uwb_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 5,
+        },
+    },
+#endif // AP_DDS_UWB_PUB_ENABLED
+
 #if AP_DDS_LOCAL_POSE_PUB_ENABLED
     {
         .topic_id = to_underlying(TopicIndex::LOCAL_POSE_PUB),
@@ -246,7 +272,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
             .durability = UXR_DURABILITY_VOLATILE,
             .reliability = UXR_RELIABILITY_RELIABLE,
             .history = UXR_HISTORY_KEEP_LAST,
-            .depth = 20,
+            .depth = 10,
         },
     },
 #endif // AP_DDS_CLOCK_PUB_ENABLED

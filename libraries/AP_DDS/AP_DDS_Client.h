@@ -25,6 +25,9 @@
 #if AP_DDS_IMU_PUB_ENABLED
 #include "sensor_msgs/msg/Imu.h"
 #endif // AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_UWB_PUB_ENABLED
+#include "sensor_msgs/msg/uwb.h"
+#endif // AP_DDS_UWB_PUB_ENABLED
 #if AP_DDS_JOY_SUB_ENABLED
 #include "sensor_msgs/msg/Joy.h"
 #endif // AP_DDS_JOY_SUB_ENABLED
@@ -64,8 +67,9 @@
 #include <AP_Param/AP_Param.h>
 
 #define DDS_MTU             512
-#define DDS_STREAM_HISTORY  8
-#define DDS_BUFFER_SIZE     DDS_MTU * DDS_STREAM_HISTORY
+#define DDS_STREAM_HISTORY  16
+#define DDS_BUFFER_SIZE     (DDS_MTU * DDS_STREAM_HISTORY)
+#define DDS_BEST_EFFORT_BUFFER_SIZE  (DDS_MTU * 4)
 
 #if AP_DDS_UDP_ENABLED
 #include <AP_HAL/utility/Socket.h>
@@ -82,14 +86,17 @@ private:
     AP_Int8 enabled;
 
     // Serial Allocation
-    uxrSession session; //Session
-    bool is_using_serial; // true when using serial transport
+    uxrSession session{}; // Session
+    bool is_using_serial{false}; // true when using serial transport
 
     // input and output stream
-    uint8_t *input_reliable_stream;
-    uint8_t *output_reliable_stream;
+    uint8_t *input_reliable_stream{nullptr};
+    uint8_t *output_reliable_stream{nullptr};
+    uint8_t *output_best_effort_stream{nullptr};
     uxrStreamId reliable_in;
     uxrStreamId reliable_out;
+    uxrStreamId best_effort_in;
+    uxrStreamId best_effort_out;
 
     // Outgoing Sensor and AHRS data
 
@@ -125,7 +132,7 @@ private:
     // The last ms timestamp AP_DDS wrote a Local Pose message
     uint64_t last_local_pose_time_ms;
     //! @brief Serialize the current local_pose and publish to the IO stream(s)
-    void write_local_pose_topic();
+    bool write_local_pose_topic() WARN_IF_UNUSED;
     static void update_topic(geometry_msgs_msg_PoseStamped& msg);
 #endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
 
@@ -157,11 +164,11 @@ private:
 #endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
 
 #if AP_DDS_NAVSATFIX_PUB_ENABLED
-    sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
+    sensor_msgs_msg_NavSatFix nav_sat_fix_topic {};
     // The last ms timestamp AP_DDS wrote a NavSatFix message
     uint64_t last_nav_sat_fix_time_ms;
     //! @brief Serialize the current nav_sat_fix state and publish to the IO stream(s)
-    void write_nav_sat_fix_topic();
+    bool write_nav_sat_fix_topic() WARN_IF_UNUSED;
     bool update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance) WARN_IF_UNUSED;
 #endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 
@@ -171,8 +178,17 @@ private:
     uint64_t last_imu_time_ms;
     static void update_topic(sensor_msgs_msg_Imu& msg);
     //! @brief Serialize the current IMU data and publish to the IO stream(s)
-    void write_imu_topic();
+    bool write_imu_topic() WARN_IF_UNUSED;
 #endif // AP_DDS_IMU_PUB_ENABLED
+
+#if AP_DDS_UWB_PUB_ENABLED
+    sensor_msgs_msg_uwb uwb_topic {};
+    // The last ms timestamp AP_DDS wrote a UWB message
+    uint64_t last_uwb_time_ms{};
+    static bool update_topic(sensor_msgs_msg_uwb& msg);
+    //! @brief Serialize the current UWB target position and publish to the IO stream(s)
+    void write_uwb_topic();
+#endif // AP_DDS_UWB_PUB_ENABLED
 
 #if AP_DDS_CLOCK_PUB_ENABLED
     rosgraph_msgs_msg_Clock clock_topic;
@@ -220,6 +236,15 @@ private:
     // connection parametrics
     bool status_ok{false};
     bool connected{false};
+    bool session_created{false};
+
+    void cleanup_session(bool notify_agent);
+    void note_transport_rx(size_t wire_bytes);
+    uxrStreamId output_stream_for_qos(const uxrQoS_t& qos) const;
+    uxrStreamId input_stream_for_qos(const uxrQoS_t& qos) const;
+    void finalize_topic_write(const uxrQoS_t& qos, uint32_t payload_bytes);
+    bool prepare_topic_stream(ucdrBuffer& ub, uxrObjectId datawriter_id, uint32_t topic_size, const char* topic_name, const uxrQoS_t& qos, uint16_t* request_id = nullptr);
+    uint64_t last_rx_activity_ms{};
 
     // subscription callback function
     static void on_topic_trampoline(uxrSession* session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length, void* args);
@@ -244,7 +269,7 @@ private:
     static size_t serial_transport_write(uxrCustomTransport* transport, const uint8_t* buf, size_t len, uint8_t* error);
     static size_t serial_transport_read(uxrCustomTransport* transport, uint8_t* buf, size_t len, int timeout, uint8_t* error);
     struct {
-        AP_HAL::UARTDriver *port;
+        AP_HAL::UARTDriver *port{nullptr};
         uxrCustomTransport transport;
     } serial;
 
@@ -262,7 +287,7 @@ private:
         AP_Networking_IPV4 ip{AP_DDS_DEFAULT_UDP_IP_ADDR};
         // UDP Allocation
         uxrCustomTransport transport;
-        SocketAPM *socket;
+        SocketAPM *socket{nullptr};
     } udp;
 #endif
     // pointer to transport's communication structure
@@ -367,5 +392,3 @@ public:
 };
 
 #endif // AP_DDS_ENABLED
-
-

@@ -614,6 +614,8 @@ private:
     static AP_GPS *_singleton;
     HAL_Semaphore rsem;
 
+    bool _gps_thread_started = false;
+
     // returns the desired gps update rate in milliseconds
     // this does not provide any guarantee that the GPS is updating at the requested
     // rate it is simply a helper for use in the backends for determining what rate
@@ -677,6 +679,8 @@ private:
     AP_GPS_Backend *_detect_instance(uint8_t instance);
 
     void update_instance(uint8_t instance);
+
+    void gps_update_thread();
 
     /*
       buffer for re-assembling RTCM data for GPS injection.

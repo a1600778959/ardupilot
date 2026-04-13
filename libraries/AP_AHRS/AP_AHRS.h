@@ -368,6 +368,12 @@ public:
     // boolean false is returned if variances are not available
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
 
+    // return the EKF attitude covariance as roll/pitch/yaw covariance in rad^2
+    bool get_orientation_covariance(Matrix3f &covariance) const;
+
+    // return diagonal gyro and accel covariance estimates in sensor units
+    bool get_imu_noise_variances(Vector3f &gyro_variances, Vector3f &accel_variances) const;
+
     // get a source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
     bool get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;

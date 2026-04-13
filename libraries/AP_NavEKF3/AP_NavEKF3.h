@@ -179,6 +179,12 @@ public:
     // return the innovation consistency test ratios
     bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
+    // return the EKF attitude covariance as roll/pitch/yaw covariance in rad^2
+    bool getOrientationCovariance(Matrix3f &covariance) const;
+
+    // return diagonal gyro and accel covariance estimates in sensor units
+    bool getImuNoiseVariances(Vector3f &gyro_variances, Vector3f &accel_variances) const;
+
     // get a source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
     bool getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;

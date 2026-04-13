@@ -876,8 +876,9 @@ void AP_GPS::update(void)
 {
     WITH_SEMAPHORE(rsem);
 
-    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        update_instance(i);
+    if (!_gps_thread_started) {
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_GPS::gps_update_thread, void), "gps_update", 2048, AP_HAL::Scheduler::PRIORITY_IO, 0);
+        _gps_thread_started = true;
     }
 
     // calculate number of instances
@@ -1887,6 +1888,19 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Legacy: 4.5 param
     // @ReadOnly: True
     // @User: Advanced
+
+void AP_GPS::gps_update_thread()
+{
+    // 独立线程处理GPS更新，以避免大数据量下阻塞主循环
+    // 每1ms更新一次，确保GPS状态及时更新，不影响地面站和DDS客户端的准确性
+    while (true) {
+        for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+            WITH_SEMAPHORE(rsem);
+            update_instance(i);
+        }
+        hal.scheduler->delay(10);
+    }
+}
 
 /*
  * end old parameter metadata

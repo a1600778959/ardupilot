@@ -13,6 +13,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_AOA/AP_AOA_ALX.h>
 #if AP_DDS_ARM_SERVER_ENABLED
 #include <AP_Arming/AP_Arming.h>
 # endif // AP_DDS_ARM_SERVER_ENABLED
@@ -54,6 +55,9 @@ static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = AP_DDS_DELAY_BATTERY_ST
 #if AP_DDS_IMU_PUB_ENABLED
 static constexpr uint16_t DELAY_IMU_TOPIC_MS = AP_DDS_DELAY_IMU_TOPIC_MS;
 #endif // AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_UWB_PUB_ENABLED
+static constexpr uint16_t DELAY_UWB_TOPIC_MS = AP_DDS_DELAY_UWB_TOPIC_MS;
+#endif // AP_DDS_UWB_PUB_ENABLED
 #if AP_DDS_LOCAL_POSE_PUB_ENABLED
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = AP_DDS_DELAY_LOCAL_POSE_TOPIC_MS;
 #endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
@@ -73,6 +77,9 @@ static constexpr uint16_t DELAY_CLOCK_TOPIC_MS =AP_DDS_DELAY_CLOCK_TOPIC_MS;
 static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS;
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 static constexpr uint16_t DELAY_PING_MS = 500;
+static constexpr uint8_t MAX_MISSED_PING_COUNT = 3;
+static constexpr uint16_t RX_ACTIVITY_GRACE_MS = 2000;
+static constexpr uint16_t STATUS_FAIL_TIMEOUT_MS = 2000;
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
@@ -162,8 +169,39 @@ static void initialize(geometry_msgs_msg_Quaternion& q)
     q.w = 1.0;
 }
 
+static void set_unknown_covariance(double (&covariance)[9])
+{
+    memset(covariance, 0, sizeof(covariance));
+}
+
+static void set_unavailable_covariance(double (&covariance)[9])
+{
+    set_unknown_covariance(covariance);
+    covariance[0] = -1.0;
+}
+
+static void copy_covariance(const Matrix3f &src, double (&dst)[9])
+{
+    for (uint8_t row = 0; row < 3; row++) {
+        for (uint8_t col = 0; col < 3; col++) {
+            dst[row * 3 + col] = src[row][col];
+        }
+    }
+}
+
+static Matrix3f diagonal_covariance(const Vector3f &variances)
+{
+    Matrix3f covariance;
+    covariance[0][0] = variances.x;
+    covariance[1][1] = variances.y;
+    covariance[2][2] = variances.z;
+    return covariance;
+}
+
 AP_DDS_Client::~AP_DDS_Client()
 {
+    cleanup_session(false);
+
     // close transport
     if (is_using_serial) {
         uxr_close_custom_transport(&serial.transport);
@@ -172,6 +210,85 @@ AP_DDS_Client::~AP_DDS_Client()
         uxr_close_custom_transport(&udp.transport);
 #endif
     }
+}
+
+void AP_DDS_Client::cleanup_session(bool notify_agent)
+{
+    WITH_SEMAPHORE(csem);
+
+    connected = false;
+    status_ok = false;
+
+    if (session_created) {
+        if (notify_agent) {
+            (void)uxr_delete_session(&session);
+        }
+        session_created = false;
+    }
+
+    delete[] input_reliable_stream;
+    input_reliable_stream = nullptr;
+
+    delete[] output_reliable_stream;
+    output_reliable_stream = nullptr;
+
+    delete[] output_best_effort_stream;
+    output_best_effort_stream = nullptr;
+}
+
+void AP_DDS_Client::note_transport_rx(size_t wire_bytes)
+{
+    (void)wire_bytes;
+    last_rx_activity_ms = AP_HAL::millis64();
+}
+
+uxrStreamId AP_DDS_Client::output_stream_for_qos(const uxrQoS_t& qos) const
+{
+    return (qos.reliability == UXR_RELIABILITY_RELIABLE) ? reliable_out : best_effort_out;
+}
+
+uxrStreamId AP_DDS_Client::input_stream_for_qos(const uxrQoS_t& qos) const
+{
+    return (qos.reliability == UXR_RELIABILITY_RELIABLE) ? reliable_in : best_effort_in;
+}
+
+void AP_DDS_Client::finalize_topic_write(const uxrQoS_t& qos, uint32_t payload_bytes)
+{
+    (void)payload_bytes;
+    if (qos.reliability == UXR_RELIABILITY_BEST_EFFORT) {
+        uxr_flash_output_streams(&session);
+    }
+}
+
+bool AP_DDS_Client::prepare_topic_stream(ucdrBuffer& ub, uxrObjectId datawriter_id, uint32_t topic_size, const char* topic_name, const uxrQoS_t& qos, uint16_t* request_id)
+{
+    const uxrStreamId stream_id = output_stream_for_qos(qos);
+    uint16_t req_id = uxr_prepare_output_stream(&session, stream_id, datawriter_id, &ub, topic_size);
+
+    // Best-effort streams use a single packet buffer. If earlier best-effort topics
+    // in the same update cycle already filled it, flush and retry once so later
+    // topics like IMU are not starved behind NavSat/Pose.
+    if ((req_id == UXR_INVALID_REQUEST_ID || ub.error || ub.init == nullptr || ub.iterator == nullptr || ub.final == nullptr) &&
+        stream_id.type == UXR_BEST_EFFORT_STREAM) {
+        uxr_flash_output_streams(&session);
+        ub = {};
+        req_id = uxr_prepare_output_stream(&session, stream_id, datawriter_id, &ub, topic_size);
+    }
+
+    if (request_id != nullptr) {
+        *request_id = req_id;
+    }
+
+    if (req_id != UXR_INVALID_REQUEST_ID &&
+        !ub.error &&
+        ub.init != nullptr &&
+        ub.iterator != nullptr &&
+        ub.final != nullptr) {
+        return true;
+    }
+
+    (void)topic_name;
+    return false;
 }
 
 #if AP_DDS_TIME_PUB_ENABLED
@@ -195,6 +312,11 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     // https://www.fluentcpp.com/2021/12/13/the-evolutions-of-lambdas-in-c14-c17-and-c20/
     // constexpr auto times2 = [] (sensor_msgs_msg_NavSatFix* msg) { return n * 2; };
 
+    msg.latitude = 0.0;
+    msg.longitude = 0.0;
+    msg.altitude = 0.0;
+    memset(msg.position_covariance, 0, sizeof(msg.position_covariance));
+
     auto &gps = AP::gps();
     WITH_SEMAPHORE(gps.get_semaphore());
 
@@ -202,17 +324,8 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         msg.status.status = -1; // STATUS_NO_FIX
         msg.status.service = 0; // No services supported
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
-        return false;
+        // return false;
     }
-
-    // No update is needed
-    const auto last_fix_time_ms = gps.last_fix_time_ms(instance);
-    if (last_nav_sat_fix_time_ms == last_fix_time_ms) {
-        return false;
-    } else {
-        last_nav_sat_fix_time_ms = last_fix_time_ms;
-    }
-
 
     update_topic(msg.header.stamp);
     static_assert(GPS_MAX_RECEIVERS <= 9, "GPS_MAX_RECEIVERS is greater than 9");
@@ -567,20 +680,42 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     WITH_SEMAPHORE(ahrs.get_semaphore());
 
     Quaternion orientation;
-    if (ahrs.get_quaternion(orientation)) {
-        msg.orientation.x = orientation[0];
-        msg.orientation.y = orientation[1];
-        msg.orientation.z = orientation[2];
-        msg.orientation.w = orientation[3];
+    const bool have_orientation = ahrs.get_quaternion(orientation);
+    if (have_orientation) {
+        // AP_Math::Quaternion stores components as w, x, y, z while
+        // geometry_msgs/Quaternion uses x, y, z, w.
+        msg.orientation.x = orientation[1];
+        msg.orientation.y = orientation[2];
+        msg.orientation.z = orientation[3];
+        msg.orientation.w = orientation[0];
     } else {
         initialize(msg.orientation);
     }
-    msg.orientation_covariance[0] = -1;
+
+    Matrix3f orientation_covariance;
+    if (have_orientation && ahrs.get_orientation_covariance(orientation_covariance)) {
+        copy_covariance(orientation_covariance, msg.orientation_covariance);
+    } else if (have_orientation) {
+        // Per sensor_msgs/Imu, all zeros means covariance unknown.
+        set_unknown_covariance(msg.orientation_covariance);
+    } else {
+        // Per sensor_msgs/Imu, -1 in element 0 means no orientation estimate.
+        set_unavailable_covariance(msg.orientation_covariance);
+    }
 
     uint8_t accel_index = ahrs.get_primary_accel_index();
     uint8_t gyro_index = ahrs.get_primary_gyro_index();
-    const Vector3f accel_data = imu.get_accel(accel_index);
-    const Vector3f gyro_data = imu.get_gyro(gyro_index);
+    const bool have_accel = imu.get_accel_health(accel_index);
+    const bool have_gyro = imu.get_gyro_health(gyro_index);
+
+    Vector3f accel_data;
+    Vector3f gyro_data;
+    if (have_accel) {
+        accel_data = imu.get_accel(accel_index);
+    }
+    if (have_gyro) {
+        gyro_data = imu.get_gyro(gyro_index);
+    }
 
     // Populate the message fields
     msg.linear_acceleration.x = accel_data.x;
@@ -590,10 +725,60 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     msg.angular_velocity.x = gyro_data.x;
     msg.angular_velocity.y = gyro_data.y;
     msg.angular_velocity.z = gyro_data.z;
-    msg.angular_velocity_covariance[0] = -1;
-    msg.linear_acceleration_covariance[0] = -1;
+
+    Vector3f gyro_variances;
+    Vector3f accel_variances;
+    const bool have_imu_covariance = ahrs.get_imu_noise_variances(gyro_variances, accel_variances);
+    if (have_imu_covariance && have_gyro) {
+        copy_covariance(diagonal_covariance(gyro_variances), msg.angular_velocity_covariance);
+    } else if (have_gyro) {
+        set_unknown_covariance(msg.angular_velocity_covariance);
+    } else {
+        set_unavailable_covariance(msg.angular_velocity_covariance);
+    }
+
+    if (have_imu_covariance && have_accel) {
+        // Add measured accel vibration energy on top of the EKF-configured noise floor.
+        const Vector3f vibration = imu.get_vibration_levels(accel_index);
+        accel_variances.x += sq(vibration.x);
+        accel_variances.y += sq(vibration.y);
+        accel_variances.z += sq(vibration.z);
+
+        copy_covariance(diagonal_covariance(accel_variances), msg.linear_acceleration_covariance);
+    } else if (have_accel) {
+        set_unknown_covariance(msg.linear_acceleration_covariance);
+    } else {
+        set_unavailable_covariance(msg.linear_acceleration_covariance);
+    }
 }
 #endif // AP_DDS_IMU_PUB_ENABLED
+
+#if AP_DDS_UWB_PUB_ENABLED
+bool AP_DDS_Client::update_topic(sensor_msgs_msg_uwb& msg)
+{
+    auto* alx = AP::alx_sensor();
+    if (alx == nullptr) {
+        return false;
+    }
+
+    Location target_loc;
+    if (!alx->get_target_lat_lng(target_loc)) {
+        return false;
+    }
+
+    msg.latitude = target_loc.lat * 1E-7;
+    msg.longitude = target_loc.lng * 1E-7;
+
+    int32_t alt_cm;
+    if (target_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
+        msg.altitude = alt_cm * 0.01;
+    } else {
+        msg.altitude = target_loc.alt * 0.01;
+    }
+
+    return true;
+}
+#endif // AP_DDS_UWB_PUB_ENABLED
 
 #if AP_DDS_CLOCK_PUB_ENABLED
 void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
@@ -661,7 +846,6 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
     (void) uxr_session;
     (void) request_id;
     (void) stream_id;
-    (void) length;
     switch (object_id.id) {
 #if AP_DDS_JOY_SUB_ENABLED
     case topics[to_underlying(TopicIndex::JOY_SUB)].dr_id.id: {
@@ -728,7 +912,6 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         if (success == false) {
             break;
         }
-
 #if AP_EXTERNAL_CONTROL_ENABLED
         if (!AP_DDS_External_Control::handle_global_position_control(rx_global_position_control_topic)) {
             // TODO #23430 handle global position control failure through rosout, throttled.
@@ -753,7 +936,6 @@ void AP_DDS_Client::on_request_trampoline(uxrSession* uxr_session, uxrObjectId o
 void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, uint16_t request_id, SampleIdentity* sample_id, ucdrBuffer* ub, uint16_t length)
 {
     (void) request_id;
-    (void) length;
     switch (object_id.id) {
 #if AP_DDS_ARM_SERVER_ENABLED
     case services[to_underlying(ServiceIndex::ARMING_MOTORS)].rep_id: {
@@ -906,13 +1088,13 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             bool param_isinf = true;
             float param_value;
             switch (param.value.type) {
-            case ParameterType::PARAMETER_INTEGER: {
+            case PARAMETER_INTEGER: {
                 param_isnan = isnan(param.value.integer_value);
                 param_isinf = isinf(param.value.integer_value);
                 param_value = float(param.value.integer_value);
                 break;
             }
-            case ParameterType::PARAMETER_DOUBLE: {
+            case PARAMETER_DOUBLE: {
                 param_isnan = isnan(param.value.double_value);
                 param_isinf = isinf(param.value.double_value);
                 param_value = float(param.value.double_value);
@@ -1005,38 +1187,38 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 
             vp = AP_Param::find(param_key, &var_type);
             if (vp == nullptr) {
-                get_parameters_response.values[i].type = ParameterType::PARAMETER_NOT_SET;
+                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
                 successful_read &= false;
                 continue;
             }
 
             switch (var_type) {
             case AP_PARAM_INT8: {
-                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int8 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT16: {
-                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int16 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT32: {
-                get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
+                get_parameters_response.values[i].type = PARAMETER_INTEGER;
                 get_parameters_response.values[i].integer_value = ((AP_Int32 *)vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_FLOAT: {
-                get_parameters_response.values[i].type = ParameterType::PARAMETER_DOUBLE;
+                get_parameters_response.values[i].type = PARAMETER_DOUBLE;
                 get_parameters_response.values[i].double_value = vp->cast_to_float(var_type);
                 successful_read &= true;
                 break;
             }
             default: {
-                get_parameters_response.values[i].type = ParameterType::PARAMETER_NOT_SET;
+                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
                 successful_read &= false;
                 break;
             }
@@ -1073,104 +1255,135 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 void AP_DDS_Client::main_loop(void)
 {
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s initializing...", msg_prefix);
-    if (!init_transport()) {
-        return;
-    }
+
+    auto reset_transport = [this]() {
+        if (comm == nullptr) {
+            return;
+        }
+
+        if (is_using_serial) {
+            uxr_close_custom_transport(&serial.transport);
+            serial.port = nullptr;
+        }
+#if AP_DDS_UDP_ENABLED
+        else {
+            uxr_close_custom_transport(&udp.transport);
+        }
+#endif
+        comm = nullptr;
+    };
 
     //! @todo check for request to stop task
     while (true) {
         if (comm == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s transport invalid, exiting", msg_prefix);
-            return;
+            if (!init_transport()) {
+                hal.scheduler->delay(1000);
+                continue;
+            }
         }
 
         // check ping
-        if (ping_max_retry == 0) {
-            if (!uxr_ping_agent(comm, ping_timeout_ms)) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s No ping response, retrying", msg_prefix);
-                continue;
-            }
+        bool ping_ok = false;
+        if (is_using_serial) {
+            const int ping_agent_timeout_ms = MAX(1, (int)MIN((uint32_t)ping_timeout_ms, (uint32_t)DELAY_PING_MS));
+            ping_ok = uxr_ping_agent_attempts(comm, ping_agent_timeout_ms, 1);
+        } else if (ping_max_retry == 0) {
+            ping_ok = uxr_ping_agent(comm, ping_timeout_ms);
         } else {
-            if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_retry)) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s No ping response, exiting", msg_prefix);
-                continue;
-            }
+            ping_ok = uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_retry);
+        }
+        if (!ping_ok) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s No ping response, retrying", msg_prefix);
+            continue;
         }
 
         // create session
         if (!init_session() || !create()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
-            return;
+            cleanup_session(true);
+            reset_transport();
+            hal.scheduler->delay(200);
+            continue;
         }
         connected = true;
+        last_rx_activity_ms = AP_HAL::millis64();
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
-
 #if AP_DDS_STATIC_TF_PUB_ENABLED
         populate_static_transforms(tx_static_transforms_topic);
         write_static_transforms();
 #endif // AP_DDS_STATIC_TF_PUB_ENABLED
-
         uint64_t last_ping_ms{0};
         uint8_t num_pings_missed{0};
-        bool had_ping_reply{false};
+        uint64_t status_fail_start_ms{0};
         while (connected) {
             hal.scheduler->delay(1);
 
             // publish topics
             update();
 
-            // check ping response
-            if (session.on_pong_flag == PONG_IN_SESSION_STATUS) {
-                had_ping_reply = true;
-            }
-
             const auto cur_time_ms = AP_HAL::millis64();
-            if (cur_time_ms - last_ping_ms > DELAY_PING_MS) {
+            if (status_ok) {
+                status_fail_start_ms = 0;
+            } else if (status_fail_start_ms == 0) {
+                status_fail_start_ms = cur_time_ms;
+            }
+            const uint32_t status_fail_ms = (status_fail_start_ms == 0) ? 0 :
+                                            (uint32_t)MIN<uint64_t>(cur_time_ms - status_fail_start_ms, UINT32_MAX);
+            const bool recent_rx_activity = (last_rx_activity_ms != 0) &&
+                                            ((cur_time_ms - last_rx_activity_ms) < RX_ACTIVITY_GRACE_MS);
+
+            // For serial, always check session health directly so an agent restart
+            // is detected even when the transport itself is still reachable.
+            const bool should_ping_session = is_using_serial || AP_DDS_SESSION_PING_ENABLED;
+            const bool should_ping_agent = !is_using_serial &&
+                                           !AP_DDS_SESSION_PING_ENABLED &&
+                                           !recent_rx_activity;
+            if ((should_ping_session || should_ping_agent) &&
+                (cur_time_ms - last_ping_ms > DELAY_PING_MS)) {
                 last_ping_ms = cur_time_ms;
 
-                if (had_ping_reply) {
-                    num_pings_missed = 0;
-
-                } else {
-                    ++num_pings_missed;
-                }
-
-                const int ping_agent_timeout_ms{0};
+                const int ping_agent_timeout_ms = MAX(1, (int)MIN((uint32_t)ping_timeout_ms, (uint32_t)DELAY_PING_MS));
                 const uint8_t ping_agent_attempts{1};
-                uxr_ping_agent_session(&session, ping_agent_timeout_ms, ping_agent_attempts);
-
-                had_ping_reply = false;
+                const bool session_ping_ok = should_ping_session
+                                                 ? uxr_ping_agent_session(&session, ping_agent_timeout_ms, ping_agent_attempts)
+                                                 : uxr_ping_agent_attempts(comm, ping_agent_timeout_ms, ping_agent_attempts);
+                if (session_ping_ok) {
+                    num_pings_missed = 0;
+                    last_rx_activity_ms = cur_time_ms;
+                } else {
+                    if (recent_rx_activity) {
+                        num_pings_missed = 0;
+                    } else {
+                        ++num_pings_missed;
+                    }
+                }
             }
 
-            if (num_pings_missed > 2) {
+            if (num_pings_missed >= MAX_MISSED_PING_COUNT) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
                               "%s No ping response, disconnecting", msg_prefix);
+                connected = false;
+            } else if (status_fail_ms >= STATUS_FAIL_TIMEOUT_MS) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
+                              "%s Session status timeout, disconnecting", msg_prefix);
                 connected = false;
             }
         }
 
-        // delete session if connected
-        if (connected) {
-            uxr_delete_session(&session);
-        }
+        cleanup_session(false);
+        reset_transport();
     }
 }
 
 bool AP_DDS_Client::init_transport()
 {
     // serial init will fail if the SERIALn_PROTOCOL is not setup
-    bool initTransportStatus = ddsSerialInit();
-    is_using_serial = initTransportStatus;
+    is_using_serial = ddsSerialInit();
 
-#if AP_DDS_UDP_ENABLED
-    // fallback to UDP if available
-    if (!initTransportStatus) {
-        initTransportStatus = ddsUdpInit();
-    }
-#endif
-
-    if (!initTransportStatus) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Transport initialization failed", msg_prefix);
+    if (!is_using_serial) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
+                      "%s Serial transport init failed",
+                      msg_prefix);
         return false;
     }
 
@@ -1179,6 +1392,8 @@ bool AP_DDS_Client::init_transport()
 
 bool AP_DDS_Client::init_session()
 {
+    cleanup_session(false);
+
     // init session
     uxr_init_session(&session, comm, key);
 
@@ -1192,18 +1407,22 @@ bool AP_DDS_Client::init_session()
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization waiting...", msg_prefix);
         hal.scheduler->delay(1000);
     }
+    session_created = true;
 
     // setup reliable stream buffers
     input_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
     output_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
-    if (input_reliable_stream == nullptr || output_reliable_stream == nullptr) {
+    output_best_effort_stream = NEW_NOTHROW uint8_t[DDS_BEST_EFFORT_BUFFER_SIZE];
+    if (input_reliable_stream == nullptr || output_reliable_stream == nullptr || output_best_effort_stream == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
+        cleanup_session(true);
         return false;
     }
 
     reliable_in = uxr_create_input_reliable_stream(&session, input_reliable_stream, DDS_BUFFER_SIZE, DDS_STREAM_HISTORY);
     reliable_out = uxr_create_output_reliable_stream(&session, output_reliable_stream, DDS_BUFFER_SIZE, DDS_STREAM_HISTORY);
-
+    best_effort_in = uxr_create_input_best_effort_stream(&session);
+    best_effort_out = uxr_create_output_best_effort_stream(&session, output_best_effort_stream, DDS_BEST_EFFORT_BUFFER_SIZE);
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Init complete", msg_prefix);
 
     return true;
@@ -1226,7 +1445,7 @@ bool AP_DDS_Client::create()
     constexpr uint8_t nRequestsParticipant = 1;
     const uint16_t requestsParticipant[nRequestsParticipant] = {participant_req_id};
 
-    constexpr uint16_t maxTimeMsPerRequestMs = 500;
+    constexpr uint16_t maxTimeMsPerRequestMs = 300;
     constexpr uint16_t requestTimeoutParticipantMs = (uint16_t) nRequestsParticipant * maxTimeMsPerRequestMs;
     uint8_t statusParticipant[nRequestsParticipant];
     if (!uxr_run_session_until_all_status(&session, requestTimeoutParticipantMs, requestsParticipant, statusParticipant, nRequestsParticipant)) {
@@ -1305,7 +1524,11 @@ bool AP_DDS_Client::create()
                 return false;
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Sub/Reader session pass for index '%u'", msg_prefix, i);
-                uxr_buffer_request_data(&session, reliable_out, topics[i].dr_id, reliable_in, &delivery_control);
+                uxr_buffer_request_data(&session,
+                                        reliable_out,
+                                        topics[i].dr_id,
+                                        input_stream_for_qos(topics[i].qos),
+                                        &delivery_control);
             }
         }
     }
@@ -1350,31 +1573,40 @@ void AP_DDS_Client::write_time_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
+        const auto& topic_info = topics[to_underlying(TopicIndex::TIME_PUB)];
         ucdrBuffer ub {};
         const uint32_t topic_size = builtin_interfaces_msg_Time_size_of_topic(&time_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::TIME_PUB)].dw_id, &ub, topic_size);
+        if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "time", topic_info.qos)) {
+            return;
+        }
         const bool success = builtin_interfaces_msg_Time_serialize_topic(&ub, &time_topic);
         if (!success) {
-            // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: XRCE_Client failed to serialize\n");
+            return;
         }
+        finalize_topic_write(topic_info.qos, topic_size);
     }
 }
 
 #if AP_DDS_NAVSATFIX_PUB_ENABLED
-void AP_DDS_Client::write_nav_sat_fix_topic()
+bool AP_DDS_Client::write_nav_sat_fix_topic()
 {
     WITH_SEMAPHORE(csem);
-    if (connected) {
-        ucdrBuffer ub {};
-        const uint32_t topic_size = sensor_msgs_msg_NavSatFix_size_of_topic(&nav_sat_fix_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::NAV_SAT_FIX_PUB)].dw_id, &ub, topic_size);
-        const bool success = sensor_msgs_msg_NavSatFix_serialize_topic(&ub, &nav_sat_fix_topic);
-        if (!success) {
-            // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
-        }
+    if (!connected) {
+        return false;
     }
+
+    const auto& topic_info = topics[to_underlying(TopicIndex::NAV_SAT_FIX_PUB)];
+    ucdrBuffer ub {};
+    const uint32_t topic_size = sensor_msgs_msg_NavSatFix_size_of_topic(&nav_sat_fix_topic, 0);
+    if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "nav", topic_info.qos)) {
+        return false;
+    }
+    const bool success = sensor_msgs_msg_NavSatFix_serialize_topic(&ub, &nav_sat_fix_topic);
+    if (!success) {
+        return false;
+    }
+    finalize_topic_write(topic_info.qos, topic_size);
+    return true;
 }
 #endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 
@@ -1383,14 +1615,17 @@ void AP_DDS_Client::write_static_transforms()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
+        const auto& topic_info = topics[to_underlying(TopicIndex::STATIC_TRANSFORMS_PUB)];
         ucdrBuffer ub {};
         const uint32_t topic_size = tf2_msgs_msg_TFMessage_size_of_topic(&tx_static_transforms_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::STATIC_TRANSFORMS_PUB)].dw_id, &ub, topic_size);
+        if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "tfs", topic_info.qos)) {
+            return;
+        }
         const bool success = tf2_msgs_msg_TFMessage_serialize_topic(&ub, &tx_static_transforms_topic);
         if (!success) {
-            // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            return;
         }
+        finalize_topic_write(topic_info.qos, topic_size);
     }
 }
 #endif // AP_DDS_STATIC_TF_PUB_ENABLED
@@ -1400,32 +1635,41 @@ void AP_DDS_Client::write_battery_state_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
+        const auto& topic_info = topics[to_underlying(TopicIndex::BATTERY_STATE_PUB)];
         ucdrBuffer ub {};
         const uint32_t topic_size = sensor_msgs_msg_BatteryState_size_of_topic(&battery_state_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::BATTERY_STATE_PUB)].dw_id, &ub, topic_size);
+        if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "bat", topic_info.qos)) {
+            return;
+        }
         const bool success = sensor_msgs_msg_BatteryState_serialize_topic(&ub, &battery_state_topic);
         if (!success) {
-            // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            return;
         }
+        finalize_topic_write(topic_info.qos, topic_size);
     }
 }
 #endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
 
 #if AP_DDS_LOCAL_POSE_PUB_ENABLED
-void AP_DDS_Client::write_local_pose_topic()
+bool AP_DDS_Client::write_local_pose_topic()
 {
     WITH_SEMAPHORE(csem);
-    if (connected) {
-        ucdrBuffer ub {};
-        const uint32_t topic_size = geometry_msgs_msg_PoseStamped_size_of_topic(&local_pose_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_POSE_PUB)].dw_id, &ub, topic_size);
-        const bool success = geometry_msgs_msg_PoseStamped_serialize_topic(&ub, &local_pose_topic);
-        if (!success) {
-            // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
-        }
+    if (!connected) {
+        return false;
     }
+
+    const auto& topic_info = topics[to_underlying(TopicIndex::LOCAL_POSE_PUB)];
+    ucdrBuffer ub {};
+    const uint32_t topic_size = geometry_msgs_msg_PoseStamped_size_of_topic(&local_pose_topic, 0);
+    if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "pose", topic_info.qos)) {
+        return false;
+    }
+    const bool success = geometry_msgs_msg_PoseStamped_serialize_topic(&ub, &local_pose_topic);
+    if (!success) {
+        return false;
+    }
+    finalize_topic_write(topic_info.qos, topic_size);
+    return true;
 }
 #endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
 
@@ -1434,14 +1678,17 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
+        const auto& topic_info = topics[to_underlying(TopicIndex::LOCAL_VELOCITY_PUB)];
         ucdrBuffer ub {};
         const uint32_t topic_size = geometry_msgs_msg_TwistStamped_size_of_topic(&tx_local_velocity_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_VELOCITY_PUB)].dw_id, &ub, topic_size);
+        if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "vel", topic_info.qos)) {
+            return;
+        }
         const bool success = geometry_msgs_msg_TwistStamped_serialize_topic(&ub, &tx_local_velocity_topic);
         if (!success) {
-            // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            return;
         }
+        finalize_topic_write(topic_info.qos, topic_size);
     }
 }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
@@ -1450,47 +1697,80 @@ void AP_DDS_Client::write_tx_local_airspeed_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
+        const auto& topic_info = topics[to_underlying(TopicIndex::LOCAL_AIRSPEED_PUB)];
         ucdrBuffer ub {};
         const uint32_t topic_size = geometry_msgs_msg_Vector3Stamped_size_of_topic(&tx_local_airspeed_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_AIRSPEED_PUB)].dw_id, &ub, topic_size);
+        if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "air", topic_info.qos)) {
+            return;
+        }
         const bool success = geometry_msgs_msg_Vector3Stamped_serialize_topic(&ub, &tx_local_airspeed_topic);
         if (!success) {
-            // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            return;
         }
+        finalize_topic_write(topic_info.qos, topic_size);
     }
 }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
-void AP_DDS_Client::write_imu_topic()
+bool AP_DDS_Client::write_imu_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (!connected) {
+        return false;
+    }
+
+    const auto& topic_info = topics[to_underlying(TopicIndex::IMU_PUB)];
+    ucdrBuffer ub {};
+    const uint32_t topic_size = sensor_msgs_msg_Imu_size_of_topic(&imu_topic, 0);
+    if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "imu", topic_info.qos)) {
+        return false;
+    }
+    const bool success = sensor_msgs_msg_Imu_serialize_topic(&ub, &imu_topic);
+    if (!success) {
+        return false;
+    }
+    finalize_topic_write(topic_info.qos, topic_size);
+    return true;
+}
+#endif // AP_DDS_IMU_PUB_ENABLED
+
+#if AP_DDS_UWB_PUB_ENABLED
+void AP_DDS_Client::write_uwb_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
         ucdrBuffer ub {};
-        const uint32_t topic_size = sensor_msgs_msg_Imu_size_of_topic(&imu_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::IMU_PUB)].dw_id, &ub, topic_size);
-        const bool success = sensor_msgs_msg_Imu_serialize_topic(&ub, &imu_topic);
-        if (!success) {
-            // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        const uint32_t topic_size = sensor_msgs_msg_uwb_size_of_topic(&uwb_topic, 0);
+        if (!prepare_topic_stream(ub, topics[to_underlying(TopicIndex::UWB_PUB)].dw_id, topic_size, "Uwb",
+                                  topics[to_underlying(TopicIndex::UWB_PUB)].qos)) {
+            return;
         }
+        const bool success = sensor_msgs_msg_uwb_serialize_topic(&ub, &uwb_topic);
+        if (!success) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Uwb : XRCE serialize failed", msg_prefix);
+            return;
+        }
+        finalize_topic_write(topics[to_underlying(TopicIndex::UWB_PUB)].qos, topic_size);
     }
 }
-#endif // AP_DDS_IMU_PUB_ENABLED
+#endif // AP_DDS_UWB_PUB_ENABLED
 
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 void AP_DDS_Client::write_geo_pose_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
+        const auto& topic_info = topics[to_underlying(TopicIndex::GEOPOSE_PUB)];
         ucdrBuffer ub {};
         const uint32_t topic_size = geographic_msgs_msg_GeoPoseStamped_size_of_topic(&geo_pose_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GEOPOSE_PUB)].dw_id, &ub, topic_size);
+        if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "geo", topic_info.qos)) {
+            return;
+        }
         const bool success = geographic_msgs_msg_GeoPoseStamped_serialize_topic(&ub, &geo_pose_topic);
         if (!success) {
-            // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            return;
         }
+        finalize_topic_write(topic_info.qos, topic_size);
     }
 }
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
@@ -1500,14 +1780,17 @@ void AP_DDS_Client::write_clock_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
+        const auto& topic_info = topics[to_underlying(TopicIndex::CLOCK_PUB)];
         ucdrBuffer ub {};
         const uint32_t topic_size = rosgraph_msgs_msg_Clock_size_of_topic(&clock_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::CLOCK_PUB)].dw_id, &ub, topic_size);
+        if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "clk", topic_info.qos)) {
+            return;
+        }
         const bool success = rosgraph_msgs_msg_Clock_serialize_topic(&ub, &clock_topic);
         if (!success) {
-            // TODO sometimes serialization fails on bootup. Determine why.
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            return;
         }
+        finalize_topic_write(topic_info.qos, topic_size);
     }
 }
 #endif // AP_DDS_CLOCK_PUB_ENABLED
@@ -1517,13 +1800,17 @@ void AP_DDS_Client::write_gps_global_origin_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
+        const auto& topic_info = topics[to_underlying(TopicIndex::GPS_GLOBAL_ORIGIN_PUB)];
         ucdrBuffer ub {};
         const uint32_t topic_size = geographic_msgs_msg_GeoPointStamped_size_of_topic(&gps_global_origin_topic, 0);
-        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GPS_GLOBAL_ORIGIN_PUB)].dw_id, &ub, topic_size);
+        if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "gori", topic_info.qos)) {
+            return;
+        }
         const bool success = geographic_msgs_msg_GeoPointStamped_serialize_topic(&ub, &gps_global_origin_topic);
         if (!success) {
-            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+            return;
         }
+        finalize_topic_write(topic_info.qos, topic_size);
     }
 }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
@@ -1542,8 +1829,11 @@ void AP_DDS_Client::update()
 #endif // AP_DDS_TIME_PUB_ENABLED
 #if AP_DDS_NAVSATFIX_PUB_ENABLED
     constexpr uint8_t gps_instance = 0;
-    if (update_topic(nav_sat_fix_topic, gps_instance)) {
-        write_nav_sat_fix_topic();
+    if (cur_time_ms - last_nav_sat_fix_time_ms >= AP_DDS_DELAY_NAVSATFIX_TOPIC_MS) {
+        if (update_topic(nav_sat_fix_topic, gps_instance) &&
+            write_nav_sat_fix_topic()) {
+            last_nav_sat_fix_time_ms = cur_time_ms;
+        }
     }
 #endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 #if AP_DDS_BATTERY_STATE_PUB_ENABLED
@@ -1558,10 +1848,11 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
 #if AP_DDS_LOCAL_POSE_PUB_ENABLED
-    if (cur_time_ms - last_local_pose_time_ms > DELAY_LOCAL_POSE_TOPIC_MS) {
+    if (cur_time_ms - last_local_pose_time_ms >= DELAY_LOCAL_POSE_TOPIC_MS) {
         update_topic(local_pose_topic);
-        last_local_pose_time_ms = cur_time_ms;
-        write_local_pose_topic();
+        if (write_local_pose_topic()) {
+            last_local_pose_time_ms = cur_time_ms;
+        }
     }
 #endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
 #if AP_DDS_LOCAL_VEL_PUB_ENABLED
@@ -1580,12 +1871,21 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
-    if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
+    if (cur_time_ms - last_imu_time_ms >= DELAY_IMU_TOPIC_MS) {
         update_topic(imu_topic);
-        last_imu_time_ms = cur_time_ms;
-        write_imu_topic();
+        if (write_imu_topic()) {
+            last_imu_time_ms = cur_time_ms;
+        }
     }
 #endif // AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_UWB_PUB_ENABLED
+    if (cur_time_ms - last_uwb_time_ms > DELAY_UWB_TOPIC_MS) {
+        last_uwb_time_ms = cur_time_ms;
+        if (update_topic(uwb_topic)) {
+            write_uwb_topic();
+        }
+    }
+#endif // AP_DDS_UWB_PUB_ENABLED
 #if AP_DDS_GEOPOSE_PUB_ENABLED
     if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
         update_topic(geo_pose_topic);
@@ -1608,7 +1908,9 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
-    status_ok = uxr_run_session_time(&session, 1);
+    // Give the client enough time to drain serial RX and process ACKNACK/heartbeat
+    // traffic; 1 ms is too short on this link and leaves reliable state stale.
+    status_ok = uxr_run_session_time(&session, 20);
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

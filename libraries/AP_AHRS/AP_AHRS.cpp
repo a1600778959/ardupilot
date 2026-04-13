@@ -3042,6 +3042,70 @@ bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3
     return false;
 }
 
+bool AP_AHRS::get_orientation_covariance(Matrix3f &covariance) const
+{
+    switch (ekf_type()) {
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        return false;
+#endif
+
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return false;
+#endif
+
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.getOrientationCovariance(covariance);
+#endif
+
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+        return false;
+#endif
+
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        return false;
+#endif
+    }
+
+    return false;
+}
+
+bool AP_AHRS::get_imu_noise_variances(Vector3f &gyro_variances, Vector3f &accel_variances) const
+{
+    switch (ekf_type()) {
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        return false;
+#endif
+
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return false;
+#endif
+
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.getImuNoiseVariances(gyro_variances, accel_variances);
+#endif
+
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+        return false;
+#endif
+
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        return false;
+#endif
+    }
+
+    return false;
+}
+
 // get a source's velocity innovations.  source should be from 0 to 7 (see AP_NavEKF_Source::SourceXY)
 // returns true on success and results are placed in innovations and variances arguments
 bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const

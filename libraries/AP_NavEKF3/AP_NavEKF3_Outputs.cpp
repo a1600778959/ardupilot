@@ -480,6 +480,50 @@ bool NavEKF3_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vec
     return true;
 }
 
+bool NavEKF3_core::getOrientationCovariance(Matrix3f &covariance) const
+{
+    covariance = Matrix3f();
+
+    if (!healthy()) {
+        return false;
+    }
+
+    constexpr float quat_delta = 1.0e-4f;
+    float jacobian[3][4] {};
+    Vector3f euler_plus;
+    Vector3f euler_minus;
+
+    for (uint8_t index = 0; index < 4; index++) {
+        QuaternionF quat_plus = stateStruct.quat;
+        quat_plus[index] += quat_delta;
+        quat_plus.normalize();
+        quat_plus.to_euler(euler_plus);
+
+        QuaternionF quat_minus = stateStruct.quat;
+        quat_minus[index] -= quat_delta;
+        quat_minus.normalize();
+        quat_minus.to_euler(euler_minus);
+
+        jacobian[0][index] = wrap_PI(euler_plus.x - euler_minus.x) / (2.0f * quat_delta);
+        jacobian[1][index] = wrap_PI(euler_plus.y - euler_minus.y) / (2.0f * quat_delta);
+        jacobian[2][index] = wrap_PI(euler_plus.z - euler_minus.z) / (2.0f * quat_delta);
+    }
+
+    for (uint8_t row = 0; row < 3; row++) {
+        for (uint8_t col = 0; col < 3; col++) {
+            float value = 0.0f;
+            for (uint8_t i = 0; i < 4; i++) {
+                for (uint8_t j = 0; j < 4; j++) {
+                    value += jacobian[row][i] * P[i][j] * jacobian[col][j];
+                }
+            }
+            covariance[row][col] = value;
+        }
+    }
+
+    return is_positive(covariance[0][0]) && is_positive(covariance[1][1]) && is_positive(covariance[2][2]);
+}
+
 // get a particular source's velocity innovations
 // returns true on success and results are placed in innovations and variances arguments
 bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const
