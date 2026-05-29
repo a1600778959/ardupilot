@@ -172,6 +172,7 @@ private:
     uint16_t _new_hdop;                                                 ///< HDOP parsed from a term
     uint8_t _new_satellite_count;                       ///< satellite count parsed from a term
     uint8_t _new_quality_indicator;                                     ///< GPS quality indicator parsed from a term
+    bool _new_rmc_valid;                                                ///< validity parsed from the current RMC sentence
 
     uint32_t _last_RMC_ms;
     uint32_t _last_GGA_ms;

@@ -227,9 +227,16 @@ bool AP_GPS_NMEA::_have_new_message()
         now - _last_GGA_ms > 150) {
         return false;
     }
-    if (_last_VTG_ms != 0 && 
-        now - _last_VTG_ms > 150) {
-        return false;
+    if (_last_VTG_ms != 0) {
+        const uint32_t vtg_delta_ms = now - _last_VTG_ms;
+        if (vtg_delta_ms > 150) {
+            // VTG is optional. If it disappears after previously being seen,
+            // wait briefly so speed/course are not mixed from mismatched epochs.
+            if (_last_VTG_ms > 1 && vtg_delta_ms < 1000) {
+                return false;
+            }
+            _last_VTG_ms = 0;
+        }
     }
 
     /*
@@ -302,6 +309,13 @@ bool AP_GPS_NMEA::_term_complete()
             switch (_sentence_type) {
             case _GPS_SENTENCE_RMC:
                 _last_RMC_ms = now;
+                set_uart_timestamp(_sentence_length);
+                state.last_gps_time_ms = now;
+                // Keep the transport timing fresh, but do not refresh
+                // position/velocity from an RMC sentence marked void.
+                if (!_new_rmc_valid) {
+                    break;
+                }
                 //time                        = _new_time;
                 //date                        = _new_date;
                 if (_last_KSXT_pos_ms == 0 && _last_AGRICA_ms == 0) {
@@ -319,8 +333,6 @@ bool AP_GPS_NMEA::_term_complete()
                         state.time_week_ms = _last_itow_ms;
                     }
                 }
-                set_uart_timestamp(_sentence_length);
-                state.last_gps_time_ms = now;
                 if (_last_vvelocity_ms == 0 ||
                     now - _last_vvelocity_ms > 1000) {
                     fill_3d_velocity();
@@ -328,7 +340,13 @@ bool AP_GPS_NMEA::_term_complete()
                 break;
             case _GPS_SENTENCE_GGA:
                 _last_GGA_ms = now;
-                if (_last_KSXT_pos_ms == 0 && _last_AGRICA_ms == 0) {
+                // GGA with no fix, or dead reckoning only, still carries DOP
+                // and satellite count but should not replace the last good
+                // navigation position.
+                if (_last_KSXT_pos_ms == 0 &&
+                    _last_AGRICA_ms == 0 &&
+                    _new_quality_indicator != 0 &&
+                    _new_quality_indicator != 6) {
                     set_alt_amsl_cm(state, _new_altitude);
                     state.location.lat  = _new_latitude;
                     state.location.lng  = _new_longitude;
@@ -577,6 +595,7 @@ bool AP_GPS_NMEA::_term_complete()
         // operational status
         //
         case _GPS_SENTENCE_RMC + 2: // validity (RMC)
+            _new_rmc_valid = (_term[0] == 'A');
             break;
         case _GPS_SENTENCE_GGA + 6: // Fix data (GGA)
             if (_term[0] > '0') {

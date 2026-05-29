@@ -747,9 +747,18 @@ void AP_GPS::update_instance(uint8_t instance)
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: detected %s", instance + 1, drivers[instance]->name());
         }
 
-        // delta will only be correct after parsing two messages
-        // 修复gps连续agrica消息一直重置最新更新时间造成延时计算异常
-        timing[instance].delta_time_ms = (tnow - timing[instance].last_message_time_ms) / state[instance].agrica_count_s;
+        // delta will only be correct after parsing two messages. AGRICA may
+        // provide multiple position updates between frontend updates, so use
+        // its count when available while keeping other GPS streams safe.
+        const uint32_t message_delta_ms = tnow - timing[instance].last_message_time_ms;
+        // Non-AGRICA backends leave agrica_count_s at zero; count one frontend
+        // update for them to avoid dividing by zero.
+        const uint32_t message_count = MAX(1U, state[instance].agrica_count_s);
+        uint32_t average_message_delta_ms = message_delta_ms / message_count;
+        if (average_message_delta_ms == 0 && message_delta_ms != 0) {
+            average_message_delta_ms = 1;
+        }
+        timing[instance].delta_time_ms = MIN((uint32_t)UINT16_MAX, average_message_delta_ms);
         state[instance].agrica_count_s = 0;
         timing[instance].last_message_time_ms = tnow;
         // if GPS disabled for flight testing then don't update fix timing value
@@ -1517,7 +1526,12 @@ bool AP_GPS::is_healthy(uint8_t instance) const
       fact that the rate of yaw data is not critical
      */
     const uint8_t delay_threshold = 2;
-    const float delay_avg_max = is_rtk_rover(instance) ? 333 : 215;
+    // Unicore moving-base NMEA is a single-driver moving-baseline stream, so
+    // it needs the same relaxed average-rate threshold as RTK rover backends.
+    const bool moving_baseline_rover =
+        is_rtk_rover(instance) ||
+        get_type(instance) == GPS_TYPE_UNICORE_MOVINGBASE_NMEA;
+    const float delay_avg_max = moving_baseline_rover ? 333 : 215;
     const GPS_timing &t = timing[instance];
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
