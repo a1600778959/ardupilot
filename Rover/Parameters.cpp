@@ -737,8 +737,8 @@ void Rover::load_parameters(void)
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_ROVER);
 
-    SRV_Channels::set_default_function(CH_1, SRV_Channel::k_steering);
-    SRV_Channels::set_default_function(CH_3, SRV_Channel::k_throttle);
+    SRV_Channels::set_default_function(CH_1, SRV_Channel::k_throttleLeft);
+    SRV_Channels::set_default_function(CH_3, SRV_Channel::k_throttleRight);
 
     SRV_Channels::upgrade_parameters();
 
