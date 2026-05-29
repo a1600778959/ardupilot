@@ -5,7 +5,8 @@
 //     AP_GROUPINFO("UART_NUM", 1, AP_AOA_ALX, _uart_num, 3),
 //     AP_GROUPEND};
 
-AP_AOA_ALX::AP_AOA_ALX() : _payload_len(0),
+AP_AOA_ALX::AP_AOA_ALX() : _uart(nullptr),
+                           _payload_len(0),
                            _payload_cnt(0),
                            _xor_sum(0),
                            _parse_state(WAIT_HEADER1)
@@ -16,6 +17,10 @@ AP_AOA_ALX::AP_AOA_ALX() : _payload_len(0),
 void AP_AOA_ALX::init(uint8_t serial_num)
 {
     _uart = hal.serial(serial_num);
+    if (_uart == nullptr) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "AOA serial %u unavailable", (unsigned)serial_num);
+        return;
+    }
     // _uart->begin(230400, 256, 256);
     _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     _uart->set_stop_bits(1);
@@ -23,8 +28,11 @@ void AP_AOA_ALX::init(uint8_t serial_num)
 
 void AP_AOA_ALX::update()
 {
+    if (_uart == nullptr) {
+        return;
+    }
     // gcs().send_text(MAV_SEVERITY_INFO, "观察传感器采集函数是否执行");
-    uint8_t rec_num = _uart->available();
+    uint16_t rec_num = _uart->available();
 
     //gcs().send_text(MAV_SEVERITY_INFO,"rec_num:%d", rec_num); // 发送监控参数指令
     while (rec_num > 0)
@@ -100,6 +108,10 @@ void AP_AOA_ALX::update()
 
             break;
         case PARSE_PAYLOAD:
+            if (_payload_cnt >= sizeof(_rx_buffer)) {
+                _reset_parser();
+                break;
+            }
             _rx_buffer[_payload_cnt++] = byte;
             _xor_sum += byte;
             if (_payload_cnt >= _payload_len + 7)
@@ -156,8 +168,6 @@ void AP_AOA_ALX::_process_packet()
         _current.timestamp_ms = AP_HAL::millis();
         _current.data_confirmed = _rx_buffer[19];
         _current.data_RSSI = _rx_buffer[21];
-        gcs().send_named_float("data_confirmed", _current.data_confirmed);
-        gcs().send_named_float("data_RSSI", _current.data_RSSI);
     }
 }
 

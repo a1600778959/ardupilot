@@ -8,11 +8,11 @@ public:
     float P[2][2]; // 协方差矩阵
     float Q[2][2]; // 过程噪声
     float R[2][2]; // 测量噪声
-    float x[2];    // 状态向量 [距离(m), 角度(rad)]
+    float x[2];    // 状态向量 [距离(m), 角度(deg)]
     AOAKalmanFilter();
     void reset();
     void predict(float dt);
-    void update(float meas_angle, float meas_dist);
+    void update(float meas_dist, float meas_angle);
     float get_angle() const { return x[1]; }
     float get_distance() const { return x[0]; }
 };

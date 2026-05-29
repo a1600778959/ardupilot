@@ -1,7 +1,21 @@
 // mode_aoafollow.cpp
 #include "Rover.h"
 
-#define DATA_TIMEOUT_S 1.0f // 数据超时阈值，单位秒
+static constexpr float AOA_DT_MIN_S = 0.001f;
+static constexpr float AOA_DT_MAX_S = 0.2f;
+static constexpr float AOA_MIN_LIMIT = 0.01f;
+static constexpr float AOA_REVERSE_SWITCH_ANGLE_DEG = 90.0f;
+static constexpr uint32_t AOA_DEBUG_MIN_PERIOD_MS = 50U;
+
+static float shortest_drive_heading_error(float target_heading_error_deg, bool &backing_to_target)
+{
+    target_heading_error_deg = wrap_180(target_heading_error_deg);
+    backing_to_target = fabsf(target_heading_error_deg) > AOA_REVERSE_SWITCH_ANGLE_DEG;
+    if (backing_to_target) {
+        return wrap_180(target_heading_error_deg + 180.0f);
+    }
+    return target_heading_error_deg;
+}
 
 const AP_Param::GroupInfo ModeAoafllow::var_info[] = {
     // PID参数
@@ -16,232 +30,307 @@ const AP_Param::GroupInfo ModeAoafllow::var_info[] = {
     AP_GROUPINFO("MAX_SPEED", 8, ModeAoafllow, _max_speed, 1.0f),
     AP_GROUPINFO("STEER_LIM", 9, ModeAoafllow, _steer_limit, 1.0f),
     AP_GROUPINFO("SERIAL", 10, ModeAoafllow, _serial_port, 6),
-    AP_GROUPEND};
+    AP_GROUPINFO("LOST_TOUT", 11, ModeAoafllow, _lost_timeout_s, 0.25f),
+    AP_GROUPINFO("HOLD_TOUT", 12, ModeAoafllow, _hold_timeout_s, 1.0f),
+    AP_GROUPINFO("ESTOP_BUF", 13, ModeAoafllow, _estop_buffer_m, 0.0f),
+    AP_GROUPINFO("ESTOP_HYST", 14, ModeAoafllow, _estop_release_hyst_m, 0.5f),
+    AP_GROUPINFO("MAX_DERR", 15, ModeAoafllow, _max_dist_err_m, 20.0f),
+    AP_GROUPINFO("MAX_AERR", 16, ModeAoafllow, _max_angle_err_deg, 60.0f),
+    AP_GROUPINFO("THR_DZ", 17, ModeAoafllow, _thr_deadband, 0.02f),
+    AP_GROUPINFO("STR_DZ", 18, ModeAoafllow, _steer_deadband, 0.06f),
+    AP_GROUPINFO("THR_KICK", 19, ModeAoafllow, _thr_friction_offset, 10.0f),
+    AP_GROUPINFO("STR_KICK", 20, ModeAoafllow, _steer_friction_offset, 450.0f),
+    AP_GROUPINFO("LOSS_DECAY", 21, ModeAoafllow, _loss_decay, 0.8f),
+    AP_GROUPINFO("DBG_RATE", 22, ModeAoafllow, _debug_rate_hz, 5.0f),
+    AP_GROUPEND
+};
 
 ModeAoafllow::ModeAoafllow() : Mode(), // 必须首先初始化基类
                                _last_update_ms(0),
+                               _emergency_stop(false),
                                _throttle_out(0.0f),
                                _steering_out(0.0f),
-                               _emergency_stop(false)
+                               _backing_to_target(false),
+                               _track_state(TrackState::ACQUIRE),
+                               _last_data_ms(0),
+                               _last_debug_ms(0)
 {
-
     AP_Param::setup_object_defaults(this, var_info);
 }
 
 bool ModeAoafllow::_enter()
 {
-    // 初始化传感器
     aoa_sensor1.init(_serial_port.get());
+    _dist_pid.set_gains(_dist_kp.get(), _dist_ki.get(), _dist_kd.get(), 0.01f);
+    _angle_pid.set_gains(_angle_kp.get(), _angle_ki.get(), _angle_kd.get(), 0.01f);
 
-    //写入PID参数
-    _dist_pid.set_gains(_dist_kp.get(), _dist_ki.get(), _dist_kd.get(), 0.01);
-    _angle_pid.set_gains(_angle_kp.get(), _angle_ki.get(), _angle_kd.get(), 0.01);
-
-    // 重置控制器状态
+    _last_update_ms = AP_HAL::millis();
+    _last_data_ms = 0;
+    _last_debug_ms = 0;
+    _set_track_state(TrackState::ACQUIRE);
     reset_controllers();
 
-    // 显示模式信息
     gcs().send_text(MAV_SEVERITY_INFO, "AOA Follow ENGAGED");
     return true;
 }
 
 void ModeAoafllow::update()
 {
-    // static float x_out = 0,y_out=0;
     const uint32_t now_ms = AP_HAL::millis();
-    // const float dt_ms = (now_ms - _last_update_ms);
-    const float dt = (now_ms - _last_update_ms) * 0.001f;
-    // // 1. 获取原始传感器数据
-    float raw_dist1, raw_angle1;
-
-    aoa_sensor1.update();       //UWB跟随传感器跟随程序
-    if (!aoa_sensor1.get_raw_data(raw_dist1, raw_angle1))
-    {   
-        _handle_data_loss(dt);
-        return;
-    }
-    gcs().send_named_float("dist1", raw_dist1);
-    gcs().send_named_float("raw_angle1", raw_angle1);
-
-    // gcs().send_text(MAV_SEVERITY_INFO, "传感器测量值:%f , %f", raw_dist1, raw_angle1);
-    // // 2. 卡尔曼滤波更新
-    _kalman_filter.predict(dt);
-    _kalman_filter.update(raw_dist1, raw_angle1);
-    
-    // 3. 获取滤波状态
-    const float filtered_dist1 = _kalman_filter.get_distance();
-    const float filtered_angle1 = _kalman_filter.get_angle();
-
-    float y = filtered_dist1 * cosf(filtered_angle1 * 0.01745f);
-    float x = filtered_angle1 - 90.0f; //偏航90度改为前方为0度,误差数值在-180~180度之间
-    gcs().send_named_float("angle", x);
-    if (abs(y) > 20)   //误差距离限幅
-    {
-        y = 20 * (y/abs(y));
-    }
-
-    if (abs(x) > 120)
-    {
-        x = 60 * (x / abs(x));
-    }
-
-    // 4. 安全监测
-    if (!_safety_check(filtered_dist1))
-    {
-        return;
-    }
-
-    // 5. PID控制计算
-    Vector2f control_out = _calculate_control(y, x, dt);
-    gcs().send_named_float("x", control_out.x);
-    gcs().send_named_float("y", control_out.y);
-    // 6. 执行器输出
-    _set_actuators(control_out);
+    const float dt = constrain_float((now_ms - _last_update_ms) * 0.001f, AOA_DT_MIN_S, AOA_DT_MAX_S);
     _last_update_ms = now_ms;
-    // 7. 调试输出
-    // _send_debug_info(now_ms, filtered_dist1, filtered_angle1, control_out);
+
+    float raw_dist = 0.0f;
+    float raw_angle = 0.0f;
+    aoa_sensor1.update();
+
+    if (!aoa_sensor1.get_raw_data(raw_dist, raw_angle)) {
+        _handle_data_loss(now_ms);
+        _send_debug_throttled(now_ms,
+                              false,
+                              0.0f,
+                              0.0f,
+                              _kalman_filter.get_distance(),
+                              _kalman_filter.get_angle(),
+                              nullptr);
+        return;
+    }
+
+    _last_data_ms = now_ms;
+
+    // 数据恢复后重新归一化积分与滤波状态，避免掉数恢复时出现突发命令
+    if ((_track_state == TrackState::ACQUIRE) || (_track_state == TrackState::LOST)) {
+        reset_controllers();
+    }
+
+    _kalman_filter.predict(dt);
+    _kalman_filter.update(raw_dist, raw_angle);
+
+    const float filtered_dist = _kalman_filter.get_distance();
+    const float filtered_angle = _kalman_filter.get_angle();
+
+    if (!_safety_check(filtered_dist)) {
+        _send_debug_throttled(now_ms, true, raw_dist, raw_angle, filtered_dist, filtered_angle, nullptr);
+        return;
+    }
+
+    _set_track_state(TrackState::TRACK);
+
+    const float target_heading_error_deg = wrap_180(filtered_angle - 90.0f); // 前方为0°
+    float forward_dist_m = filtered_dist * cosf(radians(target_heading_error_deg));
+
+    bool backing_to_target = false;
+    float heading_error_deg = shortest_drive_heading_error(target_heading_error_deg, backing_to_target);
+    if (backing_to_target != _backing_to_target) {
+        _angle_pid.reset();
+        _backing_to_target = backing_to_target;
+    }
+
+    const float max_dist_err = MAX(fabsf(_max_dist_err_m.get()), 0.1f);
+    const float max_angle_err = MAX(fabsf(_max_angle_err_deg.get()), 1.0f);
+    forward_dist_m = constrain_float(forward_dist_m, -max_dist_err, max_dist_err);
+    heading_error_deg = constrain_float(heading_error_deg, -max_angle_err, max_angle_err);
+
+    const Vector2f control_out = _calculate_control(forward_dist_m, heading_error_deg, dt);
+    _set_actuators(control_out);
+
+    _send_debug_throttled(now_ms, true, raw_dist, raw_angle, filtered_dist, filtered_angle, &control_out);
 }
 
-void ModeAoafllow::_handle_data_loss(float dt)
+void ModeAoafllow::_handle_data_loss(uint32_t now_ms)
 {
-    // 数据超时处理（超过1秒无数据）
-    if (dt > DATA_TIMEOUT_S)
-    {
-        //gcs().send_text(MAV_SEVERITY_WARNING, "AOA Data Timeout!");
-        // 缓降速处理
-        _throttle_out *= 0.8f;
-        _steering_out *= 0.8f;
-        _set_actuators(Vector2f(_throttle_out, _steering_out));
-        // rover.set_mode(rover.mode_hold, ModeReason::FAILSAFE);
-        // gcs().send_text(MAV_SEVERITY_WARNING, "AOA Data Timeout!");
+    if (_track_state == TrackState::ESTOP || _emergency_stop) {
+        g2.motors.set_throttle(0);
+        g2.motors.set_steering(0);
         return;
     }
 
+    if (_last_data_ms == 0U) {
+        _set_track_state(TrackState::ACQUIRE);
+        _set_actuators(Vector2f(0.0f, 0.0f));
+        return;
+    }
+
+    const float data_age_s = (now_ms - _last_data_ms) * 0.001f;
+    const float lost_timeout_s = MAX(_lost_timeout_s.get(), 0.05f);
+    const float hold_timeout_s = MAX(_hold_timeout_s.get(), lost_timeout_s);
+
+    if (data_age_s < lost_timeout_s) {
+        return;
+    }
+
+    if (data_age_s < hold_timeout_s) {
+        _set_track_state(TrackState::LOST);
+        const float decay = constrain_float(_loss_decay.get(), 0.0f, 1.0f);
+        _throttle_out *= decay;
+        _steering_out *= decay;
+        _set_actuators(Vector2f(_throttle_out, _steering_out));
+        return;
+    }
+
+    _set_track_state(TrackState::ACQUIRE);
+    reset_controllers();
+    _set_actuators(Vector2f(0.0f, 0.0f));
 }
 
 bool ModeAoafllow::_safety_check(float current_dist)
 {
-    float target_dist = _target_dist.get();
+    const float estop_distance = MAX(0.0f, _target_dist.get() + MAX(0.0f, _estop_buffer_m.get()));
+    const float estop_release_dist = estop_distance + MAX(0.0f, _estop_release_hyst_m.get());
 
-    // 紧急制动检查
-    // if ((current_dist < _target_dist) || (mul_flag_stop))
-    if (current_dist < target_dist)
-    {
+    if (_track_state == TrackState::ESTOP || _emergency_stop) {
+        if (current_dist > estop_release_dist) {
+            _emergency_stop = false;
+            _set_track_state(TrackState::ACQUIRE);
+            reset_controllers();
+            return true;
+        }
         _emergency_stop = true;
         g2.motors.set_throttle(0);
-        // g2.motors.set_steering(0);
-
-        //gcs().send_text(MAV_SEVERITY_EMERGENCY, "EMERGENCY STOP!");
+        g2.motors.set_steering(0);
         return false;
     }
 
-    // 重置急停状态
-    // if (_emergency_stop && current_dist > target_dist + 0.5f && mul_flag_stop == false)
-    if (_emergency_stop && current_dist > (target_dist + 0.5f))
-    {
-        _emergency_stop = false;
-        reset_controllers();
+    if (current_dist < estop_distance) {
+        _emergency_stop = true;
+        _set_track_state(TrackState::ESTOP);
+        g2.motors.set_throttle(0);
+        g2.motors.set_steering(0);
+        return false;
     }
+
     return true;
 }
 
-Vector2f ModeAoafllow::_calculate_control(float dist, float angle, float dt)
+Vector2f ModeAoafllow::_calculate_control(float forward_dist, float heading_error_deg, float dt)
 {
-    float target_dist = _target_dist.get();
-    // 距离控制
-    float dist_error = target_dist - dist;
-    _throttle_out = _dist_pid.get_pid(dist_error, dt, 1.0f / _max_speed);
-    // _throttle_out = 0;
-    // 角度控制
-    _steering_out = _angle_pid.get_pid(angle, dt, 1.0f / _steer_limit);
-    // _steering_out = 0;
-    // 输出限幅
+    const float target_dist = _target_dist.get();
+    const float speed_limit = MAX(_max_speed.get(), AOA_MIN_LIMIT);
+    const float steer_limit = MAX(_steer_limit.get(), AOA_MIN_LIMIT);
+
+    // 目标在前方且距离偏大时输出正油门，距离偏小时输出负油门
+    const float dist_error = forward_dist - target_dist;
+    _throttle_out = _dist_pid.get_pid(dist_error, dt, 1.0f / speed_limit);
+    _steering_out = _angle_pid.get_pid(heading_error_deg, dt, 1.0f / steer_limit);
+
     _throttle_out = constrain_float(_throttle_out, -1.0f, 1.0f);
     _steering_out = constrain_float(_steering_out, -1.0f, 1.0f);
-    // gcs().send_text(MAV_SEVERITY_INFO, "dist_error:%f,_throttle_out:%f,_steering_out:%f", dist_error, _throttle_out, _steering_out);
-
     return Vector2f(_throttle_out, _steering_out);
 }
 
 void ModeAoafllow::_set_actuators(const Vector2f &control)
 {
-    if (_emergency_stop)
-    {
+    if (_emergency_stop) {
         g2.motors.set_throttle(0);
         g2.motors.set_steering(0);
         return;
     }
-   
-    // 设置转向和油门
-    if (abs(control.y) > 0.06)//转向死区设置
-    {
-        int8_t i = control.y/abs(control.y);
-        g2.motors.set_steering(-(-(control.y * _steer_limit) * 4500 + 450*i));
-        /* code */
-    }
-    else
-    {
+
+    const float steer_deadband = constrain_float(fabsf(_steer_deadband.get()), 0.0f, 1.0f);
+    const float thr_deadband = constrain_float(fabsf(_thr_deadband.get()), 0.0f, 1.0f);
+    const float steer_limit = MAX(_steer_limit.get(), AOA_MIN_LIMIT);
+    const float speed_limit = MAX(_max_speed.get(), AOA_MIN_LIMIT);
+    const float steer_kick = MAX(0.0f, _steer_friction_offset.get());
+    const float thr_kick = MAX(0.0f, _thr_friction_offset.get());
+
+    if (fabsf(control.y) > steer_deadband) {
+        float steering_cmd = constrain_float((control.y * steer_limit) * 4500.0f, -4500.0f, 4500.0f);
+        steering_cmd += copysignf(steer_kick, steering_cmd);
+        g2.motors.set_steering(constrain_float(steering_cmd, -4500.0f, 4500.0f));
+    } else {
         g2.motors.set_steering(0);
     }
 
-    if (abs(control.x) > 0.02)//油门死区设置
-    {
-        int8_t i = -control.x / abs(control.x);
-        g2.motors.set_throttle((control.x * _max_speed) * 100 + i*10);
-        /* code */
-    }
-    else
-    {
+    if (fabsf(control.x) > thr_deadband) {
+        float throttle_cmd = constrain_float((control.x * speed_limit) * 100.0f, -100.0f, 100.0f);
+        throttle_cmd += copysignf(thr_kick, throttle_cmd);
+        g2.motors.set_throttle(constrain_float(throttle_cmd, -100.0f, 100.0f));
+    } else {
         g2.motors.set_throttle(0);
     }
-    
+}
+
+void ModeAoafllow::_send_debug_throttled(uint32_t now_ms,
+                                         bool have_data,
+                                         float raw_dist,
+                                         float raw_angle,
+                                         float filtered_dist,
+                                         float filtered_angle,
+                                         const Vector2f *control)
+{
+    const float debug_rate_hz = _debug_rate_hz.get();
+    if (!(debug_rate_hz > 0.0f)) {
+        return;
+    }
+
+    const uint32_t period_ms = MAX(static_cast<uint32_t>(1000.0f / debug_rate_hz), AOA_DEBUG_MIN_PERIOD_MS);
+    if ((now_ms - _last_debug_ms) < period_ms) {
+        return;
+    }
+    _last_debug_ms = now_ms;
+
+    gcs().send_named_float("aoa_st", static_cast<float>(static_cast<uint8_t>(_track_state)));
+    if (have_data) {
+        gcs().send_named_float("aoa_rd", raw_dist);
+        gcs().send_named_float("aoa_ra", raw_angle);
+    }
+    gcs().send_named_float("aoa_fd", filtered_dist);
+    gcs().send_named_float("aoa_fa", filtered_angle);
+    if (control != nullptr) {
+        gcs().send_named_float("aoa_tx", control->x);
+        gcs().send_named_float("aoa_ty", control->y);
+    }
+}
+
+void ModeAoafllow::_set_track_state(TrackState new_state)
+{
+    if (_track_state == new_state) {
+        return;
+    }
+    _track_state = new_state;
+    gcs().send_text(MAV_SEVERITY_INFO, "AOA state: %s", _state_to_string(new_state));
+}
+
+const char *ModeAoafllow::_state_to_string(TrackState state)
+{
+    switch (state) {
+    case TrackState::ACQUIRE:
+        return "ACQUIRE";
+    case TrackState::TRACK:
+        return "TRACK";
+    case TrackState::LOST:
+        return "LOST";
+    case TrackState::ESTOP:
+        return "ESTOP";
+    default:
+        return "UNKNOWN";
+    }
 }
 
 void ModeAoafllow::_send_debug_info(uint32_t timestamp, float dist, float angle, const Vector2f &control)
 {
-    // static uint32_t _last_debug_ms;
-#define AOA_DEBUG 0
-#if AOA_DEBUG
-        // 发送MAVLink调试信息（每200ms）
-    if (timestamp - _last_debug_ms > 200)
-    {
-        _last_debug_ms = timestamp;
-        mavlink_msg_aoa_debug_send(
-            MAVLINK_COMM_0,
-            timestamp,
-            dist,
-            angle,
-            control.x,
-            control.y,
-            _kalman_filter.get_variance(0),
-            _kalman_filter.get_variance(1));
-    }
-#endif
+    (void)timestamp;
+    (void)dist;
+    (void)angle;
+    (void)control;
 }
 
 void ModeAoafllow::reset_controllers()
 {
     _dist_pid.reset();
     _angle_pid.reset();
-    // 重置积分项和微分项
     _throttle_out = 0.0f;
     _steering_out = 0.0f;
-    // _last_debug_ms = 0;
+    _backing_to_target = false;
     _kalman_filter.reset();
 }
 
-// 模式退出处理
 void ModeAoafllow::_exit()
 {
+    _emergency_stop = false;
+    _set_track_state(TrackState::ACQUIRE);
+    reset_controllers();
     g2.motors.set_throttle(0);
     g2.motors.set_steering(0);
-    // aoa_sensor1.deinit();
     gcs().send_text(MAV_SEVERITY_INFO, "AOA Follow DISENGAGED");
 }
-
-// // 在AP_Mission中注册模式
-// const struct AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-//     // ...
-//     AP_GROUPINFO("MODE_AOA_FOLLOW", 23, GCS_MAVLINK_Parameters, mode_aoafollow, 0),
-//     // ...
-// };

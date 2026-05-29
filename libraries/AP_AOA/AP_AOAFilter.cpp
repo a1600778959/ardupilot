@@ -32,14 +32,15 @@ void AOAKalmanFilter::reset()
     R[1][1] = 0.001f;
 
     // 状态向量
-    x[0] = 0.0f; // 初始角度
-    x[1] = 1.0f; // 初始距离
+    x[0] = 0.0f; // 初始距离
+    x[1] = 0.0f; // 初始角度
 }
 
 void AOAKalmanFilter::predict(float dt)
 {
     // 手动实现矩阵运算
-    float F[2][2] = {{1, -dt}, {0, 1}};
+    (void)dt;
+    float F[2][2] = {{1, 0}, {0, 1}};
     float FP[2][2], FPFt[2][2];
 
     // F * P
@@ -70,11 +71,11 @@ void AOAKalmanFilter::predict(float dt)
     }
 }
 
-void AOAKalmanFilter::update(float meas_angle, float meas_dist)
+void AOAKalmanFilter::update(float meas_dist, float meas_angle)
 {
     // 手动实现卡尔曼增益计算
     float S[2][2], K[2][2];
-    float y[2] = {meas_angle - x[0], meas_dist - x[1]};
+    float y[2] = {meas_dist - x[0], wrap_180(meas_angle - x[1])};
 
     // 计算S = H*P*H' + R (H=I)
     for (int i = 0; i < 2; i++)
@@ -113,6 +114,7 @@ void AOAKalmanFilter::update(float meas_angle, float meas_dist)
         }
         x[i] += x_new[i];
     }
+    x[1] = wrap_180(x[1]);
 
     // 协方差更新：P = (I - K)*P
     float I_minus_K[2][2] = {
