@@ -387,15 +387,30 @@ protected:
     void _exit() override;
     // 添加以下成员变量声明
     uint32_t _last_update_ms;
-    uint32_t _data_timeout_ms;
 
 private:
+    enum class TrackState : uint8_t {
+        ACQUIRE = 0,
+        TRACK = 1,
+        LOST = 2,
+        ESTOP = 3,
+    };
+
     // 其他成员...
     AP_AOA_ALX aoa_sensor1;
     AOAKalmanFilter _kalman_filter;
     // void _exit() override;   // 退出模式时的清理操作
-    void _handle_data_loss(float dt);
+    void _handle_data_loss(uint32_t now_ms);
     bool _safety_check(float current_dist);
+    void _set_track_state(TrackState new_state);
+    static const char *_state_to_string(TrackState state);
+    void _send_debug_throttled(uint32_t now_ms,
+                               bool have_data,
+                               float raw_dist,
+                               float raw_angle,
+                               float filtered_dist,
+                               float filtered_angle,
+                               const Vector2f *control);
     Vector2f _calculate_control(float dist, float angle, float dt);
     void _set_actuators(const Vector2f &control);
     void _send_debug_info(uint32_t timestamp, float dist, float angle, const Vector2f &control);
@@ -404,12 +419,22 @@ private:
     AP_Float _dist_kp, _dist_ki, _dist_kd;
     AP_Float _angle_kp, _angle_ki, _angle_kd;
     AP_Float _target_dist, _max_speed, _steer_limit;
+    AP_Float _lost_timeout_s, _hold_timeout_s;
+    AP_Float _estop_buffer_m, _estop_release_hyst_m;
+    AP_Float _max_dist_err_m, _max_angle_err_deg;
+    AP_Float _thr_deadband, _steer_deadband;
+    AP_Float _thr_friction_offset, _steer_friction_offset;
+    AP_Float _loss_decay, _debug_rate_hz;
     AP_Int8 _serial_port;
     AP_Int32 _rpm;
     // 添加油门和转向输出变量
     bool _emergency_stop;
     float _throttle_out;
     float _steering_out;
+    bool _backing_to_target;
+    TrackState _track_state;
+    uint32_t _last_data_ms;
+    uint32_t _last_debug_ms;
     AP_AOAPID _dist_pid;  // 距离控制PID
     AP_AOAPID _angle_pid; // 角度控制PID
 };

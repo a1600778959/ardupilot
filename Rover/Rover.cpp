@@ -226,8 +226,7 @@ bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &
         control_value = constrain_float(g2.motors.get_steering() / 4500.0f, -1.0f, 1.0f);
         return true;
     case AP_Vehicle::ControlOutput::Lateral:
-        control_value = constrain_float(g2.motors.get_lateral() * 0.01f, -1.0f, 1.0f);
-        return true;
+        return false;
     default:
         return false;
     }

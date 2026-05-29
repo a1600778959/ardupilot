@@ -79,6 +79,23 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SLEWRATE", 8, AP_MotorsUGV, _slew_rate, 100),
 
+    // @Param: STR_TC
+    // @DisplayName: Steering Curve Time Constant
+    // @Description: Time constant for skid-steering steering response curve. Zero disables this curve and makes steering output follow input directly. Larger values produce smoother, more curved left/right transitions.
+    // @Units: s
+    // @Range: 0 2
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("STR_TC", 17, AP_MotorsUGV, _steering_curve_tc, 0.0f),
+
+    // @Param: STR_CURVE
+    // @DisplayName: Steering Curve Strength
+    // @Description: Curvature strength for skid-steering steering response. Zero gives a standard 2nd-order response. Higher values make the slow-fast-slow S-curve more pronounced.
+    // @Range: 0 30
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("STR_CURVE", 18, AP_MotorsUGV, _steering_curve_strength, 0.0f),
+
     // @Param: THST_EXPO
     // @DisplayName: Thrust Curve Expo
     // @Description: Thrust curve exponent (-1 to +1 with 0 being linear)
@@ -87,14 +104,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     AP_GROUPINFO("THST_EXPO", 9, AP_MotorsUGV, _thrust_curve_expo, 0.0f),
 
     // 10 was VEC_THR_BASE
-
-    // @Param: SPD_SCA_BASE
-    // @DisplayName: Motor speed scaling base speed
-    // @Description: Speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
-    // @Units: m/s
-    // @Range: 0 10
-    // @User: Advanced
-    AP_GROUPINFO("SPD_SCA_BASE", 11, AP_MotorsUGV, _speed_scale_base, 1.0f),
+    // 11 was SPD_SCA_BASE
 
     // @Param: STR_THR_MIX
     // @DisplayName: Motor steering vs throttle prioritisation
@@ -103,13 +113,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("STR_THR_MIX", 12, AP_MotorsUGV, _steering_throttle_mix, 0.5f),
 
-    // @Param: VEC_ANGLEMAX
-    // @DisplayName: Vector thrust angle max
-    // @Description: The angle between steering's middle position and maximum position when using vectored thrust (boats only)
-    // @Units: deg
-    // @Range: 0 90
-    // @User: Standard
-    AP_GROUPINFO("VEC_ANGLEMAX", 13, AP_MotorsUGV, _vector_angle_max, 0.0f),
+    // 13 was VEC_ANGLEMAX
 
     // @Param: THST_ASYM
     // @DisplayName: Motor Thrust Asymmetry
@@ -132,7 +136,7 @@ AP_MotorsUGV::AP_MotorsUGV(AP_WheelRateControl& rate_controller) :
 
 void AP_MotorsUGV::init(uint8_t frtype)
 {
-    _frame_type = frame_type(frtype);
+    (void)frtype;
     dist = AP_MultiDistanceSensor::get_singleton();
     // setup servo output
     setup_servo_output();
@@ -143,34 +147,24 @@ void AP_MotorsUGV::init(uint8_t frtype)
     // set safety output
     setup_safety_output();
 
-    // setup for omni vehicles
-    if (_frame_type != FRAME_TYPE_UNDEFINED) {
-        setup_omni();
-    }
 }
 
 bool AP_MotorsUGV::get_legacy_relay_index(int8_t &index1, int8_t &index2, int8_t &index3, int8_t &index4) const
 {
+    index1 = -1;
+    index2 = -1;
+    index3 = -1;
+    index4 = -1;
+
     if (_pwm_type != PWMType::BRUSHED_WITH_RELAY) {
         // Relays only used if PWM type is set to brushed with relay
         return false;
     }
 
-    // First relay is always used, throttle, throttle left or motor 1
+    // Differential drive uses two brushed reverse relays (left/right).
     index1 = 0;
-
-    // Second relay is used for right throttle on skid steer and motor 2 for omni
     if (have_skid_steering()) {
         index2 = 1;
-    }
-
-    // Omni can have a variable number of motors
-    if (is_omni()) {
-        // Omni has at least 3 motors
-        index2 = 2;
-        if (_motors_num >= 4) {
-            index2 = 3;
-        }
     }
 
     return true;
@@ -182,13 +176,11 @@ void AP_MotorsUGV::setup_safety_output()
     if (_pwm_type == PWMType::BRUSHED_WITH_RELAY) {
         // set trim to min to set duty cycle range (0 - 100%) to servo range
         // ignore servo revese flag, it is used by the relay
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle, true);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft, true);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight, true);
     }
 
     // stop sending pwm if main CPU fails
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
 }
@@ -196,36 +188,15 @@ void AP_MotorsUGV::setup_safety_output()
 // setup servo output ranges
 void AP_MotorsUGV::setup_servo_output()
 {
-    // k_steering are limited to -45;45 degree
-    SRV_Channels::set_angle(SRV_Channel::k_steering, SERVO_MAX);
-
-    // k_throttle are in power percent so -100 ... 100
-    SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
-
     // skid steering left/right throttle as -1000 to 1000 values
     SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  1000);
     SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
-
-    // omni motors set in power percent so -100 ... 100
-    for (uint8_t i=0; i<AP_MOTORS_NUM_MOTORS_MAX; i++) {
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
-        SRV_Channels::set_angle(function, 100);
-    }
-
-    // mainsail range from 0 to 100
-    SRV_Channels::set_range(SRV_Channel::k_mainsail_sheet, 100);
-    // wing sail -100 to 100
-    SRV_Channels::set_angle(SRV_Channel::k_wingsail_elevator, 100);
-    // mast rotation -100 to 100
-    SRV_Channels::set_angle(SRV_Channel::k_mast_rotation, 100);
-
 }
 
 // set steering as a value from -4500 to +4500
-//   apply_scaling should be set to false for manual modes where
-//   no scaling by speed or angle should be performed
 void AP_MotorsUGV::set_steering(float steering, bool apply_scaling)
 {
+    (void)apply_scaling;
     SensorData *data = dist->get_min_distance();
     if (data->distance < _stop_distance)  // if an obstacle is closer than 0.5 meters
     {
@@ -233,14 +204,11 @@ void AP_MotorsUGV::set_steering(float steering, bool apply_scaling)
     } else {
         _steering = steering;
     }
-    _scale_steering = apply_scaling;
-    gcs().send_named_float("steering", _steering);
 }
 
 // set throttle as a value from -100 to 100
 void AP_MotorsUGV::set_throttle(float throttle)
 {
-    gcs().send_named_float("throttle", throttle);
     // only allow setting throttle if armed
     if (!hal.util->get_soft_armed()) {
         return;
@@ -252,12 +220,6 @@ void AP_MotorsUGV::set_throttle(float throttle)
     } else {
         _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
     }
-}
-
-// set lateral input as a value from -100 to +100
-void AP_MotorsUGV::set_lateral(float lateral)
-{
-    _lateral = constrain_float(lateral, -100.0f, 100.0f);
 }
 
 // get slew limited throttle
@@ -278,11 +240,13 @@ float AP_MotorsUGV::get_slew_limited_throttle(float throttle, float dt) const
  */
 bool AP_MotorsUGV::have_skid_steering() const
 {
-    return (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) && SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) || is_omni();
+    return SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) &&
+           SRV_Channels::function_assigned(SRV_Channel::k_throttleRight);
 }
 
 void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 {
+    (void)ground_speed;
     // soft-armed overrides passed in armed status
     if (!hal.util->get_soft_armed()) {
         armed = false;
@@ -296,17 +260,13 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
     // sanity check parameters
     sanity_check_parameters();
 
-    // slew limit throttle
+    // slew limit steering before throttle so skid-steering can use the previous
+    // throttle state to work out how much wheel-output delta remains this cycle
+    slew_limit_steering(dt);
     slew_limit_throttle(dt);
 
-    // output for regular steering/throttle style frames
-    output_regular(armed, ground_speed, _steering, _throttle);
-
-    // output for skid steering style frames
+    // differential-drive output path
     output_skid_steering(armed, _steering, _throttle, dt);
-
-    // output for omni frames
-    output_omni(armed, _steering, _throttle, _lateral);
 
     // send values to the PWM timers for output
     auto &srv = AP::srv();
@@ -328,51 +288,21 @@ bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
 
     switch (motor_seq) {
         case MOTOR_TEST_THROTTLE: {
-            if (SRV_Channels::function_assigned(SRV_Channel::k_motor1)) {
-                output_throttle(SRV_Channel::k_motor1, pct);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_throttle)) {
-                output_throttle(SRV_Channel::k_throttle, pct);
-            }
+            output_throttle(SRV_Channel::k_throttleLeft, pct);
+            output_throttle(SRV_Channel::k_throttleRight, pct);
             break;
         }
         case MOTOR_TEST_STEERING: {
-            if (SRV_Channels::function_assigned(SRV_Channel::k_motor2)) {
-                output_throttle(SRV_Channel::k_motor2, pct);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
-                SRV_Channels::set_output_scaled(SRV_Channel::k_steering, pct * 45.0f);
-            }
+            output_throttle(SRV_Channel::k_throttleLeft, pct);
+            output_throttle(SRV_Channel::k_throttleRight, -pct);
             break;
         }
         case MOTOR_TEST_THROTTLE_LEFT: {
-            if (SRV_Channels::function_assigned(SRV_Channel::k_motor3)) {
-                output_throttle(SRV_Channel::k_motor3, pct);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft)) {
-                output_throttle(SRV_Channel::k_throttleLeft, pct);
-            }
+            output_throttle(SRV_Channel::k_throttleLeft, pct);
             break;
         }
         case MOTOR_TEST_THROTTLE_RIGHT: {
-            if (SRV_Channels::function_assigned(SRV_Channel::k_motor4)) {
-                output_throttle(SRV_Channel::k_motor4, pct);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
-                output_throttle(SRV_Channel::k_throttleRight, pct);
-            }
-            break;
-        }
-        case MOTOR_TEST_MAINSAIL: {
-            if (SRV_Channels::function_assigned(SRV_Channel::k_mainsail_sheet)) {
-                SRV_Channels::set_output_scaled(SRV_Channel::k_mainsail_sheet, pct);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_wingsail_elevator)) {
-                SRV_Channels::set_output_scaled(SRV_Channel::k_wingsail_elevator, pct);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_mast_rotation)) {
-                SRV_Channels::set_output_scaled(SRV_Channel::k_mast_rotation, pct);
-            }
+            output_throttle(SRV_Channel::k_throttleRight, pct);
             break;
         }
         case MOTOR_TEST_LAST:
@@ -395,51 +325,26 @@ bool AP_MotorsUGV::output_test_pwm(motor_test_order motor_seq, float pwm)
     }
     switch (motor_seq) {
         case MOTOR_TEST_THROTTLE: {
-            if (SRV_Channels::function_assigned(SRV_Channel::k_motor1)) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_motor1, pwm);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_throttle)) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, pwm);
-            }
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, pwm);
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, pwm);
             break;
         }
         case MOTOR_TEST_STEERING: {
-            if (SRV_Channels::function_assigned(SRV_Channel::k_motor2)) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_motor2, pwm);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_steering, pwm);
-            }
-            break;
-        }
-        case MOTOR_TEST_THROTTLE_LEFT: {
-            if (SRV_Channels::function_assigned(SRV_Channel::k_motor3)) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_motor3, pwm);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft)) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, pwm);
-            }
-            break;
-        }
-        case MOTOR_TEST_THROTTLE_RIGHT: {
-            if (SRV_Channels::function_assigned(SRV_Channel::k_motor4)) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_motor4, pwm);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, pwm);
+            if (const SRV_Channel *right = SRV_Channels::get_channel_for(SRV_Channel::k_throttleRight)) {
+                const uint16_t mirrored = uint16_t(MAX(0, (2 * right->get_trim()) - int(pwm)));
+                SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, mirrored);
+            } else {
                 SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, pwm);
             }
             break;
         }
-        case MOTOR_TEST_MAINSAIL: {
-            if (SRV_Channels::function_assigned(SRV_Channel::k_mainsail_sheet)) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_mainsail_sheet, pwm);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_wingsail_elevator)) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_wingsail_elevator, pwm);
-            }
-            if (SRV_Channels::function_assigned(SRV_Channel::k_mast_rotation)) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_mast_rotation, pwm);
-            }
+        case MOTOR_TEST_THROTTLE_LEFT: {
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, pwm);
+            break;
+        }
+        case MOTOR_TEST_THROTTLE_RIGHT: {
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, pwm);
             break;
         }
         default:
@@ -456,45 +361,23 @@ bool AP_MotorsUGV::output_test_pwm(motor_test_order motor_seq, float pwm)
 //  returns true if checks pass, false if they fail.  report should be true to send text messages to GCS
 bool AP_MotorsUGV::pre_arm_check(bool report) const
 {
-    const bool have_throttle = SRV_Channels::function_assigned(SRV_Channel::k_throttle);
     const bool have_throttle_left = SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft);
     const bool have_throttle_right = SRV_Channels::function_assigned(SRV_Channel::k_throttleRight);
 
-    // check that there's defined outputs, inc scripting and sail
-    if(!have_throttle_left &&
-       !have_throttle_right &&
-       !have_throttle &&
-       !SRV_Channels::function_assigned(SRV_Channel::k_steering) &&
-       !SRV_Channels::function_assigned(SRV_Channel::k_scripting1) &&
-       !is_omni()) {
+    // Differential-drive mode requires both left and right motor outputs.
+    if (!have_throttle_left && !have_throttle_right) {
         if (report) {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: no motor, sail or scripting outputs defined");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: no skid-steering outputs defined");
         }
         return false;
     }
+
     // check if only one of skid-steering output has been configured
     if (have_throttle_left != have_throttle_right) {
         if (report) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: check skid steering config");
         }
         return false;
-    }
-    // check if only one of throttle or steering outputs has been configured, if has a sail allow no throttle
-    if (have_throttle != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
-        if (report) {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: check steering and throttle config");
-        }
-        return false;
-    }
-    // check all omni motor outputs have been configured
-    for (uint8_t i=0; i<_motors_num; i++) {
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
-        if (!SRV_Channels::function_assigned(function)) {
-            if (report) {
-                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: servo function %u unassigned", function);
-            }
-            return false;
-        }
     }
 
     // Check relays are configured for brushed with relay outputs
@@ -508,10 +391,8 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         };
 
         const RelayTable relay_table[] = {
-            { have_throttle || have_throttle_left || (SRV_Channels::function_assigned(SRV_Channel::k_motor1) && (_motors_num >= 1)), AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_1 },
-            { have_throttle_right || (SRV_Channels::function_assigned(SRV_Channel::k_motor2) && (_motors_num >= 2)),                 AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_2 },
-            { SRV_Channels::function_assigned(SRV_Channel::k_motor3) && (_motors_num >= 3),                                          AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_3 },
-            { SRV_Channels::function_assigned(SRV_Channel::k_motor4) && (_motors_num >= 4),                                          AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_4 },
+            { have_throttle_left,  AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_1 },
+            { have_throttle_right, AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_2 },
         };
 
         for (uint8_t i=0; i<ARRAY_SIZE(relay_table); i++) {
@@ -533,7 +414,6 @@ void AP_MotorsUGV::sanity_check_parameters()
 {
     _throttle_min.set(constrain_int16(_throttle_min, 0, 20));
     _throttle_max.set(constrain_int16(_throttle_max, 30, 100));
-    _vector_angle_max.set(constrain_float(_vector_angle_max, 0.0f, 90.0f));
 }
 
 // setup pwm output type
@@ -544,12 +424,8 @@ void AP_MotorsUGV::setup_pwm_type()
     hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
 
     // work out mask of channels assigned to motors
-    _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttle);
     _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttleLeft);
     _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttleRight);
-    for (uint8_t i=0; i<_motors_num; i++) {
-        _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channels::get_motor_function(i));
-    }
 
     switch (_pwm_type) {
     case PWMType::ONESHOT:
@@ -579,183 +455,6 @@ void AP_MotorsUGV::setup_pwm_type()
         // do nothing
         break;
     }
-}
-
-// setup for frames with omni motors
-void AP_MotorsUGV::setup_omni()
-{
-    // remove existing motors
-    for (int8_t i=0; i<AP_MOTORS_NUM_MOTORS_MAX; i++) {
-        clear_omni_motors(i);
-    }
-
-    // hard coded factor configuration
-    switch (_frame_type) {
-
-    //   FRAME TYPE NAME
-    case FRAME_TYPE_UNDEFINED:
-        break;
-
-    case FRAME_TYPE_OMNI3:
-        _motors_num = 3;
-        add_omni_motor(0, 1.0f, -1.0f, -1.0f);
-        add_omni_motor(1, 0.0f, -1.0f, 1.0f);
-        add_omni_motor(2, 1.0f, 1.0f, 1.0f);
-        break;
-
-    case FRAME_TYPE_OMNIX:
-        _motors_num = 4,
-        add_omni_motor(0, 1.0f, -1.0f, -1.0f);
-        add_omni_motor(1, 1.0f, -1.0f, 1.0f);
-        add_omni_motor(2, 1.0f, 1.0f, -1.0f);
-        add_omni_motor(3, 1.0f, 1.0f, 1.0f);
-        break;
-
-    case FRAME_TYPE_OMNIPLUS:
-        _motors_num = 4;
-        add_omni_motor(0, 0.0f, 1.0f, 1.0f);
-        add_omni_motor(1, 1.0f, 0.0f, 0.0f);
-        add_omni_motor(2, 0.0f, -1.0f, 1.0f);
-        add_omni_motor(3, 1.0f, 0.0f, 0.0f);
-        break;
-
-    case FRAME_TYPE_OMNI3MECANUM:
-        _motors_num = 3;
-        add_omni_motor(0,  -1.0f,    1.0f,  -0.26795f);
-        add_omni_motor(1,  0.73205f, 1.0f,  -0.73205f);
-        add_omni_motor(2,  0.26795f, 1.0f,   1.0f);
-        break;
-    }
-}
-
-// add omni motor using separate throttle, steering and lateral factors
-void AP_MotorsUGV::add_omni_motor(int8_t motor_num, float throttle_factor, float steering_factor, float lateral_factor)
-{
-    // ensure valid motor number is provided
-    if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
-
-        // set throttle, steering and lateral factors
-        _throttle_factor[motor_num] = throttle_factor;
-        _steering_factor[motor_num] = steering_factor;
-        _lateral_factor[motor_num] = lateral_factor;
-
-        add_omni_motor_num(motor_num);
-    }
-}
-
-// add an omni motor and set up default output function
-void AP_MotorsUGV::add_omni_motor_num(int8_t motor_num)
-{
-    // ensure a valid motor number is provided
-    if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
-        uint8_t chan;
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
-        SRV_Channels::set_aux_channel_default(function, motor_num);
-        if (!SRV_Channels::find_channel(function, chan)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
-        }
-    }
-}
-
-// disable omni motor and remove all throttle, steering and lateral factor for this motor
-void AP_MotorsUGV::clear_omni_motors(int8_t motor_num)
-{
-    // ensure valid motor number is provided
-    if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
-        // disable the motor and set factors to zero
-        _throttle_factor[motor_num] = 0;
-        _steering_factor[motor_num] = 0;
-        _lateral_factor[motor_num] = 0;
-    }
-}
-
-// output to regular steering and throttle channels
-void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering, float throttle)
-{
-    // output to throttle channels
-    if (armed) {
-        if (_scale_steering) {
-            // vectored thrust handling
-            if (have_vectored_thrust()) {
-
-                // normalise desired steering and throttle to ease calculations
-                float steering_norm = steering / 4500.0f;
-                const float throttle_norm = throttle * 0.01f;
-
-                // steering can never be more than throttle * tan(_vector_angle_max)
-                const float vector_angle_max_rad = radians(constrain_float(_vector_angle_max, 0.0f, 90.0f));
-                const float steering_norm_lim = fabsf(throttle_norm * tanf(vector_angle_max_rad));
-                if (fabsf(steering_norm) > steering_norm_lim) {
-                    if (is_positive(steering_norm)) {
-                        steering_norm = steering_norm_lim;
-                    }
-                    if (is_negative(steering_norm)) {
-                        steering_norm = -steering_norm_lim;
-                    }
-                    limit.steer_right = true;
-                    limit.steer_left = true;
-                }
-
-                if (!is_zero(throttle_norm)) {
-                    // calculate steering angle
-                    float steering_angle_rad = atanf(steering_norm / throttle_norm);
-                    // limit steering angle to vector_angle_max
-                    if (fabsf(steering_angle_rad) > vector_angle_max_rad) {
-                        steering_angle_rad = constrain_float(steering_angle_rad, -vector_angle_max_rad, vector_angle_max_rad);
-                        limit.steer_right = true;
-                        limit.steer_left = true;
-                     }
-
-                    // convert steering angle to steering output
-                    steering = steering_angle_rad / vector_angle_max_rad * 4500.0f;
-
-                    // scale up throttle to compensate for steering angle
-                    const float throttle_scaler_inv = cosf(steering_angle_rad);
-                    if (!is_zero(throttle_scaler_inv)) {
-                        throttle /= throttle_scaler_inv;
-                    }
-                }
-            } else {
-                // scale steering down as speed increase above MOT_SPD_SCA_BASE (1 m/s default)
-                if (is_positive(_speed_scale_base) && (fabsf(ground_speed) > _speed_scale_base)) {
-                    steering *= (_speed_scale_base / fabsf(ground_speed));
-                } else {
-                    // regular steering rover at low speed so set limits to stop I-term build-up in controllers
-                    if (!have_skid_steering()) {
-                        limit.steer_left = true;
-                        limit.steer_right = true;
-                    }
-                }
-                // reverse steering direction when backing up
-                if (is_negative(ground_speed)) {
-                    steering *= -1.0f;
-                }
-            }
-        } else {
-            // reverse steering direction when backing up
-            if (is_negative(throttle)) {
-                steering *= -1.0f;
-            }
-        }
-        output_throttle(SRV_Channel::k_throttle, throttle);
-    } else {
-        // handle disarmed case
-        if (_disarm_disable_pwm) {
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
-        } else {
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::TRIM);
-        }
-    }
-
-    // clear and set limits based on input
-    // we do this here because vectored thrust or speed scaling may have reduced steering request
-    set_limits_from_input(armed, steering, throttle);
-
-    // constrain steering
-    steering = constrain_float(steering, -4500.0f, 4500.0f);
-
-    // always allow steering to move
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
 }
 
 // output to skid steering channels
@@ -802,7 +501,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
         steering_range = 1 - best_steering_throttle;
     }
 
-    // apply constraints
+    // apply steering constraints
     if (steering_scaled > steering_range) {
         limit.steer_right = true;
         steering_scaled = steering_range;
@@ -810,6 +509,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
         limit.steer_left = true;
         steering_scaled = -steering_range;
     }
+
     if (throttle_scaled > 1.0) {
         limit.throttle_upper = true;
         throttle_scaled = 1.0;
@@ -883,70 +583,11 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right, dt);
 }
 
-// output for omni frames
-void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float lateral)
-{
-    // exit immediately if the vehicle is not omni
-    if (!is_omni()) {
-        return;
-    }
-
-    if (armed) {
-        // clear and set limits based on input
-        set_limits_from_input(armed, steering, throttle);
-
-        // constrain steering
-        steering = constrain_float(steering, -4500.0f, 4500.0f);
-
-        // scale throttle, steering and lateral inputs to -1 to 1
-        const float scaled_throttle = throttle * 0.01f;
-        const float scaled_steering = steering / 4500.0f;
-        const float scaled_lateral = lateral * 0.01f;
-
-        float thr_str_ltr_out[_motors_num];
-        float thr_str_ltr_max = 1;
-        for (uint8_t i=0; i<_motors_num; i++) {
-            // Each motor outputs throttle + steering + lateral
-            thr_str_ltr_out[i] = (scaled_throttle * _throttle_factor[i]) +
-                              (scaled_steering * _steering_factor[i]) +
-                              (scaled_lateral * _lateral_factor[i]);
-            // record the largest output above 1
-            if (fabsf(thr_str_ltr_out[i]) > thr_str_ltr_max) {
-                thr_str_ltr_max = fabsf(thr_str_ltr_out[i]);
-            }
-        }
-        // Scale all outputs back evenly such that the lagest fits
-        const float output_scale = 1 / thr_str_ltr_max;
-        for (uint8_t i=0; i<_motors_num; i++) {
-            // send output for each motor
-            output_throttle(SRV_Channels::get_motor_function(i), thr_str_ltr_out[i] * 100.0f * output_scale);
-        }
-        if (output_scale < 1.0) {
-            // cant tell which command resulted in the scale back, so limit all
-            limit.steer_left = true;
-            limit.steer_right = true;
-            limit.throttle_lower = true;
-            limit.throttle_upper = true;
-        }
-    } else {
-        // handle disarmed case
-        if (_disarm_disable_pwm) {
-            for (uint8_t i=0; i<_motors_num; i++) {
-                SRV_Channels::set_output_limit(SRV_Channels::get_motor_function(i), SRV_Channel::Limit::ZERO_PWM);
-            }
-        } else {
-            for (uint8_t i=0; i<_motors_num; i++) {
-                SRV_Channels::set_output_limit(SRV_Channels::get_motor_function(i), SRV_Channel::Limit::TRIM);
-            }
-        }
-    }
-}
-
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100
 void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt)
 {
     // sanity check servo function
-    if (function != SRV_Channel::k_throttle && function != SRV_Channel::k_throttleLeft && function != SRV_Channel::k_throttleRight && function != SRV_Channel::k_motor1 && function != SRV_Channel::k_motor2 && function != SRV_Channel::k_motor3 && function!= SRV_Channel::k_motor4) {
+    if ((function != SRV_Channel::k_throttleLeft) && (function != SRV_Channel::k_throttleRight)) {
         return;
     }
 
@@ -971,21 +612,12 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 
         AP_Relay_Params::FUNCTION relay_function;
         switch (function) {
-            case SRV_Channel::k_throttle:
             case SRV_Channel::k_throttleLeft:
-            case SRV_Channel::k_motor1:
             default:
                 relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_1;
                 break;
             case SRV_Channel::k_throttleRight:
-            case SRV_Channel::k_motor2:
                 relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_2;
-                break;
-            case SRV_Channel::k_motor3:
-                relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_3;
-                break;
-            case SRV_Channel::k_motor4:
-                relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_4;
                 break;
         }
         relay->set(relay_function, relay_high);
@@ -996,22 +628,7 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 #endif  // AP_RELAY_ENABLED
 
     // output to servo channel
-    switch (function) {
-        case SRV_Channel::k_throttle:
-        case SRV_Channel::k_motor1:
-        case SRV_Channel::k_motor2:
-        case SRV_Channel::k_motor3:
-        case SRV_Channel::k_motor4:
-            SRV_Channels::set_output_scaled(function,  throttle);
-            break;
-        case SRV_Channel::k_throttleLeft:
-        case SRV_Channel::k_throttleRight:
-            SRV_Channels::set_output_scaled(function,  throttle * 10.0f);
-            break;
-        default:
-            // do nothing
-            break;
-    }
+    SRV_Channels::set_output_scaled(function, throttle * 10.0f);
 }
 
 // slew limit throttle for one iteration
@@ -1025,6 +642,80 @@ void AP_MotorsUGV::slew_limit_throttle(float dt)
         limit.throttle_lower = true;
     }
     _throttle_prev = _throttle;
+}
+
+// slew limit steering for one iteration
+void AP_MotorsUGV::slew_limit_steering(float dt)
+{
+    const float steering_max = static_cast<float>(SERVO_MAX);
+    const float steering_orig = _steering;
+    const float steering_target = constrain_float(_steering, -steering_max, steering_max);
+
+    if (dt <= 0.0f) {
+        _steering = steering_target;
+        _steering_prev = _steering;
+        _steering_rate_state = 0.0f;
+        return;
+    }
+
+    const bool is_skid_steer = have_skid_steering();
+    const bool use_skid_curve_tc = is_skid_steer && is_positive(_steering_curve_tc);
+    if (!use_skid_curve_tc) {
+        _steering = steering_target;
+        _steering_prev = _steering;
+        _steering_rate_state = 0.0f;
+        return;
+    }
+
+    const float steering_prev = constrain_float(_steering_prev, -steering_max, steering_max);
+    float steering_limited = steering_target;
+
+    // Differential drive uses left = v + w and right = v - w, so steering is
+    // the wheel-speed differential term.
+    const float steering_prev_scaled = steering_prev / steering_max;
+    const float steering_target_scaled = steering_target / steering_max;
+
+    // 2nd-order critically damped response with optional non-linear error shaping
+    // to increase S-curve visibility (slow-fast-slow).
+    const float tc = MAX(static_cast<float>(_steering_curve_tc), 0.02f);
+    const float omega = 4.6f / tc;
+    const float curve_strength = constrain_float(_steering_curve_strength, 0.0f, 30.0f);
+    const float steering_error = steering_target_scaled - steering_prev_scaled;
+    const float steering_error_abs = fabsf(steering_error);
+    const float center_gain = 1.0f + (0.2f * curve_strength * (1.0f - sq(constrain_float(steering_error_abs, 0.0f, 1.0f))));
+    const float steering_error_shaped = constrain_float(steering_error * center_gain, -2.0f, 2.0f);
+    const float accel = (sq(omega) * steering_error_shaped) - (2.0f * omega * _steering_rate_state);
+    _steering_rate_state += accel * dt;
+    float steering_next_scaled = steering_prev_scaled + (_steering_rate_state * dt);
+
+    // preserve differential-drive coupling when throttle slew limiting is active
+    if (_slew_rate > 0) {
+        const float throttle_prev_scaled = constrain_float(_throttle_prev * 0.01f, -1.0f, 1.0f);
+        const float throttle_limited_scaled = constrain_float(get_slew_limited_throttle(_throttle, dt) * 0.01f, -1.0f, 1.0f);
+        const float throttle_delta = fabsf(throttle_limited_scaled - throttle_prev_scaled);
+        const float steering_step_max = MAX(0.0f, 1.0f - throttle_delta);
+        steering_next_scaled = constrain_float(steering_next_scaled,
+                                               steering_prev_scaled - steering_step_max,
+                                               steering_prev_scaled + steering_step_max);
+    }
+
+    // prevent overshoot across target when dt is large or command changes abruptly
+    if (((steering_target_scaled - steering_prev_scaled) * (steering_target_scaled - steering_next_scaled)) <= 0.0f) {
+        steering_next_scaled = steering_target_scaled;
+        _steering_rate_state = 0.0f;
+    }
+
+    steering_limited = constrain_float(steering_next_scaled, -1.0f, 1.0f) * steering_max;
+
+    _steering = steering_limited;
+
+    if (steering_orig > _steering) {
+        limit.steer_right = true;
+    } else if (steering_orig < _steering) {
+        limit.steer_left = true;
+    }
+
+    _steering_prev = _steering;
 }
 
 // set limits based on steering and throttle input
@@ -1133,4 +824,3 @@ namespace AP {
         return AP_MotorsUGV::get_singleton();
     }
 }
-

@@ -18,17 +18,7 @@ public:
         MOTOR_TEST_STEERING = 2,
         MOTOR_TEST_THROTTLE_LEFT = 3,
         MOTOR_TEST_THROTTLE_RIGHT = 4,
-        MOTOR_TEST_MAINSAIL = 5,
         MOTOR_TEST_LAST
-    };
-
-    // supported omni motor configurations
-    enum frame_type {
-        FRAME_TYPE_UNDEFINED = 0,
-        FRAME_TYPE_OMNI3 = 1,
-        FRAME_TYPE_OMNIX = 2,
-        FRAME_TYPE_OMNIPLUS = 3,
-        FRAME_TYPE_OMNI3MECANUM = 4,
     };
 
     // initialise motors
@@ -44,18 +34,13 @@ public:
     void setup_servo_output();
 
     // get or set steering as a value from -4500 to +4500
-    //   apply_scaling should be set to false for manual modes where
-    //   no scaling by speed or angle should e performed
+    // apply_scaling is retained for API compatibility and ignored in differential mode
     float get_steering() const { return _steering; }
     void set_steering(float steering, bool apply_scaling = true);
 
     // get or set throttle as a value from -100 to 100
     float get_throttle() const { return _throttle; }
     void set_throttle(float throttle);
-
-    // get or set lateral input as a value from -100 to +100
-    float get_lateral() const { return _lateral; }
-    void set_lateral(float lateral);
 
     // get slew limited throttle
     // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
@@ -64,9 +49,6 @@ public:
 
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
-
-    // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
-    bool have_vectored_thrust() const { return is_positive(_vector_angle_max); }
 
     // output to motors and steering servos
     // ground_speed should be the vehicle's speed over the surface in m/s
@@ -88,9 +70,6 @@ public:
 
     // returns true if the configured PWM type is digital and should have fixed endpoints
     bool is_digital_pwm_type() const;
-
-    // returns true if the vehicle is omni
-    bool is_omni() const { return _frame_type != FRAME_TYPE_UNDEFINED && _motors_num > 0; }
 
     // Return the relay index that would be used for param conversion to relay functions
     bool get_legacy_relay_index(int8_t &index1, int8_t &index2, int8_t &index3, int8_t &index4) const;
@@ -126,26 +105,8 @@ private:
     // setup pwm output type
     void setup_pwm_type();
 
-    // setup for frames with omni motors
-    void setup_omni();
-
-    // add omni motor using separate throttle, steering and lateral factors
-    void add_omni_motor(int8_t motor_num, float throttle_factor, float steering_factor, float lateral_factor);
-
-    // add a motor and set up output function
-    void add_omni_motor_num(int8_t motor_num);
-
-    // disable omni motor and remove all throttle, steering and lateral factor for this motor
-    void clear_omni_motors(int8_t motor_num);
-
-    // output to regular steering and throttle channels
-    void output_regular(bool armed, float ground_speed, float steering, float throttle);
-
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle, float dt);
-
-    // output for omni motors
-    void output_omni(bool armed, float steering, float throttle, float lateral);
 
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
     // dt is the main loop time interval and is required when rate control is required
@@ -153,6 +114,9 @@ private:
     
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
+
+    // slew limit steering for one iteration
+    void slew_limit_steering(float dt);
 
     // set limits based on steering and throttle input
     void set_limits_from_input(bool armed, float steering, float throttle);
@@ -166,8 +130,6 @@ private:
     // external references
     AP_WheelRateControl &_rate_controller;
 
-    static const int8_t AP_MOTORS_NUM_MOTORS_MAX = 4;
-
     // parameters
     AP_Int8 _pwm_type;  // PWM output type
     AP_Int8 _pwm_freq;  // PWM output freq for brushed motors
@@ -175,27 +137,20 @@ private:
     AP_Int16 _slew_rate; // slew rate expressed as a percentage / second
     AP_Int8 _throttle_min; // throttle minimum percentage
     AP_Int8 _throttle_max; // throttle maximum percentage
+    AP_Float _steering_curve_tc; // steering curve time constant in seconds for skid steering
+    AP_Float _steering_curve_strength; // steering curve strength for skid steering response
     AP_Float _thrust_curve_expo; // thrust curve exponent from -1 to +1 with 0 being linear
     AP_Float _thrust_asymmetry; // asymmetry factor, how much better your skid-steering motors are at going forward than backwards (forward/backward thrust ratio)
-    AP_Float _vector_angle_max;  // angle between steering's middle position and maximum position when using vectored thrust.  zero to disable vectored thrust
-    AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles
     AP_Float _stop_distance; // distance in meters to stop UGV when obstacle detected
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
+    float   _steering_prev; // limited steering request from previous iteration
+    float   _steering_rate_state; // steering rate state used by curved skid-steering response
     float   _throttle;  // requested throttle as a value from -100 to 100
-    float   _throttle_prev; // throttle input from previous iteration
-    bool    _scale_steering = true; // true if we should scale steering by speed or angle
-    float   _lateral;  // requested lateral input as a value from -100 to +100 
+    float   _throttle_prev; // limited throttle request from previous iteration
     uint32_t _motor_mask;   // mask of motors configured with pwm_type
-    frame_type _frame_type; // frame type requested at initialisation
-
-    // omni variables
-    float   _throttle_factor[AP_MOTORS_NUM_MOTORS_MAX];
-    float   _steering_factor[AP_MOTORS_NUM_MOTORS_MAX];
-    float   _lateral_factor[AP_MOTORS_NUM_MOTORS_MAX];
-    uint8_t   _motors_num;
 
     static AP_MotorsUGV *_singleton;
 };
