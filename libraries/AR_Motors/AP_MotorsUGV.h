@@ -36,7 +36,7 @@ public:
     // get or set steering as a value from -4500 to +4500
     // apply_scaling is retained for API compatibility and ignored in differential mode
     float get_steering() const { return _steering; }
-    void set_steering(float steering, bool apply_scaling = true);
+    void set_steering(float steering);
 
     // get or set throttle as a value from -100 to 100
     float get_throttle() const { return _throttle; }
@@ -143,6 +143,7 @@ private:
     AP_Float _thrust_asymmetry; // asymmetry factor, how much better your skid-steering motors are at going forward than backwards (forward/backward thrust ratio)
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles
     AP_Float _stop_distance; // distance in meters to stop UGV when obstacle detected
+    AP_Float _reverse_delay; // delay in seconds when reversing motor
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
@@ -151,6 +152,14 @@ private:
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _throttle_prev; // limited throttle request from previous iteration
     uint32_t _motor_mask;   // mask of motors configured with pwm_type
+
+    struct ReverseThrottle {
+        float last_throttle = 0.0f;
+        uint32_t last_output_ms = 0;
+
+        // output with delay for reversal
+        void output(SRV_Channel::Aux_servo_function_t function, float throttle, float delay);
+    } rev_delay_throttleLeft, rev_delay_throttleRight;
 
     static AP_MotorsUGV *_singleton;
 };

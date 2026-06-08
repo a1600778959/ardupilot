@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
 
     // @Param: THR_MIN
     // @DisplayName: Throttle minimum
-    // @Description: Throttle minimum percentage the autopilot will apply. This is useful for handling a deadzone around low throttle and for preventing internal combustion motors cutting out during missions.
+    // @Description: Throttle minimum percentage the autopilot will apply. This is useful for handling a deadzone around low throttle and for preventing internal combustion motors cutting out during missions. Must be less than MOT_THR_MAX.
     // @Units: %
     // @Range: 0 20
     // @Increment: 1
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @DisplayName: Throttle maximum
     // @Description: Throttle maximum percentage the autopilot will apply. This can be used to prevent overheating an ESC or motor on an electric rover
     // @Units: %
-    // @Range: 30 100
+    // @Range: 5 100
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("THR_MAX", 6, AP_MotorsUGV, _throttle_max, 100),
@@ -123,6 +123,15 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     AP_GROUPINFO("THST_ASYM", 14, AP_MotorsUGV, _thrust_asymmetry, 1.0f),
 
     AP_GROUPINFO("STOP_DIST", 15, AP_MotorsUGV, _stop_distance, 1000.0f),
+
+    // @Param: REV_DELAY
+    // @DisplayName: Motor reversal delay
+    // @Description: For reversible motors that need a delay before they can change direction. When greater than zero the throttle will go to zero for this amount of time before outputting the new throttle when the demanded motor direction changes.
+    // @Units: s
+    // @Range: 0.1 1.0
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("REV_DELAY", 19, AP_MotorsUGV, _reverse_delay, 0),
 
     AP_GROUPEND
 };
@@ -194,16 +203,9 @@ void AP_MotorsUGV::setup_servo_output()
 }
 
 // set steering as a value from -4500 to +4500
-void AP_MotorsUGV::set_steering(float steering, bool apply_scaling)
+void AP_MotorsUGV::set_steering(float steering)
 {
-    (void)apply_scaling;
-    SensorData *data = dist->get_min_distance();
-    if (data->distance < _stop_distance)  // if an obstacle is closer than 0.5 meters
-    {
-        _steering = 0.0f;
-    } else {
-        _steering = steering;
-    }
+    _steering = steering;
 }
 
 // set throttle as a value from -100 to 100
@@ -213,13 +215,7 @@ void AP_MotorsUGV::set_throttle(float throttle)
     if (!hal.util->get_soft_armed()) {
         return;
     }    
-    SensorData *data = dist->get_min_distance();
-    if (data->distance < _stop_distance)  // if an obstacle is closer than 0.5 meters
-    {
-        _throttle = 0.0f;
-    } else {
-        _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
-    }
+    _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
 }
 
 // get slew limited throttle
@@ -412,8 +408,8 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
 // sanity check parameters
 void AP_MotorsUGV::sanity_check_parameters()
 {
-    _throttle_min.set(constrain_int16(_throttle_min, 0, 20));
-    _throttle_max.set(constrain_int16(_throttle_max, 30, 100));
+    _throttle_max.set(constrain_int16(_throttle_max, 5, 100));
+    _throttle_min.set(constrain_int16(_throttle_min, 0, MIN(20, _throttle_max)));
 }
 
 // setup pwm output type
@@ -627,6 +623,19 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
     }
 #endif  // AP_RELAY_ENABLED
 
+    if (_reverse_delay > 0) {
+        switch (function) {
+        case SRV_Channel::k_throttleLeft:
+            rev_delay_throttleLeft.output(function, throttle * 10.0f, _reverse_delay);
+            return;
+        case SRV_Channel::k_throttleRight:
+            rev_delay_throttleRight.output(function, throttle * 10.0f, _reverse_delay);
+            return;
+        default:
+            break;
+        }
+    }
+
     // output to servo channel
     SRV_Channels::set_output_scaled(function, throttle * 10.0f);
 }
@@ -816,6 +825,25 @@ bool AP_MotorsUGV::is_digital_pwm_type() const
             break;
     }
     return false;
+}
+
+/*
+  handle delay on reversal for a throttle
+ */
+void AP_MotorsUGV::ReverseThrottle::output(SRV_Channel::Aux_servo_function_t function, float throttle, float delay)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    if (is_zero(throttle)) {
+        // pass through, no change, don't update the last throttle
+    } else if (throttle * last_throttle < 0 &&
+               now_ms - last_output_ms < delay * 1000) {
+        // sign change, add pause
+        throttle = 0;
+    } else {
+        last_output_ms = now_ms;
+        last_throttle = throttle;
+    }
+    SRV_Channels::set_output_scaled(function, throttle);
 }
 
 namespace AP {

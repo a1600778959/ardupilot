@@ -18,6 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AR_AttitudeControl.h"
 #include <AP_GPS/AP_GPS.h>
+#include <GCS_MAVLink/GCS.h>
 
 // attitude control default definition
 #define AR_ATTCONTROL_STEER_ANG_P       2.00f
@@ -29,6 +30,7 @@
 #define AR_ATTCONTROL_STEER_RATE_FILT   10.00f
 #define AR_ATTCONTROL_STEER_RATE_MAX    120.0f
 #define AR_ATTCONTROL_STEER_ACCEL_MAX   120.0f
+#define AR_ATTCONTROL_STEER_DECEL_MAX   0.0f
 #define AR_ATTCONTROL_THR_SPEED_P       0.20f
 #define AR_ATTCONTROL_THR_SPEED_I       0.20f
 #define AR_ATTCONTROL_THR_SPEED_IMAX    1.00f
@@ -463,6 +465,15 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_BAL_LIM_THR", 15, AR_AttitudeControl, _pitch_limit_throttle_thresh, AR_ATTCONTROL_PITCH_LIM_THR_THRESH),
 
+    // @Param: _STR_DEC_MAX
+    // @DisplayName: Steering control angular deceleration maximum
+    // @Description: Steering control angular deceleration maximum (in deg/s/s).  0 to disable deceleration limiting
+    // @Range: 0 1000
+    // @Increment: 0.1
+    // @Units: deg/s/s
+    // @User: Standard
+    AP_GROUPINFO("_STR_DEC_MAX", 16, AR_AttitudeControl, _steer_decel_max, AR_ATTCONTROL_STEER_DECEL_MAX),
+
     AP_GROUPEND
 };
 
@@ -521,8 +532,12 @@ float AR_AttitudeControl::get_turn_rate_from_heading(float heading_rad, float ra
         desired_rate = constrain_float(desired_rate, -rate_max_rads, rate_max_rads);
     }
 
-    // if acceleration limit is provided, ensure rate can be slowed to zero in time to stop at heading_rad (i.e. avoid overshoot)
-    if (is_positive(_steer_accel_max)) {
+    // if deceleration limit is provided, ensure rate can be slowed to zero in time to stop at heading_rad (i.e. avoid overshoot)
+    if (is_positive(_steer_decel_max)) {
+        const float steer_decel_rate_max_rads = safe_sqrt(2.0 * fabsf(yaw_error) * radians(_steer_decel_max));
+        desired_rate = constrain_float(desired_rate, -steer_decel_rate_max_rads, steer_decel_rate_max_rads);
+    } else if (is_positive(_steer_accel_max)) {
+        // if no deceleration limit, use acceleration limit
         const float steer_accel_rate_max_rads = safe_sqrt(2.0 * fabsf(yaw_error) * radians(_steer_accel_max));
         desired_rate = constrain_float(desired_rate, -steer_accel_rate_max_rads, steer_accel_rate_max_rads);
     }
@@ -657,7 +672,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     if (!get_forward_speed(speed)) {
         // we expect caller will not try to control heading using rate control without a valid speed estimate
         // on failure to get speed we do not attempt to steer
-        speed = 0.0f;
+        speed = 0.5f;
     }
 
     // if not called recently, reset input filter and desired speed to actual speed (used for accel limiting)
@@ -772,7 +787,7 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
 {
     Vector3f velocity;
     const AP_AHRS &_ahrs = AP::ahrs();
-    if (!_ahrs.get_velocity_NED(velocity)) {
+   // if (!_ahrs.get_velocity_NED(velocity)) {
         // use less accurate GPS, assuming entire length is along forward/back axis of vehicle
         if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             if (abs(wrap_180_cd(_ahrs.yaw_sensor - AP::gps().ground_course_cd())) <= 9000) {
@@ -784,9 +799,9 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
         } else {
             return false;
         }
-    }
+    //}
     // calculate forward speed velocity into body frame
-    speed = velocity.x*_ahrs.cos_yaw() + velocity.y*_ahrs.sin_yaw();
+    // speed = velocity.x*_ahrs.cos_yaw() + velocity.y*_ahrs.sin_yaw();
     return true;
 }
 
