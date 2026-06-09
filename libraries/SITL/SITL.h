@@ -7,7 +7,6 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Baro/AP_Baro.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -23,14 +22,10 @@
 #include "SIM_ToneAlarm.h"
 #include "SIM_EFI_MegaSquirt.h"
 #include "SIM_RichenPower.h"
-#include "SIM_Loweheiser.h"
-#include "SIM_FETtecOneWireESC.h"
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
-#include "SIM_SlungPayload.h"
 #include "SIM_GPS.h"
 #include "SIM_DroneCANDevice.h"
-#include "SIM_ADSB_Sagetech_MXS.h"
 
 namespace SITL {
 
@@ -87,7 +82,6 @@ struct sitl_fdm {
 
     #define SITL_NUM_RANGEFINDERS 10
     float rangefinder_m[SITL_NUM_RANGEFINDERS];
-    float airspeed_raw_pressure[AIRSPEED_MAX_SENSORS];
 
     struct {
         float speed;
@@ -99,7 +93,7 @@ struct sitl_fdm {
     // earthframe wind, from backends that know it
     Vector3f wind_ef;
 
-    // AGL altitude, usually derived from the terrain database in simulation:
+    // AGL altitude:
     float height_agl;
 
 };
@@ -124,9 +118,6 @@ public:
 #endif // SFML_JOYSTICK
         for (uint8_t i=0; i<BARO_MAX_INSTANCES; i++) {
             AP_Param::setup_object_defaults(&baro[i], baro[i].var_info);
-        }
-        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-            AP_Param::setup_object_defaults(&airspeed[i], airspeed[i].var_info);
         }
         // set compass offset
         for (uint8_t i = 0; i < HAL_COMPASS_MAX_SENSORS; i++) {
@@ -241,7 +232,6 @@ public:
     AP_Int8  flow_enable; // enable simulated optflow
     AP_Int16 flow_rate; // optflow data rate (Hz)
     AP_Int8  flow_delay; // optflow data delay
-    AP_Int8  terrain_enable; // enable using terrain for height
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odometry data
@@ -286,20 +276,6 @@ public:
     };
     BaroParm baro[BARO_MAX_INSTANCES];
 
-    // airspeed parameters
-    class AirspeedParm {
-    public:
-        static const struct AP_Param::GroupInfo var_info[];
-        AP_Float noise;  // pressure noise
-        AP_Float fail;   // airspeed value in m/s to fail to
-        AP_Float fail_pressure; // pitot tube failure pressure in Pa
-        AP_Float fail_pitot_pressure; // pitot tube failure pressure in Pa
-        AP_Float offset; // airspeed sensor offset in m/s
-        AP_Float ratio; // airspeed ratios
-        AP_Int8  signflip;
-    };
-    AirspeedParm airspeed[AIRSPEED_MAX_SENSORS];
-
     class ServoParams {
     public:
         ServoParams(void) {
@@ -325,9 +301,6 @@ public:
 #if AP_SIM_GLIDER_ENABLED
         Glider *glider_ptr;
 #endif
-#if AP_SIM_SLUNGPAYLOAD_ENABLED
-        SlungPayloadSim slung_payload_sim;
-#endif
 #if AP_SIM_FLIGHTAXIS_ENABLED
         FlightAxis *flightaxis_ptr;
 #endif
@@ -338,7 +311,6 @@ public:
     enum EFIType {
         EFI_TYPE_NONE = 0,
         EFI_TYPE_MS = 1,
-        EFI_TYPE_LOWEHEISER = 2,
         EFI_TYPE_HIRTH = 8,
     };
     
@@ -365,17 +337,6 @@ public:
 
     AP_Int16  mag_delay; // magnetometer data delay in ms
 
-    // ADSB related run-time options
-    enum class ADSBType {
-        Shortcut = 0,
-        SageTechMXS = 3,
-    };
-    AP_Enum<ADSBType> adsb_types;  // bitmask of active ADSB types
-    AP_Int16 adsb_plane_count;
-    AP_Float adsb_radius_m;
-    AP_Float adsb_altitude_m;
-    AP_Int8  adsb_tx;
-
     // Earth magnetic field anomaly
     AP_Vector3f mag_anomaly_ned; // NED anomaly vector at ground level (mGauss)
     AP_Float mag_anomaly_hgt; // height above ground where anomally strength has decayed to 1/8 of the ground level value (m)
@@ -384,7 +345,6 @@ public:
     AP_Vector3f imu_pos_offset;     // XYZ position of the IMU accelerometer relative to the body frame origin (m)
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
-    AP_Vector3f vicon_pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
 
     // barometer temperature control
     AP_Float temp_start;            // [deg C] Barometer start temperature
@@ -495,11 +455,7 @@ public:
     ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
     RichenPower richenpower_sim;
-#if AP_SIM_LOWEHEISER_ENABLED
-    Loweheiser loweheiser_sim;
-#endif
     IntelligentEnergy24 ie24_sim;
-    FETtecOneWireESC fetteconewireesc_sim;
 #if AP_TEST_DRONECAN_DRIVERS
     DroneCANDevice dronecan_sim;
 #endif
@@ -519,14 +475,6 @@ public:
     } led;
 
     AP_Int8 led_layout;
-
-    // vicon parameters
-    AP_Vector3f vicon_glitch;   // glitch in meters in vicon's local NED frame
-    AP_Int8 vicon_fail;         // trigger vicon failure
-    AP_Int16 vicon_yaw;         // vicon local yaw in degrees
-    AP_Int16 vicon_yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
-    AP_Int8 vicon_type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
-    AP_Vector3f vicon_vel_glitch;   // velocity glitch in m/s in vicon's local frame
 
     // get the rangefinder reading for the desired instance, returns -1 for no data
     float get_rangefinder(uint8_t instance);

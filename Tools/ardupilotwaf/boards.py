@@ -145,8 +145,7 @@ class Board:
             cfg.msg("GPS Debug Logging", 'no', color='YELLOW')
 
         # allow enable of custom controller for any board
-        # enabled on sitl by default
-        if (cfg.options.enable_custom_controller or self.get_name() == "sitl") and not cfg.options.no_gcs:
+        if cfg.options.enable_custom_controller and not cfg.options.no_gcs:
             env.ENABLE_CUSTOM_CONTROLLER = True
             env.DEFINES.update(
                 AP_CUSTOMCONTROL_ENABLED=1,
@@ -680,12 +679,6 @@ class sitl(Board):
 
         cfg.define('AP_NOTIFY_LP5562_BUS', 2)
         cfg.define('AP_NOTIFY_LP5562_ADDR', 0x30)
-
-        try:
-            env.CXXFLAGS.remove('-DHAL_NAVEKF2_AVAILABLE=0')
-        except ValueError:
-            pass
-        env.CXXFLAGS += ['-DHAL_NAVEKF2_AVAILABLE=1']
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)

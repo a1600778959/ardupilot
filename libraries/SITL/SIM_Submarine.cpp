@@ -17,7 +17,6 @@
 */
 
 #include "SIM_Submarine.h"
-#include <AP_Motors/AP_Motors.h>
 
 #include <stdio.h>
 

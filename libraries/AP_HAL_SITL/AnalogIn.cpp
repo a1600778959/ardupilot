@@ -32,12 +32,6 @@ float ADCSource::voltage_latest() {
     case 0:
         return _sitlState->sonar_pin_voltage;
 
-    case 1:
-        return _sitlState->airspeed_pin_voltage[0];
-    
-    case 2:
-        return _sitlState->airspeed_pin_voltage[1];
-
     case 12:
         return _sitlState->current_pin_voltage;
 

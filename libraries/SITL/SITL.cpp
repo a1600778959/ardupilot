@@ -185,11 +185,6 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Description: Enable simulated Optical Flow sensor
     // @Values: 0:Disable,1:Enabled
     AP_GROUPINFO("FLOW_ENABLE",   33, SIM,  flow_enable, 0),
-    // @Param: TERRAIN
-    // @DisplayName: Terrain Enable
-    // @Description: Enable using terrain for height
-    // @Values: 0:Disable,1:Enabled
-    AP_GROUPINFO("TERRAIN",       34, SIM,  terrain_enable, 1),
     // @Param: FLOW_RATE
     // @DisplayName: Opflow Rate
     // @Description: Opflow Data Rate
@@ -200,29 +195,10 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Description: Opflow data delay
     // @Units: ms
     AP_GROUPINFO("FLOW_DELAY",    36, SIM,  flow_delay, 0),
-    // @Param: ADSB_COUNT
-    // @DisplayName: Number of ADSB aircrafts
-    // @Description: Total number of ADSB simulated aircraft
-    AP_GROUPINFO("ADSB_COUNT",    45, SIM,  adsb_plane_count, -1),
-    // @Param: ADSB_RADIUS
-    // @DisplayName: ADSB radius stddev of another aircraft
-    // @Description: Simulated standard deviation of radius in ADSB of another aircraft
-    // @Units: m
-    AP_GROUPINFO("ADSB_RADIUS",   46, SIM,  adsb_radius_m, 10000),
-    // @Param: ADSB_ALT
-    // @DisplayName: ADSB altitude of another aircraft
-    // @Description: Simulated ADSB altitude of another aircraft
-    // @Units: m
-    AP_GROUPINFO("ADSB_ALT",      47, SIM,  adsb_altitude_m, 1000),
     // @Param: PIN_MASK
     // @DisplayName: GPIO emulation
     // @Description: SITL GPIO emulation
     AP_GROUPINFO("PIN_MASK",      50, SIM,  pin_mask, 0),
-    // @Param: ADSB_TX
-    // @DisplayName: ADSB transmit enable
-    // @Description: ADSB transceiever enable and disable
-    // @Values: 0:Transceiever disable, 1:Transceiever enable
-    AP_GROUPINFO("ADSB_TX",       51, SIM,  adsb_tx, 0),
     // @Param: SPEEDUP
     // @DisplayName: Sim Speedup
     // @Description: Runs the simulation at multiples of normal speed. Do not use if realtime physics, like RealFlight, is being used
@@ -525,98 +501,8 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: Scenario for thermalling simulation, for soaring
     AP_GROUPINFO("THML_SCENARI",  12, SIM,  thermal_scenario, 0),
 
-    // @Param: VICON_POS_X
-    // @DisplayName: SITL vicon position on vehicle in Forward direction
-    // @Description: SITL vicon position on vehicle in Forward direction
-    // @Units: m
-    // @Range: 0 10
-    // @User: Advanced
-
-    // @Param: VICON_POS_Y
-    // @DisplayName: SITL vicon position on vehicle in Right direction
-    // @Description: SITL vicon position on vehicle in Right direction
-    // @Units: m
-    // @Range: 0 10
-    // @User: Advanced
-
-    // @Param: VICON_POS_Z
-    // @DisplayName: SITL vicon position on vehicle in Down direction
-    // @Description: SITL vicon position on vehicle in Down direction
-    // @Units: m
-    // @Range: 0 10
-    // @User: Advanced    
-    AP_GROUPINFO("VICON_POS",     14, SIM,  vicon_pos_offset, 0),
-
     // Buyoancy for submarines
     AP_GROUPINFO_FRAME("BUOYANCY", 15, SIM, buoyancy, 1, AP_PARAM_FRAME_SUB),
-
-    // @Param: VICON_GLIT_X
-    // @DisplayName: SITL vicon position glitch North
-    // @Description: SITL vicon position glitch North
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: VICON_GLIT_Y
-    // @DisplayName: SITL vicon position glitch East
-    // @Description: SITL vicon position glitch East
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: VICON_GLIT_Z
-    // @DisplayName: SITL vicon position glitch Down
-    // @Description: SITL vicon position glitch Down
-    // @Units: m
-    // @User: Advanced
-    AP_GROUPINFO("VICON_GLIT",    16, SIM,  vicon_glitch, 0),
-
-    // @Param: VICON_FAIL
-    // @DisplayName: SITL vicon failure
-    // @Description: SITL vicon failure
-    // @Values: 0:Vicon Healthy, 1:Vicon Failed
-    // @User: Advanced
-    AP_GROUPINFO("VICON_FAIL",    17, SIM,  vicon_fail, 0),
-
-    // @Param: VICON_YAW
-    // @DisplayName: SITL vicon yaw angle in earth frame
-    // @Description: SITL vicon yaw angle in earth frame
-    // @Units: deg
-    // @Range: 0 360
-    // @User: Advanced
-    AP_GROUPINFO("VICON_YAW",     18, SIM,  vicon_yaw, 0),
-
-    // @Param: VICON_YAWERR
-    // @DisplayName: SITL vicon yaw error
-    // @Description: SITL vicon yaw added to reported yaw sent to vehicle
-    // @Units: deg
-    // @Range: -180 180
-    // @User: Advanced
-    AP_GROUPINFO("VICON_YAWERR",  19, SIM,  vicon_yaw_error, 0),
-
-    // @Param: VICON_TMASK
-    // @DisplayName: SITL vicon type mask
-    // @Description: SITL vicon messages sent
-    // @Bitmask: 0:VISION_POSITION_ESTIMATE, 1:VISION_SPEED_ESTIMATE, 2:VICON_POSITION_ESTIMATE, 3:VISION_POSITION_DELTA, 4:ODOMETRY
-    // @User: Advanced
-    AP_GROUPINFO("VICON_TMASK",   20, SIM,  vicon_type_mask, 3),
-
-    // @Param: VICON_VGLI_X
-    // @DisplayName: SITL vicon velocity glitch North
-    // @Description: SITL vicon velocity glitch North
-    // @Units: m/s
-    // @User: Advanced
-
-    // @Param: VICON_VGLI_Y
-    // @DisplayName: SITL vicon velocity glitch East
-    // @Description: SITL vicon velocity glitch East
-    // @Units: m/s
-    // @User: Advanced
-
-    // @Param: VICON_VGLI_Z
-    // @DisplayName: SITL vicon velocity glitch Down
-    // @Description: SITL vicon velocity glitch Down
-    // @Units: m/s
-    // @User: Advanced
-    AP_GROUPINFO("VICON_VGLI",    21, SIM,  vicon_vel_glitch, 0),
 
     // @Param: RATE_HZ
     // @DisplayName: Loop rate
@@ -628,9 +514,6 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @DisplayName: IMU count
     // @Description: Number of simulated IMUs to create
     AP_GROUPINFO("IMU_COUNT",    23, SIM,  imu_count,  2),
-
-    // @Path: ./SIM_FETtecOneWireESC.cpp
-    AP_SUBGROUPINFO(fetteconewireesc_sim, "FTOWESC_", 30, SIM, FETtecOneWireESC),
 
     // @Path: ./SIM_RichenPower.cpp
     AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SIM, RichenPower),
@@ -685,22 +568,6 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Units: %
     // @User: Advanced
     AP_GROUPINFO("UART_LOSS", 42, SIM,  uart_byte_loss_pct, 0),
-
-    // @Group: ARSPD_
-    // @Path: ./SITL_Airspeed.cpp
-    AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, AirspeedParm),
-#if AIRSPEED_MAX_SENSORS > 1
-    // @Group: ARSPD2_
-    // @Path: ./SITL_Airspeed.cpp
-    AP_SUBGROUPINFO(airspeed[1], "ARSPD2_", 51, SIM, AirspeedParm),
-#endif
-
-    // @Param: ADSB_TYPES
-    // @DisplayName: Simulated ADSB Type mask
-    // @Description: specifies which simulated ADSB types are active
-    // @User: Advanced
-    // @Bitmask: 0:MAVLink,3:SageTechMXS
-    AP_GROUPINFO("ADSB_TYPES",    52, SIM,  adsb_types, 1),
 
 #ifdef WITH_SITL_OSD
     // @Param: OSD_COLUMNS
@@ -1486,12 +1353,6 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     // @Group: GLD_
     // @Path: ./SIM_Glider.cpp
     AP_SUBGROUPPTR(glider_ptr, "GLD_",  3, SIM::ModelParm, Glider),
-#endif
-
-#if AP_SIM_SLUNGPAYLOAD_ENABLED
-    // @Group: SLUP_
-    // @Path: ./SIM_SlungPayload.cpp
-    AP_SUBGROUPINFO(slung_payload_sim, "SLUP_", 4, SIM::ModelParm, SlungPayloadSim),
 #endif
 
 #if AP_SIM_FLIGHTAXIS_ENABLED

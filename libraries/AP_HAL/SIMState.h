@@ -8,8 +8,6 @@
 
 #include <SITL/SITL_Input.h>
 #include <SITL/SIM_SoloGimbal.h>
-#include <SITL/SIM_ADSB.h>
-#include <SITL/SIM_Vicon.h>
 #include <SITL/SIM_RF_Benewake_TF02.h>
 #include <SITL/SIM_RF_Benewake_TF03.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
@@ -43,8 +41,6 @@
 #include <SITL/SIM_PS_LightWare_SF45B.h>
 
 #include <SITL/SIM_RichenPower.h>
-#include <SITL/SIM_Loweheiser.h>
-#include <SITL/SIM_FETtecOneWireESC.h>
 #include <AP_HAL/utility/Socket_native.h>
 
 #include <AP_HAL/AP_HAL_Namespace.h>
@@ -115,14 +111,6 @@ private:
     SITL::SoloGimbal *gimbal;
 #endif
 
-#if HAL_SIM_ADSB_ENABLED
-    // simulated ADSb
-    SITL::ADSB *adsb;
-#endif
-
-    // simulated vicon system:
-    SITL::Vicon *vicon;
-
     // simulated Benewake tf02 rangefinder:
     SITL::RF_Benewake_TF02 *benewake_tf02;
     // simulated Benewake tf03 rangefinder:
@@ -170,9 +158,6 @@ private:
     // simulated RPLidarA2:
     SITL::PS_RPLidarA2 *rplidara2;
 #endif
-
-    // simulated FETtec OneWire ESCs:
-    SITL::FETtecOneWireESC *fetteconewireesc;
 
 #if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
     // simulated SF45B proximity sensor:

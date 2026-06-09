@@ -78,7 +78,6 @@ void SITL_State::_sitl_setup()
 
     if (_sitl != nullptr) {
         // setup some initial values
-        _update_airspeed(0);
 #if AP_SIM_SOLOGIMBAL_ENABLED
         if (enable_gimbal) {
             gimbal = NEW_NOTHROW SITL::SoloGimbal();
@@ -138,7 +137,6 @@ void SITL_State::_fdm_input_step(void)
     }
 
     if (_sitl != nullptr) {
-        _update_airspeed(_sitl->state.airspeed);
         _update_rangefinder();
     }
 
@@ -380,23 +378,6 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         }
     }
 
-    if (_sitl != nullptr) {
-        // FETtec ESC simulation support.  Input signals of 1000-2000
-        // are positive thrust, 0 to 1000 are negative thrust.  Deeper
-        // changes required to support negative thrust - potentially
-        // adding a field to input.
-        if (_sitl != nullptr) {
-            if (_sitl->fetteconewireesc_sim.enabled()) {
-                _sitl->fetteconewireesc_sim.update_sitl_input_pwm(input);
-                for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
-                    if (input.servos[i] != 0 && input.servos[i] < 1000) {
-                        AP_HAL::panic("Bad input servo value (%u)", input.servos[i]);
-                    }
-                }
-            }
-        }
-    }
-
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
     uint8_t engine_fail = _sitl?_sitl->engine_fail.get():0;
     float throttle = 0.0f;
@@ -488,25 +469,6 @@ void SITL_State::set_height_agl(void)
         // remember home altitude as first non-zero altitude
         home_alt = _sitl->state.altitude;
     }
-
-#if AP_TERRAIN_AVAILABLE
-    if (_sitl != nullptr &&
-        _sitl->terrain_enable) {
-        // get height above terrain from AP_Terrain. This assumes
-        // AP_Terrain is working
-        float terrain_height_amsl;
-        Location location;
-        location.lat = _sitl->state.latitude*1.0e7;
-        location.lng = _sitl->state.longitude*1.0e7;
-
-        AP_Terrain *_terrain = AP_Terrain::get_singleton();
-        if (_terrain != nullptr &&
-            _terrain->height_amsl(location, terrain_height_amsl, false)) {
-            _sitl->state.height_agl = _sitl->state.altitude - terrain_height_amsl;
-            return;
-        }
-    }
-#endif
 
     if (_sitl != nullptr) {
         // fall back to flat earth model

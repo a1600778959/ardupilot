@@ -306,10 +306,8 @@ uint8_t AP_InertialSensor_NONE::bus_id = 0;
 
 void AP_InertialSensor_NONE::start()
 {
-    if (!_imu.register_gyro(gyro_instance, gyro_sample_hz,
-                            AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, bus_id, 1, DEVTYPE_SITL)) ||
-        !_imu.register_accel(accel_instance, accel_sample_hz,
-                             AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, bus_id, 2, DEVTYPE_SITL))) {
+    if (!_imu.register_gyro(gyro_instance, gyro_sample_hz, bus_id + 1) ||
+        !_imu.register_accel(accel_instance, accel_sample_hz, bus_id + 1)) {
         return;
     }
     bus_id++;

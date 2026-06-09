@@ -30,18 +30,13 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 // ignore cast errors in this case to keep complexity down
 #pragma GCC diagnostic ignored "-Wcast-align"
 
 extern const AP_HAL::HAL& hal;
 
-#if APM_BUILD_TYPE(APM_BUILD_Heli)
-#define XPLANE_JSON "xplane_heli.json"
-#else
 #define XPLANE_JSON "xplane_plane.json"
-#endif
 
 // DATA@ frame types. Thanks to TauLabs xplanesimulator.h
 // (which strangely enough acknowledges APM as a source!)
@@ -107,13 +102,6 @@ XPlane::XPlane(const char *frame_str) :
     AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
     AP_Param::set_default_by_name("GPS1_TYPE", 100);
     AP_Param::set_default_by_name("INS_GYR_CAL", 0);
-
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    // default flaps to channel 5
-    AP_Param::set_default_by_name("SERVO5_FUNCTION", 3);
-    AP_Param::set_default_by_name("SERVO5_MIN", 1000);
-    AP_Param::set_default_by_name("SERVO5_MAX", 2000);
-#endif
 
     if (!load_dref_map(XPLANE_JSON)) {
         AP_HAL::panic("%s failed to load\n", XPLANE_JSON);

@@ -14,12 +14,15 @@
  */
 
 #include "AP_NavEKF_Source.h"
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_DAL/AP_DAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
+
+static constexpr uint32_t EXTNAV_VELOCITY_PREARM_TIMEOUT_MS = 1000;
 
 const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
 
@@ -293,6 +296,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
     bool gps_required = false;
     bool rangefinder_required = false;
     bool visualodom_required = false;
+    bool extnav_velocity_required = false;
     bool optflow_required = false;
     bool wheelencoder_required = false;
 
@@ -325,7 +329,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
                 gps_required = true;
                 break;
             case SourceXY::EXTNAV:
-                visualodom_required = true;
+                extnav_velocity_required = true;
                 break;
             case SourceXY::WHEEL_ENCODER:
                 wheelencoder_required = true;
@@ -366,7 +370,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
                 gps_required = true;
                 break;
             case SourceZ::EXTNAV:
-                visualodom_required = true;
+                extnav_velocity_required = true;
                 break;
             case SourceZ::BARO:
             case SourceZ::RANGEFINDER:
@@ -450,6 +454,11 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
             hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "VisualOdom");
             return false;
         }
+    }
+
+    if (extnav_velocity_required && !AP::ahrs().has_recent_extnav_velocity(EXTNAV_VELOCITY_PREARM_TIMEOUT_MS)) {
+        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "ExternalNavVel");
+        return false;
     }
 
     if (wheelencoder_required && !dal.wheelencoder_enabled()) {

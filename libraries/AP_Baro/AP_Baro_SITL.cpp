@@ -3,7 +3,6 @@
 #if AP_SIM_BARO_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -17,9 +16,6 @@ AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
 {
     if (_sitl != nullptr) {
         _instance = _frontend.register_sensor();
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-        _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
-#endif
         set_bus_id(_instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, 0, _instance, DEVTYPE_BARO_SITL));
         hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Baro_SITL::_timer, void));
     }
@@ -117,17 +113,10 @@ void AP_Baro_SITL::_timer()
         sim_alt = _buffer[best_index].data;
     }
 
-#if !APM_BUILD_TYPE(APM_BUILD_ArduSub)
     float p, T_K;
     AP_Baro::get_pressure_temperature_for_alt_amsl(sim_alt, p, T_K);
     float T = KELVIN_TO_C(T_K);
     temperature_adjustment(p, T);
-#else
-    float rho, delta, theta;
-    AP_Baro::SimpleUnderWaterAtmosphere(-sim_alt * 0.001f, rho, delta, theta);
-    float p = SSL_AIR_PRESSURE * delta;
-    float T = KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta);
-#endif
 
     // add in correction for wind effects
     p += wind_pressure_correction(_instance);

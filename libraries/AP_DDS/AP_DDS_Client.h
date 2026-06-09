@@ -215,6 +215,10 @@ private:
     // incoming REP147 velocity control
     static geometry_msgs_msg_TwistStamped rx_velocity_control_topic;
 #endif // AP_DDS_VEL_CTRL_ENABLED
+#if AP_DDS_EXTNAV_VEL_SUB_ENABLED
+    // incoming external navigation velocity observation
+    static geometry_msgs_msg_TwistStamped rx_extnav_velocity_topic;
+#endif // AP_DDS_EXTNAV_VEL_SUB_ENABLED
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
     // incoming REP147 goal interface global position
     static ardupilot_msgs_msg_GlobalPosition rx_global_position_control_topic;
@@ -332,6 +336,12 @@ public:
 
     //! @brief Maximum number of attempts to ping the XRCE agent before exiting
     AP_Int8 ping_max_retry;
+
+    //! @brief 1-sigma uncertainty for DDS external navigation velocity observations
+    AP_Float extnav_velocity_error;
+
+    //! @brief Average delay of DDS external navigation velocity observations
+    AP_Int16 extnav_velocity_delay_ms;
 
     //! @brief Enum used to mark a topic as a data reader or writer
     enum class Topic_rw : uint8_t {

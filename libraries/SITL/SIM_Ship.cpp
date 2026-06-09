@@ -28,7 +28,6 @@
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL_SITL/SITL_State.h>
-#include <AP_Terrain/AP_Terrain.h>
 
 using namespace SITL;
 
@@ -215,14 +214,6 @@ void ShipSim::send_report(void)
     }
 
     int32_t alt_mm = home.alt * 10;  // assume home altitude
-
-#if AP_TERRAIN_AVAILABLE
-    auto terrain = AP::terrain();
-    float height;
-    if (terrain != nullptr && terrain->enabled() && terrain->height_amsl(loc, height, false)) {
-        alt_mm = height * 1000;
-    }
-#endif
 
     {  // send position
         Vector2f vel(ship.speed, 0);

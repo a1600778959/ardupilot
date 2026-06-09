@@ -379,7 +379,7 @@ class VehicleInfo(object):
         },
     },
     "Rover": {
-        "default_frame": "rover",
+        "default_frame": "rover-skid",
         "frames": {
             # ROVER
             "rover": {
@@ -526,6 +526,5 @@ class VehicleInfo(object):
             ret["waf_target"] = opts.build_target
 
         return ret
-
 
 

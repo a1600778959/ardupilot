@@ -17,7 +17,6 @@
 */
 
 #include "SIM_Motor.h"
-#include <AP_Motors/AP_Motors.h>
 
 using namespace SITL;
 

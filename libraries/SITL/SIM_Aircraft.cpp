@@ -26,7 +26,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Declination/AP_Declination.h>
-#include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_JSON/AP_JSON.h>
@@ -109,18 +108,6 @@ void Aircraft::set_start_location(const Location &start_loc, const float start_y
 */
 float Aircraft::ground_height_difference() const
 {
-#if AP_TERRAIN_AVAILABLE
-    AP_Terrain *terrain = AP::terrain();
-    float h1, h2;
-    if (sitl &&
-        terrain != nullptr &&
-        sitl->terrain_enable &&
-        terrain->height_amsl(home, h1, false) &&
-        terrain->height_amsl(location, h2, false)) {
-        h2 += local_ground_level;
-        return h2 - h1;
-    }
-#endif
     return local_ground_level;
 }
 
@@ -510,7 +497,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
   as distance to obstacles - this takes effect for yaw-only
   orientations
  */
-#define SITL_RANGEFINDER_AS_OBJECT_SENSOR (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Rover))
+#define SITL_RANGEFINDER_AS_OBJECT_SENSOR APM_BUILD_TYPE(APM_BUILD_Rover)
 #define SITL_RANGEFINDER_IS_YAW_ONLY(orientation) (orientation <= ROTATION_YAW_315)
 
 // returns perpendicular height to surface rangefinder is bouncing off
@@ -840,11 +827,6 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
         }
     }
 
-    // update slung payload
-#if AP_SIM_SLUNGPAYLOAD_ENABLED
-    sitl->models.slung_payload_sim.update(get_position_relhome(), velocity_ef, accel_earth, wind_ef);
-#endif
-
     // allow for changes in physics step
     adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
 }
@@ -1120,17 +1102,6 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         richenpower->update(input);
     }
 
-#if AP_SIM_LOWEHEISER_ENABLED
-    // update Loweheiser generator
-    if (loweheiser) {
-        loweheiser->update();
-    }
-#endif
-
-    if (fetteconewireesc) {
-        fetteconewireesc->update(*this);
-    }
-
 #if AP_SIM_SHIP_ENABLED
     sitl->models.shipsim.update();
 #endif
@@ -1279,18 +1250,6 @@ void Aircraft::add_twist_forces(Vector3f &rot_accel)
     }
 }
 
-#if AP_SIM_SLUNGPAYLOAD_ENABLED
-// add body-frame force due to slung payload
-void Aircraft::add_slungpayload_forces(Vector3f &body_accel)
-{
-    Vector3f forces_ef;
-    sitl->models.slung_payload_sim.get_forces_on_vehicle(forces_ef);
-
-    // convert ef forces to body-frame accelerations (acceleration = force / mass)
-    const Vector3f accel_bf = dcm.transposed() * forces_ef / mass;
-    body_accel += accel_bf;
-}
-#endif
 
 /*
   get position relative to home
@@ -1367,4 +1326,3 @@ bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion
 {
     return Aircraft::set_pose(instance, loc, quat, velocity_ef, gyro_rads);
 }
-

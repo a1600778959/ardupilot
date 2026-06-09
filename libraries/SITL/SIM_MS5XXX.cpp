@@ -144,8 +144,6 @@ void MS5XXX::update(const class Aircraft &aircraft)
         break;
     }
 
-    // float pressure = AP::sitl()->state.airspeed_raw_pressure[0];
-    // float temperature = 25.0f;
 }
 
 int MS5XXX::rdwr(I2C::i2c_rdwr_ioctl_data *&data)

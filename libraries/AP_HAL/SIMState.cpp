@@ -30,8 +30,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace AP_HAL;
 
-#include <AP_Terrain/AP_Terrain.h>
-
 #ifndef AP_SIM_FRAME_CLASS
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 #define AP_SIM_FRAME_CLASS MultiCopter
@@ -136,19 +134,6 @@ void SIMState::fdm_input_local(void)
         gimbal->update();
     }
 #endif
-#if HAL_SIM_ADSB_ENABLED
-    if (adsb != nullptr) {
-        adsb->update();
-    }
-#endif
-    if (vicon != nullptr) {
-        Quaternion attitude;
-        sitl_model->get_attitude(attitude);
-        vicon->update(sitl_model->get_location(),
-                      sitl_model->get_position_relhome(),
-                      sitl_model->get_velocity_ef(),
-                      attitude);
-    }
     if (benewake_tf02 != nullptr) {
         benewake_tf02->update(sitl_model->rangefinder_range());
     }
@@ -329,23 +314,6 @@ void SIMState::_simulator_servos(struct sitl_input &input)
         }
     }
 
-    if (_sitl != nullptr) {
-        // FETtec ESC simulation support.  Input signals of 1000-2000
-        // are positive thrust, 0 to 1000 are negative thrust.  Deeper
-        // changes required to support negative thrust - potentially
-        // adding a field to input.
-        if (_sitl != nullptr) {
-            if (_sitl->fetteconewireesc_sim.enabled()) {
-                _sitl->fetteconewireesc_sim.update_sitl_input_pwm(input);
-                for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
-                    if (input.servos[i] != 0 && input.servos[i] < 1000) {
-                        AP_HAL::panic("Bad input servo value (%u)", input.servos[i]);
-                    }
-                }
-            }
-        }
-    }
-
     float voltage = 0;
     _current = 0;
     
@@ -382,25 +350,6 @@ void SIMState::set_height_agl(void)
         // remember home altitude as first non-zero altitude
         home_alt = _sitl->state.altitude;
     }
-
-#if AP_TERRAIN_AVAILABLE
-    if (_sitl != nullptr &&
-        _sitl->terrain_enable) {
-        // get height above terrain from AP_Terrain. This assumes
-        // AP_Terrain is working
-        float terrain_height_amsl;
-        Location location;
-        location.lat = _sitl->state.latitude*1.0e7;
-        location.lng = _sitl->state.longitude*1.0e7;
-
-        AP_Terrain *_terrain = AP_Terrain::get_singleton();
-        if (_terrain != nullptr &&
-            _terrain->height_amsl(location, terrain_height_amsl)) {
-            _sitl->state.height_agl = _sitl->state.altitude - terrain_height_amsl;
-            return;
-        }
-    }
-#endif
 
     if (_sitl != nullptr) {
         // fall back to flat earth model

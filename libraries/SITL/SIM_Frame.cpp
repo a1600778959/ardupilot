@@ -17,7 +17,6 @@
 */
 
 #include "SIM_Frame.h"
-#include <AP_Motors/AP_Motors.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "SIM_Aircraft.h"
@@ -29,247 +28,247 @@ using namespace SITL;
 
 static Motor quad_plus_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
-    Motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
-    Motor(AP_MOTORS_MOT_3,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
-    Motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
+    Motor(0U,  90, 1, 2),
+    Motor(1U, -90, 1, 4),
+    Motor(2U,   0, -1,  1),
+    Motor(3U, 180, -1,  3),
 };
 
 static Motor quad_x_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
-    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
-    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
+    Motor(0U,   45, 1, 1),
+    Motor(1U, -135, 1, 3),
+    Motor(2U,  -45, -1,  4),
+    Motor(3U,  135, -1,  2),
 };
 
 // motor order to match betaflight conventions
 // See: https://fpvfrenzy.com/betaflight-motor-order/
 static Motor quad_bf_x_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2),
-    Motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,1),
-    Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,3),
-    Motor(AP_MOTORS_MOT_4,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4),
+    Motor(0U,  135, -1, 2),
+    Motor(1U,   45, 1,1),
+    Motor(2U, -135, 1,3),
+    Motor(3U,  -45, -1, 4),
 };
 
 // motor order to match betaflight conventions, reversed direction
 static Motor quad_bf_x_rev_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
-    Motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
-    Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
-    Motor(AP_MOTORS_MOT_4,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
+    Motor(0U,  135, 1, 2),
+    Motor(1U,   45, -1,  1),
+    Motor(2U, -135, -1,  3),
+    Motor(3U,  -45, 1, 4),
 };
 
 // motor order to match DJI conventions
 // See: https://forum44.djicdn.com/data/attachment/forum/201711/26/172348bppvtt1ot1nrtp5j.jpg
 static Motor quad_dji_x_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
-    Motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
-    Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
+    Motor(0U,   45, 1, 1),
+    Motor(1U,  -45, -1,  4),
+    Motor(2U, -135, 1, 3),
+    Motor(3U,  135, -1,  2),
 };
 
 // motor order so that test order matches motor order ("clockwise X")
 static Motor quad_cw_x_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
-    Motor(AP_MOTORS_MOT_2,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
-    Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_4,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(0U,   45, 1, 1),
+    Motor(1U,  135, -1,  2),
+    Motor(2U, -135, 1, 3),
+    Motor(3U,  -45, -1,  4),
 };
 
 static Motor tiltquad_h_vectored_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1, -1, 0, 0, 7, 10, -90),
-    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3, -1, 0, 0, 8, 10, -90),
-    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4, -1, 0, 0, 8, 10, -90),
-    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, -1, 0, 0, 7, 10, -90),
+    Motor(0U,   45, -1,  1, -1, 0, 0, 7, 10, -90),
+    Motor(1U, -135, -1,  3, -1, 0, 0, 8, 10, -90),
+    Motor(2U,  -45, 1, 4, -1, 0, 0, 8, 10, -90),
+    Motor(3U,  135, 1, 2, -1, 0, 0, 7, 10, -90),
 };
 
 static Motor tiltquad[] =
 {
-    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1, -1, 0, 0, 7, 10, -90),
-    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3),
-    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4, -1, 0, 0, 8, 10, -90),
-    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2),
+    Motor(0U,   45, 1,  1, -1, 0, 0, 7, 10, -90),
+    Motor(1U, -135, 1,  3),
+    Motor(2U,  -45, -1,   4, -1, 0, 0, 8, 10, -90),
+    Motor(3U,  135, -1,   2),
 };
 
 static Motor hexa_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
-    Motor(AP_MOTORS_MOT_2, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
-    Motor(AP_MOTORS_MOT_3,-120, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5),
-    Motor(AP_MOTORS_MOT_4,  60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
-    Motor(AP_MOTORS_MOT_5, -60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6),
-    Motor(AP_MOTORS_MOT_6, 120, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3)
+    Motor(0U,   0, -1,  1),
+    Motor(1U, 180, 1, 4),
+    Motor(2U,-120, -1,  5),
+    Motor(3U,  60, 1, 2),
+    Motor(4U, -60, 1, 6),
+    Motor(5U, 120, -1,  3)
 };
 
 static Motor hexax_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
-    Motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
-    Motor(AP_MOTORS_MOT_3, -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6),
-    Motor(AP_MOTORS_MOT_4, 150, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_5,  30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
-    Motor(AP_MOTORS_MOT_6,-150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4)
+    Motor(0U,  90, -1,  2),
+    Motor(1U, -90, 1, 5),
+    Motor(2U, -30, -1,  6),
+    Motor(3U, 150, 1, 3),
+    Motor(4U,  30, 1, 1),
+    Motor(5U,-150, -1,  4)
 };
 
 static Motor hexa_dji_x_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
-    Motor(AP_MOTORS_MOT_2,  -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6),
-    Motor(AP_MOTORS_MOT_3,  -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
-    Motor(AP_MOTORS_MOT_4, -150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
-    Motor(AP_MOTORS_MOT_5,  150, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_6,   90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2)
+    Motor(0U,   30, 1, 1),
+    Motor(1U,  -30, -1,  6),
+    Motor(2U,  -90, 1, 5),
+    Motor(3U, -150, -1,  4),
+    Motor(4U,  150, 1, 3),
+    Motor(5U,   90, -1,  2)
 };
 
 static Motor hexa_cw_x_motors[] = 
 {
-    Motor(AP_MOTORS_MOT_1,   30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
-    Motor(AP_MOTORS_MOT_2,   90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
-    Motor(AP_MOTORS_MOT_3,  150, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_4, -150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
-    Motor(AP_MOTORS_MOT_5,  -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
-    Motor(AP_MOTORS_MOT_6,  -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6)
+    Motor(0U,   30, 1, 1),
+    Motor(1U,   90, -1,  2),
+    Motor(2U,  150, 1, 3),
+    Motor(3U, -150, -1,  4),
+    Motor(4U,  -90, 1, 5),
+    Motor(5U,  -30, -1,  6)
 };
 
 static Motor octa_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,    0,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
-    Motor(AP_MOTORS_MOT_2,  180,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5),
-    Motor(AP_MOTORS_MOT_3,   45,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
-    Motor(AP_MOTORS_MOT_4,  135,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
-    Motor(AP_MOTORS_MOT_5,  -45,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8),
-    Motor(AP_MOTORS_MOT_6, -135,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6),
-    Motor(AP_MOTORS_MOT_7,  -90,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
-    Motor(AP_MOTORS_MOT_8,   90,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3)
+    Motor(0U,    0,  -1,  1),
+    Motor(1U,  180,  -1,  5),
+    Motor(2U,   45,  1, 2),
+    Motor(3U,  135,  1, 4),
+    Motor(4U,  -45,  1, 8),
+    Motor(5U, -135,  1, 6),
+    Motor(6U,  -90,  -1,  7),
+    Motor(7U,   90,  -1,  3)
 };
 
 static Motor octa_dji_x_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   22.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
-    Motor(AP_MOTORS_MOT_2,  -22.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8),
-    Motor(AP_MOTORS_MOT_3,  -67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7),
-    Motor(AP_MOTORS_MOT_4, -112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6),
-    Motor(AP_MOTORS_MOT_5, -157.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
-    Motor(AP_MOTORS_MOT_6,  157.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
-    Motor(AP_MOTORS_MOT_7,  112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_8,   67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2)
+    Motor(0U,   22.5f, 1, 1),
+    Motor(1U,  -22.5f, -1,  8),
+    Motor(2U,  -67.5f, 1, 7),
+    Motor(3U, -112.5f, -1,  6),
+    Motor(4U, -157.5f, 1, 5),
+    Motor(5U,  157.5f, -1,  4),
+    Motor(6U,  112.5f, 1, 3),
+    Motor(7U,   67.5f, -1,  2)
 };
 
 static Motor octa_cw_x_motors[] = 
 {
-    Motor(AP_MOTORS_MOT_1,   22.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
-    Motor(AP_MOTORS_MOT_2,   67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
-    Motor(AP_MOTORS_MOT_3,  112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_4,  157.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
-    Motor(AP_MOTORS_MOT_5, -157.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
-    Motor(AP_MOTORS_MOT_6, -112.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6),
-    Motor(AP_MOTORS_MOT_7,  -67.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7),
-    Motor(AP_MOTORS_MOT_8,  -22.5f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8)
+    Motor(0U,   22.5f, 1, 1),
+    Motor(1U,   67.5f, -1,  2),
+    Motor(2U,  112.5f, 1, 3),
+    Motor(3U,  157.5f, -1,  4),
+    Motor(4U, -157.5f, 1, 5),
+    Motor(5U, -112.5f, -1,  6),
+    Motor(6U,  -67.5f, 1, 7),
+    Motor(7U,  -22.5f, -1,  8)
 };
 
 static Motor octa_quad_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
-    Motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
-    Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
-    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
-    Motor(AP_MOTORS_MOT_5,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8),
-    Motor(AP_MOTORS_MOT_6,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
-    Motor(AP_MOTORS_MOT_7,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
-    Motor(AP_MOTORS_MOT_8, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6)
+    Motor(0U,   45, 1, 1),
+    Motor(1U,  -45, -1,  7),
+    Motor(2U, -135, 1, 5),
+    Motor(3U,  135, -1,  3),
+    Motor(4U,  -45, 1, 8),
+    Motor(5U,   45, -1,  2),
+    Motor(6U,  135, 1, 4),
+    Motor(7U, -135, -1,  6)
 };
 
 static Motor octa_quad_cw_x_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
-    Motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
-    Motor(AP_MOTORS_MOT_3,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
-    Motor(AP_MOTORS_MOT_5, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
-    Motor(AP_MOTORS_MOT_6, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6),
-    Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7),
-    Motor(AP_MOTORS_MOT_8,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8)
+    Motor(0U,   45, 1, 1),
+    Motor(1U,   45, -1,  2),
+    Motor(2U,  135, 1, 3),
+    Motor(3U,  135, -1,  4),
+    Motor(4U, -135, 1, 5),
+    Motor(5U, -135, -1,  6),
+    Motor(6U,  -45, 1, 7),
+    Motor(7U,  -45, -1,  8)
 };
 
 static Motor dodeca_hexa_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1),
-    Motor(AP_MOTORS_MOT_2,   30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2),
-    Motor(AP_MOTORS_MOT_3,   90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   3),
-    Motor(AP_MOTORS_MOT_4,   90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  4),
-    Motor(AP_MOTORS_MOT_5,  150, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5),
-    Motor(AP_MOTORS_MOT_6,  150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6),
-    Motor(AP_MOTORS_MOT_7, -150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   7),
-    Motor(AP_MOTORS_MOT_8, -150, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  8),
-    Motor(AP_MOTORS_MOT_9,  -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  9),
-    Motor(AP_MOTORS_MOT_10, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   10),
-    Motor(AP_MOTORS_MOT_11, -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   11),
-    Motor(AP_MOTORS_MOT_12, -30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  12)
+    Motor(0U,   30, 1,  1),
+    Motor(1U,   30, -1,   2),
+    Motor(2U,   90, -1,   3),
+    Motor(3U,   90, 1,  4),
+    Motor(4U,  150, 1,  5),
+    Motor(5U,  150, -1,   6),
+    Motor(6U, -150, -1,   7),
+    Motor(7U, -150, 1,  8),
+    Motor(8U,  -90, 1,  9),
+    Motor(9U, -90, -1,   10),
+    Motor(10U, -30, -1,   11),
+    Motor(11U, -30, 1,  12)
 };
 
 static Motor deca_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,     0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1),
-    Motor(AP_MOTORS_MOT_2,    36, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2),
-    Motor(AP_MOTORS_MOT_3,    72, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3),
-    Motor(AP_MOTORS_MOT_4,   108, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4),
-    Motor(AP_MOTORS_MOT_5,   144, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5),
-    Motor(AP_MOTORS_MOT_6,   180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6),
-    Motor(AP_MOTORS_MOT_7,  -144, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7),
-    Motor(AP_MOTORS_MOT_8,  -108, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8),
-    Motor(AP_MOTORS_MOT_9,   -72, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  9),
-    Motor(AP_MOTORS_MOT_10,  -36, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  10)
+    Motor(0U,     0, 1,  1),
+    Motor(1U,    36, -1,   2),
+    Motor(2U,    72, 1,  3),
+    Motor(3U,   108, -1,   4),
+    Motor(4U,   144, 1,  5),
+    Motor(5U,   180, -1,   6),
+    Motor(6U,  -144, 1,  7),
+    Motor(7U,  -108, -1,   8),
+    Motor(8U,   -72, 1,  9),
+    Motor(9U,  -36, -1,  10)
 };
 
 static Motor deca_cw_x_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,    18, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1),
-    Motor(AP_MOTORS_MOT_2,    54, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2),
-    Motor(AP_MOTORS_MOT_3,    90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3),
-    Motor(AP_MOTORS_MOT_4,   126, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4),
-    Motor(AP_MOTORS_MOT_5,   162, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5),
-    Motor(AP_MOTORS_MOT_6,  -162, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6),
-    Motor(AP_MOTORS_MOT_7,  -126, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7),
-    Motor(AP_MOTORS_MOT_8,   -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8),
-    Motor(AP_MOTORS_MOT_9,   -54, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  9),
-    Motor(AP_MOTORS_MOT_10,  -18, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  10)
+    Motor(0U,    18, 1,  1),
+    Motor(1U,    54, -1,   2),
+    Motor(2U,    90, 1,  3),
+    Motor(3U,   126, -1,   4),
+    Motor(4U,   162, 1,  5),
+    Motor(5U,  -162, -1,   6),
+    Motor(6U,  -126, 1,  7),
+    Motor(7U,   -90, -1,   8),
+    Motor(8U,   -54, 1,  9),
+    Motor(9U,  -18, -1,  10)
 };
 
 static Motor tri_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
-    Motor(AP_MOTORS_MOT_2,  -60, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 3),
-    Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, AP_MOTORS_MOT_7, 60, -60, -1, 0, 0),
+    Motor(0U,   60, 1, 1),
+    Motor(1U,  -60, -1, 3),
+    Motor(3U,  180, 1, 2, 6U, 60, -60, -1, 0, 0),
 };
 
 static Motor tilttri_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1, -1, 0, 0, AP_MOTORS_MOT_8, 0, -90),
-    Motor(AP_MOTORS_MOT_2,  -60, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3, -1, 0, 0, AP_MOTORS_MOT_8, 0, -90),
-    Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, AP_MOTORS_MOT_7, 60, -60, -1, 0, 0),
+    Motor(0U,   60, 1, 1, -1, 0, 0, 7U, 0, -90),
+    Motor(1U,  -60, -1,  3, -1, 0, 0, 7U, 0, -90),
+    Motor(3U,  180, 1, 2, 6U, 60, -60, -1, 0, 0),
 };
 
 static Motor tilttri_vectored_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,   60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1, -1, 0, 0, 7, 10, -90),
-    Motor(AP_MOTORS_MOT_2,  -60, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3, -1, 0, 0, 8, 10, -90),
-    Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2)
+    Motor(0U,   60, 1, 1, -1, 0, 0, 7, 10, -90),
+    Motor(1U,  -60, -1,  3, -1, 0, 0, 8, 10, -90),
+    Motor(3U,  180, 1, 2)
 };
 
 static Motor y6_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1,  60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
-    Motor(AP_MOTORS_MOT_2, -60, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5),
-    Motor(AP_MOTORS_MOT_3, -60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6),
-    Motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
-    Motor(AP_MOTORS_MOT_5,  60, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
-    Motor(AP_MOTORS_MOT_6, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3)
+    Motor(0U,  60, 1, 2),
+    Motor(1U, -60, -1,  5),
+    Motor(2U, -60, 1, 6),
+    Motor(3U, 180, -1,  4),
+    Motor(4U,  60, -1,  1),
+    Motor(5U, 180, 1, 3)
 };
 
 /*
@@ -277,12 +276,12 @@ static Motor y6_motors[] =
  */
 static Motor firefly_motors[] =
 {
-    Motor(AP_MOTORS_MOT_1, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_2,  60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1, -1, 0, 0, 6, 0, -90),
-    Motor(AP_MOTORS_MOT_3, -60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5, -1, 0, 0, 6, 0, -90),
-    Motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
-    Motor(AP_MOTORS_MOT_5,  60, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2, -1, 0, 0, 6, 0, -90),
-    Motor(AP_MOTORS_MOT_6, -60, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6, -1, 0, 0, 6, 0, -90)
+    Motor(0U, 180, 1, 3),
+    Motor(1U,  60, 1, 1, -1, 0, 0, 6, 0, -90),
+    Motor(2U, -60, 1, 5, -1, 0, 0, 6, 0, -90),
+    Motor(3U, 180, -1,  4),
+    Motor(4U,  60, -1,  2, -1, 0, 0, 6, 0, -90),
+    Motor(5U, -60, -1,  6, -1, 0, 0, 6, 0, -90)
 };
 
 /*

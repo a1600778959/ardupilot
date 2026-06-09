@@ -17,7 +17,6 @@
 */
 
 #include "SIM_Multicopter.h"
-#include <AP_Motors/AP_Motors.h>
 
 #include <stdio.h>
 
@@ -49,10 +48,6 @@ void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot
     add_shove_forces(rot_accel, body_accel);
     add_twist_forces(rot_accel);
 
-#if AP_SIM_SLUNGPAYLOAD_ENABLED
-    // add forces from slung payload
-    add_slungpayload_forces(body_accel);
-#endif
 }
     
 /*
@@ -87,4 +82,3 @@ void MultiCopter::update(const struct sitl_input &input)
     // update magnetic field
     update_mag_field_bf();
 }
-

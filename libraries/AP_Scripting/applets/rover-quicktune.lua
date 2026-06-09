@@ -14,7 +14,7 @@ ATC_SPEED_D
 CRUISE_SPEED
 CRUISE_THROTTLE
 
-See the accompanying rover-quiktune.md file for instructions on how to use
+See the accompanying rover-quicktune.md file for instructions on how to use
 
 --]]
 
@@ -33,6 +33,15 @@ function bind_param(name)
    local p = Parameter()
    assert(p:init(name), string.format("RTun: could not find %s parameter", name))
    return p
+end
+
+-- bind a parameter if it exists
+function bind_optional_param(name)
+   local p = Parameter()
+   if p:init(name) then
+      return p
+   end
+   return nil
 end
 
 -- add a parameter and bind it to a variable
@@ -146,7 +155,7 @@ local RTUN_RC_FUNC = bind_add_param('RC_FUNC', 11, 300)
 --[[
   // @Param: RTUN_SPEED_MIN
   // @DisplayName: Rover Quicktune minimum speed for tuning
-  // @Description: The mimimum speed in m/s required for tuning to start
+  // @Description: The minimum speed in m/s required for tuning to start
   // @Units: m/s
   // @Range: 0.1 0.5
   // @User: Standard
@@ -160,6 +169,8 @@ local RCMAP_ROLL       = bind_param("RCMAP_ROLL")
 local RCMAP_THROTTLE   = bind_param("RCMAP_THROTTLE")
 local RCIN_ROLL  = rc:get_channel(RCMAP_ROLL:get())
 local RCIN_THROTTLE = rc:get_channel(RCMAP_THROTTLE:get())
+local MOT_STR_TC       = bind_optional_param("MOT_STR_TC")
+local MOT_STR_CURVE    = bind_optional_param("MOT_STR_CURVE")
 
 -- definitions
 local UPDATE_RATE_HZ = 40           -- this script updates at 40hz
@@ -169,11 +180,24 @@ local FLTD_MUL = 0.5                -- ATC_STR_RAT_FLTD set to 0.5 * INS_GYRO_FI
 local FLTT_MUL = 0.5                -- ATC_STR_RAT_FLTT set to 0.5 * INS_GYRO_FILTER
 local STR_RAT_FF_TURNRATE_MIN = math.rad(10)    -- steering rate feedforward min vehicle turn rate (in radians/sec)
 local STR_RAT_FF_STEERING_MIN = 0.10            -- steering rate feedforward min steering output (in the range 0 to 1)
+local STR_RAT_FF_TURN_ANGLE_TARGET = 4.0 * math.pi -- steering rate feedforward requires two rotations of valid turn data
 local SPEED_FF_THROTTLE_MIN = 0.20  -- speed feedforward requires throttle output (in the range 0 to 1)
 
 -- get time in seconds since boot
 function get_time()
    return millis():tofloat() * 0.001
+end
+
+-- get sample time while avoiding large gaps from pauses being counted as valid data
+function get_sample_dt(last_sample_time, now_sec)
+  if last_sample_time == nil then
+    return 1.0 / UPDATE_RATE_HZ
+  end
+  local sample_dt = now_sec - last_sample_time
+  if sample_dt <= 0 or sample_dt > 0.5 then
+    return 1.0 / UPDATE_RATE_HZ
+  end
+  return sample_dt
 end
 
 -- local variables
@@ -195,7 +219,13 @@ local ff_speed_count = 0                -- number of speed and throttle samples 
 local ff_steering_sum = 0               -- total steering input recorded during steering rate FF tuning (divided by count to calc average)
 local ff_turn_rate_sum = 0              -- total turn rate recorded during steering rate FF tuning (divided by count to calc average)
 local ff_turn_rate_count = 0            -- number of steering and turn rate samples taken during FF tuning
+local ff_steering_time_sum = 0          -- valid steering FF sample time
+local ff_turn_angle_sum = 0             -- valid steering FF turn angle in radians
+local ff_steering_last_time = nil       -- previous steering FF update time
+local ff_speed_time_sum = 0             -- valid speed FF sample time
+local ff_speed_last_time = nil          -- previous speed FF update time
 local ff_last_warning = 0               -- time of last warning to user
+local steering_curve_warning_done = false -- true once motor steering curve warning has been sent
 
 -- params dictionary indexed by name, such as "ATC_STR_RAT_P"
 local params = {}                       -- table of all parameters that may be tuned
@@ -293,9 +323,21 @@ function setup_gcs_pid_mask(axis)
   elseif axis == "ATC_SPEED" then
     GCS_PID_MASK:set(2)
   else
-    gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("RTun: setup_gcs_pid_mask received unhandled aixs %s", axis))
+    gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("RTun: setup_gcs_pid_mask received unhandled axis %s", axis))
   end
   gcs_pid_mask_done[axis] = true
+end
+
+-- warn once if motor steering curve shaping is enabled during steering tune
+function warn_steering_curve_if_enabled()
+  if steering_curve_warning_done then
+    return
+  end
+  steering_curve_warning_done = true
+  if ((MOT_STR_TC ~= nil and MOT_STR_TC:get() > 0) or
+      (MOT_STR_CURVE ~= nil and MOT_STR_CURVE:get() > 0)) then
+    gcs:send_text(MAV_SEVERITY.WARNING, "RTun: MOT_STR_TC/CURVE affect tune")
+  end
 end
 
 -- check for pilot input to pause tune
@@ -370,6 +412,9 @@ function init_steering_ff()
   ff_steering_sum = 0
   ff_turn_rate_sum = 0
   ff_turn_rate_count = 0
+  ff_steering_time_sum = 0
+  ff_turn_angle_sum = 0
+  ff_steering_last_time = nil
 end
 
 -- run steering turn rate controller feedforward calibration
@@ -379,9 +424,13 @@ function update_steering_ff(ff_pname)
   -- get steering, turn rate, throttle and speed
   local steering_out, _ = vehicle:get_steering_and_throttle()
   local turn_rate_rads = ahrs:get_gyro():z()
+  local steering_abs = math.abs(steering_out)
+  local turn_rate_abs = math.abs(turn_rate_rads)
 
   -- update user every 5 sec
   local now_sec = get_time()
+  local sample_dt = get_sample_dt(ff_steering_last_time, now_sec)
+  ff_steering_last_time = now_sec
   local update_user = false
   if (now_sec > ff_last_warning + 5) then
     update_user = true
@@ -389,31 +438,33 @@ function update_steering_ff(ff_pname)
   end
 
   -- calculate percentage complete
-  local turn_rate_complete_pct = (ff_turn_rate_sum / math.pi * 2.0) * 100
-  local time_complete_pct = (ff_turn_rate_count  / (10 * UPDATE_RATE_HZ)) * 100
-  local complete_pct = math.min(turn_rate_complete_pct, time_complete_pct)
+  local turn_angle_complete_pct = (ff_turn_angle_sum / STR_RAT_FF_TURN_ANGLE_TARGET) * 100
+  local time_complete_pct = (ff_steering_time_sum / 10.0) * 100
+  local complete_pct = math.min(turn_angle_complete_pct, time_complete_pct)
 
   -- check steering and turn rate and accumulate output and response
-  local steering_ok = steering_out >= STR_RAT_FF_STEERING_MIN
-  local turnrate_ok = math.abs(turn_rate_rads) > STR_RAT_FF_TURNRATE_MIN
+  local steering_ok = steering_abs >= STR_RAT_FF_STEERING_MIN
+  local turnrate_ok = turn_rate_abs > STR_RAT_FF_TURNRATE_MIN
   if (steering_ok and turnrate_ok) then
-    ff_steering_sum = ff_steering_sum + steering_out
-    ff_turn_rate_sum = ff_turn_rate_sum + math.abs(turn_rate_rads)
+    ff_steering_sum = ff_steering_sum + steering_abs
+    ff_turn_rate_sum = ff_turn_rate_sum + turn_rate_abs
     ff_turn_rate_count = ff_turn_rate_count + 1
+    ff_steering_time_sum = ff_steering_time_sum + sample_dt
+    ff_turn_angle_sum = ff_turn_angle_sum + (turn_rate_abs * sample_dt)
     if (update_user) then
       gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: %s %.0f%% complete", ff_pname, complete_pct))
     end
   else
     if update_user then
       if not steering_ok then
-        gcs:send_text(MAV_SEVERITY.WARNING, string.format("RTun: increase steering (%d%% < %d%%)", math.floor(steering_out * 100), math.floor(STR_RAT_FF_STEERING_MIN * 100)))
+        gcs:send_text(MAV_SEVERITY.WARNING, string.format("RTun: increase steering (%d%% < %d%%)", math.floor(steering_abs * 100), math.floor(STR_RAT_FF_STEERING_MIN * 100)))
       elseif not turnrate_ok then
-        gcs:send_text(MAV_SEVERITY.WARNING, string.format("RTun: increase turn rate (%d deg/s < %d)", math.floor(math.deg(math.abs(turn_rate_rads))), math.floor(math.deg(STR_RAT_FF_TURNRATE_MIN))))
+        gcs:send_text(MAV_SEVERITY.WARNING, string.format("RTun: increase turn rate (%d deg/s < %d)", math.floor(math.deg(turn_rate_abs)), math.floor(math.deg(STR_RAT_FF_TURNRATE_MIN))))
       end
     end
   end
 
-  -- check for completion of two rotations of turns data and 10 seconds
+  -- check for completion of two rotations of turns data and 10 seconds of valid samples
   if complete_pct >= 100 then
     local FF_new_gain = (ff_steering_sum / ff_turn_rate_sum) * RTUN_STR_FFRATIO:get()
     adjust_gain(ff_pname, FF_new_gain)
@@ -441,6 +492,8 @@ function init_speed_ff()
   ff_throttle_sum = 0
   ff_speed_sum = 0
   ff_speed_count = 0
+  ff_speed_time_sum = 0
+  ff_speed_last_time = nil
 end
 
 -- run speed controller feedforward calibration
@@ -450,12 +503,12 @@ function update_speed_ff(ff_pname)
   -- get steering, turn rate, throttle and speed
   local _, throttle_out = vehicle:get_steering_and_throttle()
   local velocity_ned = ahrs:get_velocity_NED()
-  if velocity_ned then
-    speed = ahrs:earth_to_body(velocity_ned):x()
-  end
+  local speed = velocity_ned and ahrs:earth_to_body(velocity_ned):x()
 
   -- update user every 5 sec
   local now_sec = get_time()
+  local sample_dt = get_sample_dt(ff_speed_last_time, now_sec)
+  ff_speed_last_time = now_sec
   local update_user = false
   if (now_sec > ff_last_warning + 5) then
     update_user = true
@@ -463,15 +516,16 @@ function update_speed_ff(ff_pname)
   end
 
   -- calculate percentage complete
-  local complete_pct = (ff_speed_count / (10 * UPDATE_RATE_HZ)) * 100
+  local complete_pct = (ff_speed_time_sum / 10.0) * 100
 
   -- check throttle and speed
   local throttle_ok = throttle_out >= SPEED_FF_THROTTLE_MIN
-  local speed_ok = speed > SPEED_FF_SPEED_MIN:get()
+  local speed_ok = (speed ~= nil) and (speed > SPEED_FF_SPEED_MIN:get())
   if (throttle_ok and speed_ok) then
     ff_throttle_sum = ff_throttle_sum + throttle_out
     ff_speed_sum = ff_speed_sum + speed
     ff_speed_count = ff_speed_count + 1
+    ff_speed_time_sum = ff_speed_time_sum + sample_dt
     if (update_user) then
       gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: %s %.0f%% complete", ff_pname, complete_pct))
     end
@@ -479,13 +533,15 @@ function update_speed_ff(ff_pname)
     if update_user then
       if not throttle_ok then
         gcs:send_text(MAV_SEVERITY.WARNING, string.format("RTun: increase throttle (%d < %d)", math.floor(throttle_out * 100), math.floor(SPEED_FF_THROTTLE_MIN * 100)))
+      elseif speed == nil then
+        gcs:send_text(MAV_SEVERITY.WARNING, "RTun: no velocity estimate")
       elseif not speed_ok then
         gcs:send_text(MAV_SEVERITY.WARNING, string.format("RTun: increase speed (%3.1f < %3.1f)", speed, SPEED_FF_SPEED_MIN:get()))
       end
     end
   end
 
-  -- check for 10 seconds of data
+  -- check for 10 seconds of valid data
   if complete_pct >= 100 then
     local cruise_speed_new = ff_speed_sum / ff_speed_count
     local cruise_throttle_new = (ff_throttle_sum / ff_speed_count) * 100 * RTUN_SPD_FFRATIO:get()
@@ -520,7 +576,7 @@ init_params_tables()
 reset_axes_done()
 get_all_params()
 save_gcs_pid_mask()
-gcs:send_text(MAV_SEVERITY.INFO, "Rover quiktune loaded")
+gcs:send_text(MAV_SEVERITY.INFO, "Rover quicktune loaded")
 
 -- main update function
 local last_warning = get_time()
@@ -580,7 +636,7 @@ function update()
   end
 
   -- get axis currently being tuned
-  axis = get_current_axis()
+  local axis = get_current_axis()
 
   -- if no axis is being tuned we must be done
   if axis == nil then
@@ -609,6 +665,9 @@ function update()
   -- check filters have been set for this axis
   if not filters_done[axis] then
     gcs:send_text(MAV_SEVERITY.INFO, string.format("RTun: starting %s tune", axis))
+    if axis == "ATC_STR_RAT" then
+      warn_steering_curve_if_enabled()
+    end
     setup_filters(axis)
   end
 
@@ -636,7 +695,7 @@ function update()
   end
 end
 
--- wrapper around update(). This calls update() at 10Hz,
+-- wrapper around update(). This calls update() at 40Hz,
 -- and if update faults then an error is displayed, but the script is not
 -- stopped
 function protected_wrapper()
@@ -645,8 +704,7 @@ function protected_wrapper()
     gcs:send_text(MAV_SEVERITY.CRITICAL, "RTun: Internal Error: " .. err)
     -- when we fault we run the update function again after 1s, slowing it
     -- down a bit so we don't flood the console with errors
-    --return protected_wrapper, 1000
-    return
+    return protected_wrapper, 1000
   end
   return protected_wrapper, 1000/UPDATE_RATE_HZ
 end

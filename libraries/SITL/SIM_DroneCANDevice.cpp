@@ -91,20 +91,12 @@ void DroneCANDevice::update_baro() {
         sim_alt = _buffer[best_index].data;
     }
 
-#if !APM_BUILD_TYPE(APM_BUILD_ArduSub)
-
     float p, t_K;
     AP_Baro::get_pressure_temperature_for_alt_amsl(sim_alt, p, t_K);
     float T = KELVIN_TO_C(t_K);
 
     AP_Baro_SITL::temperature_adjustment(p, T);
     T = C_TO_KELVIN(T);
-#else
-    float rho, delta, theta;
-    AP_Baro::SimpleUnderWaterAtmosphere(-sim_alt * 0.001f, rho, delta, theta);
-    float p = SSL_AIR_PRESSURE * delta;
-    float T = SSL_AIR_TEMPERATURE * theta;
-#endif
 
     // add in correction for wind effects
     p += AP_Baro_SITL::wind_pressure_correction(0);
@@ -116,25 +108,6 @@ void DroneCANDevice::update_baro() {
     uavcan_equipment_air_data_StaticTemperature temp_msg {};
     temp_msg.static_temperature = T;
     temp_pub.broadcast(temp_msg);
-}
-
-void DroneCANDevice::update_airspeed() {
-    const uint32_t now = AP_HAL::micros64();
-    if ((now - _airspeed_last_update_us < 50000) && (_airspeed_last_update_us != 0)) {
-        return;
-    }
-    _airspeed_last_update_us = now;
-    uavcan_equipment_air_data_RawAirData msg {};
-    msg.differential_pressure = AP::sitl()->state.airspeed_raw_pressure[0];
-
-    // this was mostly swiped from SIM_Airspeed_DLVR:
-    const float sim_alt = AP::sitl()->state.altitude;
-
-    // To Do: Add a sensor board temperature offset parameter
-    msg.static_air_temperature = C_TO_KELVIN(AP_Baro::get_temperatureC_for_alt_amsl(sim_alt));
-
-    static Canard::Publisher<uavcan_equipment_air_data_RawAirData> raw_air_pub{CanardInterface::get_test_iface()};
-    raw_air_pub.broadcast(msg);
 }
 
 void DroneCANDevice::_setup_eliptical_correcion(uint8_t i)
@@ -226,7 +199,6 @@ void DroneCANDevice::update_rangefinder() {
 void DroneCANDevice::update()
 {
     update_baro();
-    update_airspeed();
     update_compass();
     update_rangefinder();
 }

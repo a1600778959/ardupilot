@@ -229,19 +229,6 @@ void AP_AHRS::init()
         _ekf_type.set(EKFType::THREE);
         EKF3.set_enable(true);
     }
-#elif !HAL_NAVEKF3_AVAILABLE && HAL_NAVEKF2_AVAILABLE
-    if (_ekf_type.get() == 3) {
-        _ekf_type.set(EKFType::TWO);
-        EKF2.set_enable(true);
-    }
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE && HAL_NAVEKF3_AVAILABLE
-    // a special case to catch users who had AHRS_EKF_TYPE=2 saved and
-    // updated to a version where EK2_ENABLE=0
-    if (_ekf_type.get() == 2 && !EKF2.get_enable() && EKF3.get_enable()) {
-        _ekf_type.set(EKFType::THREE);
-    }
 #endif
 
     last_active_ekf_type = (EKFType)_ekf_type.get();
@@ -2308,12 +2295,24 @@ void AP_AHRS::writeDefaultAirSpeed(float airspeed, float uncertainty)
 // Write velocity data from an external navigation system
 void AP_AHRS::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
+    if (isfinite(vel.x) && isfinite(vel.y) && isfinite(vel.z) && isfinite(err) && err > 0.0f) {
+        last_extnav_velocity_ms = AP_HAL::millis();
+    }
+
 #if HAL_NAVEKF2_AVAILABLE
     EKF2.writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
 #endif
 #if HAL_NAVEKF3_AVAILABLE
     EKF3.writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
 #endif
+}
+
+bool AP_AHRS::has_recent_extnav_velocity(uint32_t max_age_ms) const
+{
+    if (last_extnav_velocity_ms == 0) {
+        return false;
+    }
+    return (AP_HAL::millis() - last_extnav_velocity_ms) <= max_age_ms;
 }
 
 // get speed limit and XY navigation gain scale factor

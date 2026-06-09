@@ -10,10 +10,7 @@
 
 #include <AP_HAL/utility/Socket_native.h>
 #include <SITL/SIM_SoloGimbal.h>
-#include <SITL/SIM_ADSB.h>
-#include <SITL/SIM_ADSB_Sagetech_MXS.h>
 #include <SITL/SIM_EFI_Hirth.h>
-#include <SITL/SIM_Vicon.h>
 #include <SITL/SIM_RF_Ainstein_LR_D1.h>
 #include <SITL/SIM_RF_Benewake_TF02.h>
 #include <SITL/SIM_RF_Benewake_TF03.h>
@@ -51,8 +48,6 @@
 #include <SITL/SIM_PS_LightWare_SF45B.h>
 
 #include <SITL/SIM_RichenPower.h>
-#include <SITL/SIM_Loweheiser.h>
-#include <SITL/SIM_FETtecOneWireESC.h>
 
 #include <SITL/SIM_ELRS.h>
 
@@ -67,7 +62,6 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_Terrain/AP_Terrain.h>
 #include <SITL/SITL.h>
 #include <SITL/SITL_Input.h>
 
@@ -93,9 +87,8 @@ public:
     // name parameter
     SITL::SerialDevice *create_serial_sim(const char *name, const char *arg, const uint8_t portNumber);
 
-    // simulated airspeed, sonar and battery monitor
+    // simulated sonar and battery monitor
     float sonar_pin_voltage;    // pin 0
-    float airspeed_pin_voltage[AIRSPEED_MAX_SENSORS]; // pin 1
     float voltage_pin_voltage;  // pin 13
     float current_pin_voltage;  // pin 12
     float voltage2_pin_voltage;  // pin 15
@@ -110,20 +103,6 @@ public:
     // simulated gimbal
     bool enable_gimbal;
     SITL::SoloGimbal *gimbal;
-#endif
-
-#if HAL_SIM_ADSB_ENABLED
-    // simulated ADSb
-    SITL::ADSB *adsb;
-#endif
-
-#if AP_SIM_ADSB_SAGETECH_MXS_ENABLED
-    SITL::ADSB_Sagetech_MXS *sagetech_mxs;
-#endif
-
-#if !defined(HAL_BUILD_AP_PERIPH)
-    // simulated vicon system:
-    SITL::Vicon *vicon;
 #endif
 
     // simulated Ainstein LR-D1 rangefinder:
@@ -182,9 +161,6 @@ public:
     // simulated RPLidarA2:
     SITL::PS_RPLidarA2 *rplidara2;
 #endif
-
-    // simulated FETtec OneWire ESCs:
-    SITL::FETtecOneWireESC *fetteconewireesc;
 
     // simulated RPLidarA1:
     SITL::PS_RPLidarA1 *rplidara1;

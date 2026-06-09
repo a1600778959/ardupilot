@@ -21,7 +21,6 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_Terrain/AP_Terrain.h>
 #include <AP_HAL/utility/Socket_native.h>
 
 class SimMCast : public SITL::Aircraft {
@@ -64,7 +63,7 @@ public:
     const char *_serial_path[9] {
         "none:0",
         "none:1",
-        "sim:adsb",
+        "none:2",
         "GPS1",
         "udpclient:127.0.0.1:15550", // for CAN UART test
         "none:5",

@@ -505,10 +505,6 @@ void AP_Baro::init(void)
 #define GET_I2C_DEVICE(bus, address) _have_i2c_driver(bus, address)?nullptr:hal.i2c_mgr->get_device(bus, address)
 
 #if AP_SIM_BARO_ENABLED
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_BARO_MS56XX_ENABLED
-    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                      std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
-#endif
     // do not probe for other drivers when using simulation:
     return;
 #endif

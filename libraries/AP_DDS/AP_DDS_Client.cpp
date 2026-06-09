@@ -36,6 +36,9 @@
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
 #endif // AP_EXTERNAL_CONTROL_ENABLED
+#if AP_DDS_EXTNAV_VEL_SUB_ENABLED
+#include "AP_DDS_ExternalNav.h"
+#endif // AP_DDS_EXTNAV_VEL_SUB_ENABLED
 #include "AP_DDS_Frames.h"
 
 #include "AP_DDS_Client.h"
@@ -91,6 +94,9 @@ tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
 #if AP_DDS_VEL_CTRL_ENABLED
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
 #endif // AP_DDS_VEL_CTRL_ENABLED
+#if AP_DDS_EXTNAV_VEL_SUB_ENABLED
+geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_extnav_velocity_topic {};
+#endif // AP_DDS_EXTNAV_VEL_SUB_ENABLED
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
 ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
@@ -157,6 +163,24 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_MAX_RETRY", 6, AP_DDS_Client, ping_max_retry, 10),
+
+    // @Param: _EXTVEL_ERR
+    // @DisplayName: DDS external navigation velocity error
+    // @Description: One-sigma uncertainty for DDS external navigation velocity observations
+    // @Units: m/s
+    // @Range: 0.01 100
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("_EXTVEL_ERR", 7, AP_DDS_Client, extnav_velocity_error, 0.5),
+
+    // @Param: _EXTVEL_DLY
+    // @DisplayName: DDS external navigation velocity delay
+    // @Description: Average delay of DDS external navigation velocity observations relative to inertial measurements
+    // @Units: ms
+    // @Range: 0 1000
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_EXTVEL_DLY", 8, AP_DDS_Client, extnav_velocity_delay_ms, 0),
 
     AP_GROUPEND
 };
@@ -906,6 +930,21 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         break;
     }
 #endif // AP_DDS_VEL_CTRL_ENABLED
+#if AP_DDS_EXTNAV_VEL_SUB_ENABLED
+    case topics[to_underlying(TopicIndex::EXTNAV_VELOCITY_SUB)].dr_id.id: {
+        const bool success = geometry_msgs_msg_TwistStamped_deserialize_topic(ub, &rx_extnav_velocity_topic);
+        if (success == false) {
+            break;
+        }
+
+        const int16_t configured_delay_ms = extnav_velocity_delay_ms.get();
+        const uint16_t delay_ms = configured_delay_ms > 0 ? uint16_t(configured_delay_ms) : 0U;
+        if (!AP_DDS_ExternalNav::handle_velocity(rx_extnav_velocity_topic, extnav_velocity_error.get(), delay_ms)) {
+            // TODO #23430 handle external navigation velocity failure through rosout, throttled.
+        }
+        break;
+    }
+#endif // AP_DDS_EXTNAV_VEL_SUB_ENABLED
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
     case topics[to_underlying(TopicIndex::GLOBAL_POSITION_SUB)].dr_id.id: {
         const bool success = ardupilot_msgs_msg_GlobalPosition_deserialize_topic(ub, &rx_global_position_control_topic);

@@ -33,25 +33,6 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         benewake_tf02 = NEW_NOTHROW SITL::RF_Benewake_TF02();
         return benewake_tf02;
-#if !defined(HAL_BUILD_AP_PERIPH)
-    } else if (streq(name, "vicon")) {
-        if (vicon != nullptr) {
-            AP_HAL::panic("Only one vicon system at a time");
-        }
-        vicon = NEW_NOTHROW SITL::Vicon();
-        return vicon;
-#endif
-#if HAL_SIM_ADSB_ENABLED
-    } else if (streq(name, "adsb")) {
-        // ADSB is a stand-out as it is the only serial device which
-        // will cope with begin() being called multiple times on a
-        // serial port
-        if (adsb == nullptr) {
-            adsb = NEW_NOTHROW SITL::ADSB();
-        }
-        sitl_model->set_adsb(adsb);
-        return adsb;
-#endif
     } else if (streq(name, "ainsteinlrd1")) {
         if (ainsteinlrd1 != nullptr) {
             AP_HAL::panic("Only one ainsteinlrd1 at a time");
@@ -224,30 +205,10 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         sf45b = NEW_NOTHROW SITL::PS_LightWare_SF45B();
         return sf45b;
 #endif
-#if AP_SIM_ADSB_SAGETECH_MXS_ENABLED
-    } else if (streq(name, "sagetech_mxs")) {
-        if (sagetech_mxs != nullptr) {
-            AP_HAL::panic("Only one sagetech_mxs at a time");
-        }
-        sagetech_mxs = NEW_NOTHROW SITL::ADSB_Sagetech_MXS();
-        if (adsb == nullptr) {
-            adsb = NEW_NOTHROW SITL::ADSB();
-        }
-        sitl_model->set_adsb(adsb);
-        return sagetech_mxs;
-#endif
-#if AP_SIM_LOWEHEISER_ENABLED
-    } else if (streq(name, "loweheiser")) {
-        sitl_model->set_loweheiser(&_sitl->loweheiser_sim);
-        return &_sitl->loweheiser_sim;
-#endif
 #if !defined(HAL_BUILD_AP_PERIPH)
     } else if (streq(name, "richenpower")) {
         sitl_model->set_richenpower(&_sitl->richenpower_sim);
         return &_sitl->richenpower_sim;
-    } else if (streq(name, "fetteconewireesc")) {
-        sitl_model->set_fetteconewireesc(&_sitl->fetteconewireesc_sim);
-        return &_sitl->fetteconewireesc_sim;
     } else if (streq(name, "ie24")) {
         sitl_model->set_ie24(&_sitl->ie24_sim);
         return &_sitl->ie24_sim;
@@ -343,21 +304,6 @@ void SITL_State_Common::sim_update(void)
 #if AP_SIM_SOLOGIMBAL_ENABLED
     if (gimbal != nullptr) {
         gimbal->update(*sitl_model);
-    }
-#endif
-#if HAL_SIM_ADSB_ENABLED
-    if (adsb != nullptr) {
-        adsb->update(*sitl_model);
-    }
-#endif
-#if !defined(HAL_BUILD_AP_PERIPH)
-    if (vicon != nullptr) {
-        Quaternion attitude;
-        sitl_model->get_attitude(attitude);
-        vicon->update(sitl_model->get_location(),
-                      sitl_model->get_position_relhome(),
-                      sitl_model->get_velocity_ef(),
-                      attitude);
     }
 #endif
     if (ainsteinlrd1 != nullptr) {
@@ -472,12 +418,6 @@ void SITL_State_Common::sim_update(void)
     }
 #endif
 
-#if AP_SIM_ADSB_SAGETECH_MXS_ENABLED
-    if (sagetech_mxs != nullptr) {
-        sagetech_mxs->update(sitl_model);
-    }
-#endif
-
     if (vectornav != nullptr) {
         vectornav->update();
     }
@@ -555,4 +495,3 @@ void SITL_State_Common::update_voltage_current(struct sitl_input &input, float t
 }
 
 #endif // HAL_BOARD_SITL
-

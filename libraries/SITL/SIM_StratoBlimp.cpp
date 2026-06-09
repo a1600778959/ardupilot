@@ -21,7 +21,6 @@
 #if AP_SIM_STRATOBLIMP_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
-#include <AP_Motors/AP_Motors.h>
 
 #include <stdio.h>
 

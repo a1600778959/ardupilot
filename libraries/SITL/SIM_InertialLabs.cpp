@@ -92,9 +92,6 @@ void InertialLabs::send_packet(void)
     // 0x53 Unit status word (USW)
     pkt.unit_status = 0; // INS data is valid
 
-    // 0x28 Differential pressure
-    pkt.differential_pressure = fdm.airspeed_raw_pressure[0] * 0.01 * 1.0e4; // mbar*1.0e4 (0.01 - Pa to mbar)
-
     // 0x86 True airspeed (TAS)
     pkt.true_airspeed = fdm.airspeed * 100; // m/s*100
 

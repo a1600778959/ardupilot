@@ -292,6 +292,9 @@ public:
     // Write velocity data from an external navigation system
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
+    // True if a valid external navigation velocity sample was recently written
+    bool has_recent_extnav_velocity(uint32_t max_age_ms) const;
+
     // get speed limit
     void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const;
     float getControlScaleZ(void) const;
@@ -680,6 +683,9 @@ private:
 
     // multi-thread access support
     HAL_Semaphore _rsem;
+
+    // system time of the last valid external navigation velocity sample
+    uint32_t last_extnav_velocity_ms{};
 
     /*
      * Parameters

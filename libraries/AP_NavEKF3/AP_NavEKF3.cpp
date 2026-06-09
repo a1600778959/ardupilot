@@ -1542,6 +1542,11 @@ void NavEKF3::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float
 */
 void NavEKF3::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
+    if (!sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) &&
+        !sources.useVelZSource(AP_NavEKF_Source::SourceZ::EXTNAV)) {
+        return;
+    }
+
     dal.writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
 
     if (core) {

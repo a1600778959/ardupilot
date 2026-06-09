@@ -26,7 +26,6 @@
 #include "SIM_MaxSonarI2CXL.h"
 #include "SIM_BattMonitor_SMBus_Maxell.h"
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
-#include "SIM_Airspeed_DLVR.h"
 #include "SIM_Temperature_TSYS01.h"
 #include "SIM_Temperature_TSYS03.h"
 #include "SIM_Temperature_MCP9600.h"
@@ -34,7 +33,6 @@
 #include "SIM_IS31FL3195.h"
 #include "SIM_LP5562.h"
 #include "SIM_LM2755.h"
-#include "SIM_MS5525.h"
 #include "SIM_MS5611.h"
 #include "SIM_QMC5883L.h"
 
@@ -63,14 +61,12 @@ static MaxSonarI2CXL maxsonari2cxl_2;
 static Maxell maxell;
 static Rotoye rotoye;
 static SIM_BattMonitor_SMBus_Generic smbus_generic;
-static Airspeed_DLVR airspeed_dlvr;
 static TSYS01 tsys01;
 #if AP_SIM_TSYS03_ENABLED
 static TSYS03 tsys03;
 #endif
 static MCP9600 mcp9600;
 static ICM40609 icm40609;
-static MS5525 ms5525;
 static MS5611 ms5611;
 #if AP_SIM_LP5562_ENABLED
 static LP5562 lp5562;
@@ -101,12 +97,10 @@ struct i2c_device_at_address {
     { 1, 0x38, ignored }, // NCP5623
     { 1, 0x39, ignored }, // NCP5623C
     { 1, 0x40, ignored }, // KellerLD
-    { 1, 0x76, ms5525 },  // MS5525: ARSPD_TYPE = 4
     { 1, 0x77, tsys01 },
     { 1, 0x0B, rotoye },        // Rotoye: BATTx_MONITOR 19, BATTx_I2C_ADDR 13
     { 2, 0x0B, maxell },        // Maxell: BATTx_MONITOR 16, BATTx_I2C_ADDR 13
     { 3, 0x0B, smbus_generic},  // BATTx_MONITOR 7, BATTx_I2C_ADDR 13
-    { 2, 0x28, airspeed_dlvr }, // ARSPD_TYPE = 7 5inch H2O sensor
 #if AP_SIM_LP5562_ENABLED
     { 2, 0x30, lp5562 },        // LP5562 RGB LED driver
 #endif

@@ -907,6 +907,11 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
         return;
     }
 
+    if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) &&
+        !frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::EXTNAV)) {
+        return;
+    }
+
     if ((timeStamp_ms - extNavVelMeasTime_ms) < frontend->extNavIntervalMin_ms) {
         return;
     }

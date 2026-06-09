@@ -19,7 +19,6 @@
 #pragma once
 
 #include "SIM_Aircraft.h"
-#include <AP_Motors/AP_Motors.h>
 
 namespace SITL {
 
@@ -42,7 +41,7 @@ private:
     float terminal_rotation_rate = 4*radians(360.0f);
     float hover_throttle = 0.65f;
     float terminal_velocity = 40;
-    float rotor_rot_accel = radians(20) * AP_MOTORS_MATRIX_YAW_FACTOR_CW;
+    float rotor_rot_accel = radians(20) * -1;
     float roll_rate_max = radians(700);
     float pitch_rate_max = radians(700);
     float yaw_rate_max = radians(700);

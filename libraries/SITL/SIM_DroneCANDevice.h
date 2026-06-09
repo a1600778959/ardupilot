@@ -43,12 +43,10 @@ private:
       float _last_altitude;
     void update_baro(void);
 
-    void update_airspeed(void);
     void update_compass(void);
     void update_rangefinder(void);
     void _setup_eliptical_correcion(uint8_t i);
     uint64_t _baro_last_update_us;
-    uint64_t _airspeed_last_update_us;
     uint64_t _compass_last_update_us;
     uint64_t _rangefinder_last_update_us;
     Matrix3f _eliptical_corr;
