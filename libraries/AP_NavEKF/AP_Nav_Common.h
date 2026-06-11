@@ -33,13 +33,13 @@ enum class NavFilterStatusBit {
     PRED_HORIZ_POS_REL =    256, // expected good relative horizontal position estimate - used before takeoff
     PRED_HORIZ_POS_ABS =    512, // expected good absolute horizontal position estimate - used before takeoff
     TAKEOFF_DETECTED   =   1024, // optical flow takeoff has been detected
-    TAKEOFF_EXPECTED   =   2048, // compensating for baro errors during takeoff
-    TOUCHDOWN_EXPECTED =   4096, // compensating for baro errors during touchdown
+    TAKEOFF_EXPECTED   =   2048, // compensating for height errors during takeoff
+    TOUCHDOWN_EXPECTED =   4096, // compensating for height errors during touchdown
     USING_GPS          =   8192, // using GPS position
     GPS_GLITCHING      =  16384, // GPS glitching is affecting navigation accuracy
     GPS_QUALITY_GOOD   =  32768, // can use GPS for navigation
     INITALIZED         =  65536, // has ever been healthy
-    REJECTING_AIRSPEED = 131072, // rejecting airspeed data
+    RESERVED_17        = 131072,
     DEAD_RECKONING     = 262144, // dead reckoning (e.g. no position or velocity source)
 };
 
@@ -56,13 +56,13 @@ union nav_filter_status {
         bool pred_horiz_pos_rel : 1; // 8 - true if filter expects it can produce a good relative horizontal position estimate - used before takeoff
         bool pred_horiz_pos_abs : 1; // 9 - true if filter expects it can produce a good absolute horizontal position estimate - used before takeoff
         bool takeoff_detected   : 1; // 10 - true if optical flow takeoff has been detected
-        bool takeoff            : 1; // 11 - true if filter is compensating for baro errors during takeoff
-        bool touchdown          : 1; // 12 - true if filter is compensating for baro errors during touchdown
+        bool takeoff            : 1; // 11 - true if filter is compensating for height errors during takeoff
+        bool touchdown          : 1; // 12 - true if filter is compensating for height errors during touchdown
         bool using_gps          : 1; // 13 - true if we are using GPS position
         bool gps_glitching      : 1; // 14 - true if GPS glitching is affecting navigation accuracy
         bool gps_quality_good   : 1; // 15 - true if we can use GPS for navigation
         bool initalized         : 1; // 16 - true if the EKF has ever been healthy
-        bool rejecting_airspeed : 1; // 17 - true if we are rejecting airspeed data
+        bool reserved_17        : 1; // 17 - reserved
         bool dead_reckoning     : 1; // 18 - true if we are dead reckoning (e.g. no position or velocity source)
     } flags;
     uint32_t value;
@@ -76,7 +76,7 @@ union nav_gps_status {
         bool bad_hAcc           : 1; // 1 - true if reported gps horizontal position accuracy is insufficient to start using GPS
         bool bad_yaw            : 1; // 2 - true if EKF yaw errors are too large to start using GPS
         bool bad_sats           : 1; // 3 - true if the number of satellites is insufficient to start using GPS
-        bool bad_VZ             : 1; // 4 - true if the vertical velocity is inconsistent with the inertial/baro
+        bool bad_VZ             : 1; // 4 - true if the vertical velocity is inconsistent with the inertial estimate
         bool bad_horiz_drift    : 1; // 5 - true if the GPS horizontal position is drifting (this check assumes vehicle is static)
         bool bad_hdop           : 1; // 6 - true if the reported HDoP is insufficient to start using GPS
         bool bad_vert_vel       : 1; // 7 - true if the GPS vertical speed is too large to start using GPS (this check assumes vehicle is static)

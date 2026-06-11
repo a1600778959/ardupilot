@@ -1,5 +1,5 @@
 /*
-  NavEKF_core_common holds scratch data shared by EKF2 and EKF3
+  NavEKF_core_common holds scratch data used by EKF3
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,8 +22,7 @@
 #include "AP_Nav_Common.h"
 
 /*
-  this declares a common parent class for AP_NavEKF2 and
-  AP_NavEKF3. The purpose of this class is to hold common static
+  this declares a common parent class for AP_NavEKF3. The purpose of this class is to hold common static
   scratch space variables. These variables do not hold anything that
   matters between iterations, they are only intermediate variables. By
   placing these in a common parent class we save a lot of memory, but
@@ -64,4 +63,3 @@ protected:
 #pragma GCC diagnostic error "-Wframe-larger-than=2600"
 #endif
 #endif
-

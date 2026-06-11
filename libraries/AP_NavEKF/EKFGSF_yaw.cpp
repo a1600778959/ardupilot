@@ -31,8 +31,7 @@ void EKFGSF_yaw::update(const Vector3F &delAng,
                         const Vector3F &delVel,
                         const ftype delAngDT,
                         const ftype delVelDT,
-                        bool runEKF,
-                        ftype TAS)
+                        bool runEKF)
 {
 
     // copy to class variables
@@ -41,7 +40,6 @@ void EKFGSF_yaw::update(const Vector3F &delAng,
     angle_dt = delAngDT;
     velocity_dt = delVelDT;
     run_ekf_gsf = runEKF;
-    true_airspeed = TAS;
 
     // Calculate a low pass filtered acceleration vector that will be used to keep the AHRS tilt aligned
     // The time constant of the filter is a fixed ratio relative to the time constant of the AHRS tilt correction loop
@@ -72,11 +70,7 @@ void EKFGSF_yaw::update(const Vector3F &delAng,
     // esitmates.
     ftype EKFGSF_ahrs_ng = ahrs_accel_norm / GRAVITY_MSS;
     if (EKFGSF_ahrs_ng > 1.0f) {
-        if (is_positive(true_airspeed)) {
-            // When flying in fixed wing mode we need to allow for more positive g due to coordinated turns
-            // Gain varies from unity at 1g to zero at 2g
-            accel_gain = EKFGSF_tiltGain * sq(2.0f - EKFGSF_ahrs_ng);
-        } else if (accel_gain <= 1.5f) {
+        if (accel_gain <= 1.5f) {
             // Gain varies from unity at 1g to zero at 1.5g
             accel_gain = EKFGSF_tiltGain * sq(3.0f - 2.0f * EKFGSF_ahrs_ng);
         } else {
@@ -202,27 +196,12 @@ void EKFGSF_yaw::predictAHRS(const uint8_t mdl_idx)
     const Vector3F ang_rate_delayed_raw { delta_angle / angle_dt };
 
     // Perform angular rate correction using accel data and reduce correction as accel magnitude moves away from 1 g (reduces drift when vehicle picked up and moved).
-    // During fixed wing flight, compensate for centripetal acceleration assuming coordinated turns and X axis forward
 
     Vector3F tilt_error_gyro_correction; // (rad/sec)
 
     if (accel_gain > 0.0f) {
 
-        Vector3F accel = ahrs_accel;
-
-        if (is_positive(true_airspeed)) {
-            // Calculate centripetal acceleration in body frame from cross product of body rate and body frame airspeed vector
-            // NOTE: this assumes X axis is aligned with airspeed vector
-            const Vector3F centripetal_accel_vec_bf {
-                0.0f,
-                ang_rate_delayed_raw[2] * true_airspeed,
-                - ang_rate_delayed_raw[1] * true_airspeed
-            };
-            // Correct measured accel for centripetal acceleration
-            accel -= centripetal_accel_vec_bf;
-        }
-
-        tilt_error_gyro_correction = (k % accel) * (accel_gain / ahrs_accel_norm);
+        tilt_error_gyro_correction = (k % ahrs_accel) * (accel_gain / ahrs_accel_norm);
 
     }
 

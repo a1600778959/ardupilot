@@ -39,8 +39,8 @@ struct PACKED log_AHRS {
 // @LoggerMessage: AOA
 // @Description: Angle of attack and Side Slip Angle values
 // @Field: TimeUS: Time since system startup
-// @Field: AOA: Angle of Attack calculated from airspeed, wind vector,velocity vector 
-// @Field: SSA: Side Slip Angle calculated from airspeed, wind vector,velocity vector
+// @Field: AOA: Angle of Attack calculated from wind and velocity vectors
+// @Field: SSA: Side Slip Angle calculated from wind and velocity vectors
 struct PACKED log_AOA_SSA {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -170,4 +170,3 @@ struct PACKED log_ATSC {
         "ATSC", "Qffffff",  "TimeUS,AngPScX,AngPScY,AngPScZ,PDScX,PDScY,PDScZ", "s------", "F000000" , true }, \
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
         "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo----", "F0000000000" },
-

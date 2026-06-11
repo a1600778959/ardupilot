@@ -132,30 +132,6 @@ public:
     // return a wind estimation vector, in m/s
     virtual bool wind_estimate(Vector3f &wind) const = 0;
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate
-    virtual bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED { return false; }
-    virtual bool airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const { return false; }
-
-    // return a true airspeed estimate (navigation airspeed) if
-    // available. return true if we have an estimate
-    bool airspeed_estimate_true(float &airspeed_ret) const WARN_IF_UNUSED {
-        if (!airspeed_estimate(airspeed_ret)) {
-            return false;
-        }
-        airspeed_ret *= get_EAS2TAS();
-        return true;
-    }
-
-    // return estimate of true airspeed vector in body frame in m/s
-    // returns false if estimate is unavailable
-    virtual bool airspeed_vector_true(Vector3f &vec) const WARN_IF_UNUSED {
-        return false;
-    }
-
-    // get apparent to true airspeed ratio
-    static float get_EAS2TAS(void);
-
     // return a ground vector estimate in meters/second, in North/East order
     virtual Vector2f groundspeed_vector(void) = 0;
 
@@ -260,7 +236,7 @@ public:
         return 0;
     };
 
-    // Resets the baro so that it reads zero at the current height
+    // Resets the height datum to the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
@@ -271,7 +247,7 @@ public:
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    virtual bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const {
+    virtual bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &reservedInnov, float &yawInnov) const {
         return false;
     }
 
@@ -283,7 +259,7 @@ public:
     // indicates perfect consistency between the measurement and the EKF solution and a value of 1 is the maximum
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
-    virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const {
+    virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar) const {
         return false;
     }
 

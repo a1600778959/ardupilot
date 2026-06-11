@@ -16,7 +16,7 @@ public:
 
     enum class SourceXY : uint8_t {
         NONE = 0,
-        // BARO = 1 (not applicable)
+        // 1 reserved
         // RANGEFINDER = 2 (not applicable)
         GPS = 3,
         EXTNAV = 6,
@@ -25,7 +25,7 @@ public:
 
     enum class SourceZ : uint8_t {
         NONE = 0,
-        BARO = 1,
+        RESERVED_1 = 1,
         RANGEFINDER = 2,
         GPS = 3,
         // OPTFLOW = 5 (not applicable, optical flow can be used for terrain alt but not relative or absolute alt)

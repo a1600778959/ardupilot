@@ -41,22 +41,6 @@ bool AP_AHRS_SIM::wind_estimate(Vector3f &wind) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_estimate(float &airspeed_ret) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    airspeed_ret = _sitl->state.airspeed;
-
-    return true;
-}
-
-bool AP_AHRS_SIM::airspeed_estimate(uint8_t index, float &airspeed_ret) const
-{
-    return airspeed_estimate(airspeed_ret);
-}
-
 bool AP_AHRS_SIM::get_quaternion(Quaternion &quat) const
 {
     if (_sitl == nullptr) {
@@ -167,7 +151,7 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
 
 void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    // same as EKF2 for no optical flow
+    // same as EKF3 for no optical flow
     ekfGndSpdLimit = 400.0f;
     ekfNavVelGainScaler = 1.0f;
 }
@@ -211,24 +195,24 @@ bool AP_AHRS_SIM::get_origin(Location &ret) const
 
 // return the innovations for the specified instance
 // An out of range instance (eg -1) returns data for the primary instance
-bool AP_AHRS_SIM::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+bool AP_AHRS_SIM::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &reservedInnov, float &yawInnov) const
 {
     velInnov.zero();
     posInnov.zero();
     magInnov.zero();
-    tasInnov = 0.0f;
+    reservedInnov = 0.0f;
     yawInnov = 0.0f;
 
     return true;
 }
 
-bool AP_AHRS_SIM::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+bool AP_AHRS_SIM::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar) const
 {
     velVar = 0;
     posVar = 0;
     hgtVar = 0;
     magVar.zero();
-    tasVar = 0;
+    reservedVar = 0;
 
     return true;
 }

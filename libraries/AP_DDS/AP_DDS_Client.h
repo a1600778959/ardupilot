@@ -40,9 +40,6 @@
 #if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 #include "geographic_msgs/msg/GeoPointStamped.h"
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
-#if AP_DDS_AIRSPEED_PUB_ENABLED
-#include "geometry_msgs/msg/Vector3Stamped.h"
-#endif // AP_DDS_AIRSPEED_PUB_ENABLED
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 #include "geographic_msgs/msg/GeoPoseStamped.h"
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
@@ -144,15 +141,6 @@ private:
     void write_tx_local_velocity_topic();
     static void update_topic(geometry_msgs_msg_TwistStamped& msg);
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
-
-#if AP_DDS_AIRSPEED_PUB_ENABLED
-    geometry_msgs_msg_Vector3Stamped tx_local_airspeed_topic;
-    // The last ms timestamp AP_DDS wrote a airspeed message
-    uint64_t last_airspeed_time_ms;
-    //! @brief Serialize the current local airspeed and publish to the IO stream(s)
-    void write_tx_local_airspeed_topic();
-    static bool update_topic(geometry_msgs_msg_Vector3Stamped& msg);
-#endif //AP_DDS_AIRSPEED_PUB_ENABLED
 
 #if AP_DDS_BATTERY_STATE_PUB_ENABLED
     sensor_msgs_msg_BatteryState battery_state_topic;

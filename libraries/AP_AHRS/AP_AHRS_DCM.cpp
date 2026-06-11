@@ -29,7 +29,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -712,22 +711,12 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // least 6 satellites to get a really reliable velocity number
         // from the GPS.
         //
-        // As a fallback we use the fixed wing acceleration correction
-        // if we have an airspeed estimate (which we only have if
-        // _fly_forward is set), otherwise no correction
         if (_ra_deltat < 0.2f) {
             // not enough time has accumulated
             return;
         }
 
-        float airspeed = _last_airspeed;
-
-        // use airspeed to estimate our ground velocity in
-        // earth frame by subtracting the wind
-        velocity = _dcm_matrix.colx() * airspeed;
-
-        // add in wind estimate
-        velocity += _wind;
+        velocity.zero();
 
         last_correction_time = AP_HAL::millis();
         _have_gps_lock = false;
@@ -745,15 +734,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
         }
         _have_gps_lock = true;
 
-        // keep last airspeed estimate for dead-reckoning purposes
-        Vector3f airspeed = velocity - _wind;
-
-        // rotate vector to body frame
-        airspeed = _body_dcm_matrix.mul_transpose(airspeed);
-
-        // take positive component in X direction. This mimics a pitot
-        // tube
-        _last_airspeed = MAX(airspeed.x, 0);
     }
 
     if (have_gps()) {
@@ -1000,7 +980,7 @@ void AP_AHRS_DCM::estimate_wind(void)
         // wind speed
         const Vector3f velocityDiff = velocity - _last_vel;
 
-        // estimate airspeed it using equation 6
+        // estimate the vehicle speed using equation 6
         const float V = velocityDiff.length() / diff_length;
 
         const Vector3f fuselageDirectionSum = fuselageDirection + _last_fuse;
@@ -1045,14 +1025,13 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
 {
     loc.lat = _last_lat;
     loc.lng = _last_lng;
-    const auto &baro = AP::baro();
     const auto &gps = AP::gps();
     int32_t alt_cm;
     if (_gps_use == GPSUse::EnableWithHeight &&
         gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         alt_cm = gps.location().alt;
     } else {
-        alt_cm = baro.get_altitude() * 100 + AP::ahrs().get_home().alt;
+        alt_cm = AP::ahrs().get_home().alt;
     }
     loc.set_alt_cm(alt_cm, Location::AltFrame::ABSOLUTE);
     loc.offset(_position_offset_north, _position_offset_east);
@@ -1065,62 +1044,6 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
         loc.offset(dpos.x, dpos.y);
     }
     return _have_position;
-}
-
-bool AP_AHRS_DCM::airspeed_estimate(float &airspeed_ret) const
-{
-    // airspeed_estimate will also make this nullptr check and act
-    // appropriately when we call it with a dummy sensor ID.
-    return airspeed_estimate(0, airspeed_ret);
-}
-
-// return an airspeed estimate:
-//  - from a real sensor if available
-//  - otherwise from a GPS-derived wind-triangle estimate (if GPS available)
-//  - otherwise from a cached wind-triangle estimate value (but returning false)
-bool AP_AHRS_DCM::airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const
-{
-    // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_estimate which fills in airspeed_ret in this order:
-    //               airspeed as filled-in by an enabled airspeed sensor
-    //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
-    //               Or if none of the above, fills-in using the previous airspeed estimate
-    // Return false: if we are using the previous airspeed estimate
-    if (!get_unconstrained_airspeed_estimate(airspeed_index, airspeed_ret)) {
-        return false;
-    }
-
-    const float _wind_max = AP::ahrs().get_max_wind();
-    if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-        // constrain the airspeed by the ground speed
-        // and AHRS_WIND_MAX
-        const float gnd_speed = AP::gps().ground_speed();
-        float true_airspeed = airspeed_ret * get_EAS2TAS();
-        true_airspeed = constrain_float(true_airspeed,
-                                        gnd_speed - _wind_max,
-                                        gnd_speed + _wind_max);
-        airspeed_ret = true_airspeed / get_EAS2TAS();
-    }
-
-    return true;
-}
-
-// airspeed_ret: will always be filled-in by get_unconstrained_airspeed_estimate which fills in airspeed_ret in this order:
-//               airspeed as filled-in by an enabled airspeed sensor
-//               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
-//               Or if none of the above, fills-in using the previous airspeed estimate
-// Return false: if we are using the previous airspeed estimate
-bool AP_AHRS_DCM::get_unconstrained_airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const
-{
-    if (AP::ahrs().get_wind_estimation_enabled() && have_gps()) {
-        // estimated via GPS speed and wind
-        airspeed_ret = _last_airspeed;
-        return true;
-    }
-
-    // Else give the last estimate, but return false.
-    // This is used by the dead-reckoning code
-    airspeed_ret = _last_airspeed;
-    return false;
 }
 
 /*
@@ -1148,66 +1071,9 @@ bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
 // return a ground speed estimate in m/s
 Vector2f AP_AHRS_DCM::groundspeed_vector(void)
 {
-    // Generate estimate of ground speed vector using air data system
-    Vector2f gndVelADS;
-    Vector2f gndVelGPS;
-    float airspeed = 0;
-    const bool gotAirspeed = airspeed_estimate_true(airspeed);
-    const bool gotGPS = (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D);
-    if (gotAirspeed) {
-        const Vector2f airspeed_vector{_cos_yaw * airspeed, _sin_yaw * airspeed};
-        Vector3f wind;
-        UNUSED_RESULT(wind_estimate(wind));
-        gndVelADS = airspeed_vector + wind.xy();
-    }
-
-    // Generate estimate of ground speed vector using GPS
-    if (gotGPS) {
+    if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
         const float cog = radians(AP::gps().ground_course());
-        gndVelGPS = Vector2f(cosf(cog), sinf(cog)) * AP::gps().ground_speed();
-    }
-    // If both ADS and GPS data is available, apply a complementary filter
-    if (gotAirspeed && gotGPS) {
-        // The LPF is applied to the GPS and the HPF is applied to the air data estimate
-        // before the two are summed
-        //Define filter coefficients
-        // alpha and beta must sum to one
-        // beta = dt/Tau, where
-        // dt = filter time step (0.1 sec if called by nav loop)
-        // Tau = cross-over time constant (nominal 2 seconds)
-        // More lag on GPS requires Tau to be bigger, less lag allows it to be smaller
-        // To-Do - set Tau as a function of GPS lag.
-        const float alpha = 1.0f - beta;
-        // Run LP filters
-        _lp = gndVelGPS * beta  + _lp * alpha;
-        // Run HP filters
-        _hp = (gndVelADS - _lastGndVelADS) + _hp * alpha;
-        // Save the current ADS ground vector for the next time step
-        _lastGndVelADS = gndVelADS;
-        // Sum the HP and LP filter outputs
-        return _hp + _lp;
-    }
-    // Only ADS data is available return ADS estimate
-    if (gotAirspeed && !gotGPS) {
-        return gndVelADS;
-    }
-    // Only GPS data is available so return GPS estimate
-    if (!gotAirspeed && gotGPS) {
-        return gndVelGPS;
-    }
-
-    if (airspeed > 0) {
-        // we have a rough airspeed, and we have a yaw. For
-        // dead-reckoning purposes we can create a estimated
-        // groundspeed vector
-        Vector2f ret{_cos_yaw, _sin_yaw};
-        ret *= airspeed;
-        // adjust for estimated wind
-        Vector3f wind;
-        UNUSED_RESULT(wind_estimate(wind));
-        ret.x += wind.x;
-        ret.y += wind.y;
-        return ret;
+        return Vector2f(cosf(cog), sinf(cog)) * AP::gps().ground_speed();
     }
 
     return Vector2f(0.0f, 0.0f);
@@ -1220,9 +1086,6 @@ bool AP_AHRS_DCM::get_vert_pos_rate_D(float &velocity) const
     Vector3f velned;
     if (get_velocity_NED(velned)) {
         velocity = velned.z;
-        return true;
-    } else if (AP::baro().healthy()) {
-        velocity = -AP::baro().get_climb_rate();
         return true;
     }
     return false;

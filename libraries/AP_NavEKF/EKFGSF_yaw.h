@@ -20,8 +20,7 @@ public:
                 const Vector3F &delVel,// IMU delta velocity vector measured in body frame (m/s)
                 const ftype delAngDT, // time interval that delAng was integrated over (sec) - must be no less than IMU_DT_MIN_SEC
                 const ftype delVelDT, // time interval that delVel was integrated over (sec) - must be no less than IMU_DT_MIN_SEC
-                bool runEKF,          // set to true when flying or movement suitable for yaw estimation
-                ftype TAS);           // true airspeed used for centripetal accel compensation - set to 0 when not required.
+                bool runEKF);         // set to true when flying or movement suitable for yaw estimation
 
     // Fuse NE velocty mesurements and update the EKF's and GSF state and covariance estimates
     // Should be called after update(...) whenever new velocity data is available
@@ -65,8 +64,8 @@ private:
     const ftype EKFGSF_gyroBiasGain{0.04}; // gain applied to integral of gyro correction for complementary filter (1/sec)
     const ftype EKFGSF_accelFiltRatio{10.0}; // ratio  of time constant of AHRS tilt correction to time constant of first order LPF applied to accel data used by ahrs
 
-    // Declarations used by the bank of AHRS complementary filters that use IMU data augmented by true
-    // airspeed data when in fixed wing mode to estimate the quaternions that are used to rotate IMU data into a
+    // Declarations used by the bank of AHRS complementary filters that use IMU data
+    // to estimate the quaternions that are used to rotate IMU data into a
     // Front, Right, Yaw frame of reference.
     Vector3F delta_angle;
     Vector3F delta_velocity;
@@ -86,9 +85,8 @@ private:
     ftype accel_gain;               // gain from accel vector tilt error to rate gyro correction used by AHRS calculation
     Vector3F ahrs_accel;            // filtered body frame specific force vector used by AHRS calculation (m/s/s)
     ftype ahrs_accel_norm;          // length of body frame specific force vector used by AHRS calculation (m/s/s)
-    ftype true_airspeed;            // true airspeed used to correct for centripetal acceleratoin in coordinated turns (m/s)
 
-    // Runs quaternion prediction for the selected AHRS using IMU (and optionally true airspeed) data
+    // Runs quaternion prediction for the selected AHRS using IMU data
     void predictAHRS(const uint8_t mdl_idx);
 
     // Applies a body frame delta angle to a body to earth frame rotation matrix using a small angle approximation

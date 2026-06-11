@@ -9,7 +9,6 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
@@ -49,8 +48,6 @@ public:
 
 static DummyVehicle vehicle;
 
-// choose which AHRS system to use
-// AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(barometer, gps);
 auto &ahrs = vehicle.ahrs;
 
 void setup(void)

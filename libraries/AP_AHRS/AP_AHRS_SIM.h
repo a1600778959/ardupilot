@@ -66,14 +66,6 @@ public:
     // return a wind estimation vector, in m/s
     bool wind_estimate(Vector3f &wind) const override;
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate
-    bool airspeed_estimate(float &airspeed_ret) const override;
-
-    // return an airspeed estimate if available. return true
-    // if we have an estimate from a specific sensor index
-    bool airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const override;
-
     // return a ground vector estimate in meters/second, in North/East order
     Vector2f groundspeed_vector() override;
 
@@ -111,8 +103,8 @@ public:
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
-    bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
+    bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &reservedInnov, float &yawInnov) const override;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar) const override;
 
 private:
 

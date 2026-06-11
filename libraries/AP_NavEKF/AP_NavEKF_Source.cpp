@@ -23,6 +23,7 @@
 extern const AP_HAL::HAL& hal;
 
 static constexpr uint32_t EXTNAV_VELOCITY_PREARM_TIMEOUT_MS = 1000;
+static constexpr uint32_t EXTNAV_POSE_PREARM_TIMEOUT_MS = 1000;
 
 const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
 
@@ -43,9 +44,9 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Param: 1_POSZ
     // @DisplayName: Position Vertical Source
     // @Description: Position Vertical Source
-    // @Values: 0:None, 1:Baro, 2:RangeFinder, 3:GPS, 4:Beacon, 6:ExternalNav
+    // @Values: 0:None, 2:RangeFinder, 3:GPS, 4:Beacon, 6:ExternalNav
     // @User: Advanced
-    AP_GROUPINFO("1_POSZ", 3, AP_NavEKF_Source, _source_set[0].posz, (int8_t)AP_NavEKF_Source::SourceZ::BARO),
+    AP_GROUPINFO("1_POSZ", 3, AP_NavEKF_Source, _source_set[0].posz, (int8_t)AP_NavEKF_Source::SourceZ::NONE),
 
     // @Param: 1_VELZ
     // @DisplayName: Velocity Vertical Source
@@ -79,9 +80,9 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Param: 2_POSZ
     // @DisplayName: Position Vertical Source (Secondary)
     // @Description: Position Vertical Source (Secondary)
-    // @Values: 0:None, 1:Baro, 2:RangeFinder, 3:GPS, 4:Beacon, 6:ExternalNav
+    // @Values: 0:None, 2:RangeFinder, 3:GPS, 4:Beacon, 6:ExternalNav
     // @User: Advanced
-    AP_GROUPINFO("2_POSZ", 8, AP_NavEKF_Source, _source_set[1].posz, (int8_t)AP_NavEKF_Source::SourceZ::BARO),
+    AP_GROUPINFO("2_POSZ", 8, AP_NavEKF_Source, _source_set[1].posz, (int8_t)AP_NavEKF_Source::SourceZ::NONE),
 
     // @Param: 2_VELZ
     // @DisplayName: Velocity Vertical Source (Secondary)
@@ -116,9 +117,9 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Param: 3_POSZ
     // @DisplayName: Position Vertical Source (Tertiary)
     // @Description: Position Vertical Source (Tertiary)
-    // @Values: 0:None, 1:Baro, 2:RangeFinder, 3:GPS, 4:Beacon, 6:ExternalNav
+    // @Values: 0:None, 2:RangeFinder, 3:GPS, 4:Beacon, 6:ExternalNav
     // @User: Advanced
-    AP_GROUPINFO("3_POSZ", 13, AP_NavEKF_Source, _source_set[2].posz, (int8_t)AP_NavEKF_Source::SourceZ::BARO),
+    AP_GROUPINFO("3_POSZ", 13, AP_NavEKF_Source, _source_set[2].posz, (int8_t)AP_NavEKF_Source::SourceZ::NONE),
 
     // @Param: 3_VELZ
     // @DisplayName: Velocity Vertical Source (Tertiary)
@@ -240,12 +241,9 @@ AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource() const
 // get pos Z source
 AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getPosZSource() const
 {
-#ifdef HAL_BARO_ALLOW_INIT_NO_BARO
-    // check for special case of missing baro
-    if ((_source_set[active_source_set].posz == SourceZ::BARO) && (AP::dal().baro().num_instances() == 0)) {
+    if (_source_set[active_source_set].posz == SourceZ::RESERVED_1) {
         return SourceZ::NONE;
     }
-#endif
     return _source_set[active_source_set].posz;
 }
 
@@ -290,12 +288,11 @@ void AP_NavEKF_Source::mark_configured()
 bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
     auto &dal = AP::dal();
-    bool baro_required = false;
     bool beacon_required = false;
     bool compass_required = false;
     bool gps_required = false;
     bool rangefinder_required = false;
-    bool visualodom_required = false;
+    bool extnav_pose_required = false;
     bool extnav_velocity_required = false;
     bool optflow_required = false;
     bool wheelencoder_required = false;
@@ -312,7 +309,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
                 gps_required = true;
                 break;
             case SourceXY::EXTNAV:
-                visualodom_required = true;
+                extnav_pose_required = true;
                 break;
             case SourceXY::WHEEL_ENCODER:
             default:
@@ -342,9 +339,9 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
 
             // check posz
             switch ((SourceZ)_source_set[i].posz.get()) {
-            case SourceZ::BARO:
-                baro_required = true;
-                break;
+            case SourceZ::RESERVED_1:
+                hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_POSZ", (int)i+1);
+                return false;
             case SourceZ::RANGEFINDER:
                 rangefinder_required = true;
                 break;
@@ -352,7 +349,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
                 gps_required = true;
                 break;
             case SourceZ::EXTNAV:
-                visualodom_required = true;
+                extnav_pose_required = true;
                 break;
             case SourceZ::NONE:
                 break;
@@ -372,7 +369,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
             case SourceZ::EXTNAV:
                 extnav_velocity_required = true;
                 break;
-            case SourceZ::BARO:
+            case SourceZ::RESERVED_1:
             case SourceZ::RANGEFINDER:
             default:
                 // invalid velz value
@@ -394,7 +391,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
             compass_required = true;
             break;
         case SourceYaw::EXTNAV:
-            visualodom_required = true;
+            extnav_pose_required = true;
             break;
         case SourceYaw::GSF:
             gps_required = true;
@@ -408,11 +405,6 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
 
     // check all required sensors are available
     const char* ekf_requires_msg = "EK3 sources require %s";
-    if (baro_required && (dal.baro().num_instances() == 0)) {
-        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "Baro");
-        return false;
-    }
-
     if (beacon_required) {
         const bool beacon_available = false;
         if (!beacon_available) {
@@ -448,12 +440,9 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
         }
     }
 
-    if (visualodom_required) {
-        bool visualodom_available = false;
-        if (!visualodom_available) {
-            hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "VisualOdom");
-            return false;
-        }
+    if (extnav_pose_required && !AP::ahrs().has_recent_extnav_pose(EXTNAV_POSE_PREARM_TIMEOUT_MS)) {
+        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "ExternalNav");
+        return false;
     }
 
     if (extnav_velocity_required && !AP::ahrs().has_recent_extnav_velocity(EXTNAV_VELOCITY_PREARM_TIMEOUT_MS)) {

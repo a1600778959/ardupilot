@@ -67,9 +67,6 @@ static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = AP_DDS_DELAY_LOCAL_POSE_TO
 #if AP_DDS_LOCAL_VEL_PUB_ENABLED
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS;
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
-#if AP_DDS_AIRSPEED_PUB_ENABLED
-static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = AP_DDS_DELAY_AIRSPEED_TOPIC_MS;
-#endif // AP_DDS_AIRSPEED_PUB_ENABLED
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = AP_DDS_DELAY_GEO_POSE_TOPIC_MS;
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
@@ -622,35 +619,6 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
     msg.twist.angular.z = -angular_velocity[2];
 }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
-#if AP_DDS_AIRSPEED_PUB_ENABLED
-bool AP_DDS_Client::update_topic(geometry_msgs_msg_Vector3Stamped& msg)
-{
-    update_topic(msg.header.stamp);
-    STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
-    auto &ahrs = AP::ahrs();
-    WITH_SEMAPHORE(ahrs.get_semaphore());
-    // In ROS REP 103, axis orientation uses the following convention:
-    // X - Forward
-    // Y - Left
-    // Z - Up
-    // https://www.ros.org/reps/rep-0103.html#axis-orientation
-    // The true airspeed data is received from AP_AHRS in body-frame
-    // X - Forward
-    // Y - Right
-    // Z - Down
-    // As a consequence, to follow ROS REP 103, it is necessary to invert Y and Z
-    Vector3f true_airspeed_vec_bf;
-    bool is_airspeed_available {false};
-    if (ahrs.airspeed_vector_true(true_airspeed_vec_bf)) {
-        msg.vector.x = true_airspeed_vec_bf[0];
-        msg.vector.y = -true_airspeed_vec_bf[1];
-        msg.vector.z = -true_airspeed_vec_bf[2];
-        is_airspeed_available = true;
-    }
-    return is_airspeed_available;
-}
-#endif // AP_DDS_AIRSPEED_PUB_ENABLED
-
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
 {
@@ -909,7 +877,9 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
 
         if (rx_dynamic_transforms_topic.transforms_size > 0) {
-
+            if (!AP_DDS_ExternalNav::handle_tf(rx_dynamic_transforms_topic)) {
+                // TODO #23430 handle external navigation pose failure through rosout, throttled.
+            }
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received tf2_msgs/TFMessage: TF is empty", msg_prefix);
         }
@@ -1731,25 +1701,6 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
     }
 }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
-#if AP_DDS_AIRSPEED_PUB_ENABLED
-void AP_DDS_Client::write_tx_local_airspeed_topic()
-{
-    WITH_SEMAPHORE(csem);
-    if (connected) {
-        const auto& topic_info = topics[to_underlying(TopicIndex::LOCAL_AIRSPEED_PUB)];
-        ucdrBuffer ub {};
-        const uint32_t topic_size = geometry_msgs_msg_Vector3Stamped_size_of_topic(&tx_local_airspeed_topic, 0);
-        if (!prepare_topic_stream(ub, topic_info.dw_id, topic_size, "air", topic_info.qos)) {
-            return;
-        }
-        const bool success = geometry_msgs_msg_Vector3Stamped_serialize_topic(&ub, &tx_local_airspeed_topic);
-        if (!success) {
-            return;
-        }
-        finalize_topic_write(topic_info.qos, topic_size);
-    }
-}
-#endif // AP_DDS_AIRSPEED_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
 bool AP_DDS_Client::write_imu_topic()
 {
@@ -1901,14 +1852,6 @@ void AP_DDS_Client::update()
         write_tx_local_velocity_topic();
     }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
-#if AP_DDS_AIRSPEED_PUB_ENABLED
-    if (cur_time_ms - last_airspeed_time_ms > DELAY_AIRSPEED_TOPIC_MS) {
-        last_airspeed_time_ms = cur_time_ms;
-        if (update_topic(tx_local_airspeed_topic)) {
-            write_tx_local_airspeed_topic();
-        }
-    }
-#endif // AP_DDS_AIRSPEED_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
     if (cur_time_ms - last_imu_time_ms >= DELAY_IMU_TOPIC_MS) {
         update_topic(imu_topic);

@@ -183,7 +183,6 @@ $ ros2 node list
 ```bash
 $ ros2 topic list -v
 Published topics:
- * /ap/airspeed [geometry_msgs/msg/Vector3] 1 publisher
  * /ap/battery [sensor_msgs/msg/BatteryState] 1 publisher
  * /ap/clock [rosgraph_msgs/msg/Clock] 1 publisher
  * /ap/geopose/filtered [geographic_msgs/msg/GeoPoseStamped] 1 publisher

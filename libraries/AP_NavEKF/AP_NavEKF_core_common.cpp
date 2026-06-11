@@ -1,5 +1,5 @@
 /*
-  NavEKF_core_common holds scratch data shared by EKF2 and EKF3
+  NavEKF_core_common holds scratch data used by EKF3
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by

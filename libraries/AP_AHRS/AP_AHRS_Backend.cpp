@@ -21,7 +21,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -173,7 +172,7 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation, float pitch_trim_deg)
 }
 
 /*
- * Update AOA and SSA estimation based on airspeed, velocity vector and wind vector
+ * Update AOA and SSA estimation based on the velocity and wind vectors
  *
  * Based on:
  * "On estimation of wind velocity, angle-of-attack and sideslip angle of small UAVs using standard sensors" by
@@ -221,11 +220,6 @@ void AP_AHRS::Log_Write_Home_And_Origin()
     }
 }
 #endif
-
-// get apparent to true airspeed ratio
-float AP_AHRS_Backend::get_EAS2TAS(void) {
-    return AP::baro()._get_EAS2TAS();
-}
 
 // return current vibration vector for primary IMU
 Vector3f AP_AHRS::get_vibration(void) const
