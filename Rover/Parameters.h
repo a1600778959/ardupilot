@@ -98,8 +98,8 @@ public:
         k_param_steering_learn,     // unused
         k_param_NavEKF,             // deprecated - remove
         k_param_mission,            // mission library
-        k_param_NavEKF2_old,        // deprecated - remove
-        k_param_NavEKF2,
+        k_param_estimator2_old_unused, // unused
+        k_param_estimator2_unused,     // unused
         k_param_g2,                 // 2nd block of parameters
         k_param_NavEKF3,
 
@@ -213,7 +213,7 @@ public:
         k_param_rcmap,
         k_param_L1_controller,          // unused
         k_param_steerController_old,    // unused
-        k_param_barometer,
+        k_param_reserved_216,
         k_param_notify,
         k_param_button,
         k_param_osd,
@@ -323,9 +323,6 @@ public:
     // default speed for rtl
     AP_Float rtl_speed;
 
-    // frame class for vehicle
-    AP_Int8 frame_class;
-
 #if HAL_PROXIMITY_ENABLED
     // proximity library
     AP_Proximity proximity;
@@ -336,14 +333,8 @@ public:
     AC_Avoid avoid;
 #endif
 
-    // pitch angle at 100% throttle
-    AP_Float bal_pitch_max;
-
     // pitch/roll angle for crash check
     AP_Int8 crash_angle;
-
-    // frame type for vehicle (used for vectored motor vehicles and custom motor configs)
-    AP_Int8 frame_type;
 
     // loiter type
     AP_Int8 loit_type;
@@ -361,9 +352,6 @@ public:
     // mission behave
     AP_Enum<ModeAuto::DoneBehaviour> mis_done_behave;
 #endif
-
-    // balance both pitch trim
-    AP_Float bal_pitch_trim;
 
     // stick mixing for auto modes
     AP_Int8     stick_mixing;

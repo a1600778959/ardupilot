@@ -145,8 +145,8 @@ local function pack_data_2002()
             data[44 + i - 1] = 0x00
 
         end  
-        -- 装备气压高度UINT32
-        local lon = math.floor(baro:get_altitude()*100)
+        -- 装备高度UINT32
+        local lon = gps_loc:alt()
         gcs:send_text(0,string.format("altitude:%s",tostring(lon)))--当前AD值	
         for i=1,4 do
             data[48 + i - 1] = (lon % 0x100)&0xff
@@ -322,8 +322,8 @@ local function pack_data_2001()
             data[44 + i - 1] = 0x00
 
         end  
-        -- 装备气压高度UINT32
-        local lon = math.floor(baro:get_altitude()*100)
+        -- 装备高度UINT32
+        local lon = gps_loc:alt()
         gcs:send_text(0,string.format("altitude:%s",tostring(lon)))--当前AD值	
         for i=1,4 do
             data[48 + i - 1] = (lon % 0x100)&0xff

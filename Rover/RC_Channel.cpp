@@ -37,11 +37,7 @@ void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwit
     case AUX_FUNC::HOLD:
     case AUX_FUNC::LEARN_CRUISE:
     case AUX_FUNC::LOITER:
-    case AUX_FUNC::MAINSAIL:
     case AUX_FUNC::MANUAL:
-    case AUX_FUNC::PITCH:
-    case AUX_FUNC::ROLL:
-    case AUX_FUNC::WALKING_HEIGHT:
     case AUX_FUNC::RTL:
     case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
     case AUX_FUNC::SAVE_WP:
@@ -193,13 +189,6 @@ bool RC_Channel_Rover::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
             SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_steering);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Steering trim saved!");
         }
-        break;
-
-    // manual input, nothing to do
-    case AUX_FUNC::MAINSAIL:
-    case AUX_FUNC::PITCH:
-    case AUX_FUNC::ROLL:
-    case AUX_FUNC::WALKING_HEIGHT:
         break;
 
     default:

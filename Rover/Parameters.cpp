@@ -59,7 +59,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Bitmask: 0:Steering,1:Throttle,2:Pitch,3:Left Wheel,4:Right Wheel,5:Sailboat Heel,6:Velocity North,7:Velocity East
+    // @Bitmask: 0:Steering,1:Throttle,3:Left Wheel,4:Right Wheel,6:Velocity North,7:Velocity East
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
     // @Param: AUTO_TRIGGER_PIN
@@ -216,10 +216,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
-
-    // @Group: BARO
-    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "BARO", AP_Baro),
 
 #if AP_RELAY_ENABLED
     // @Group: RELAY
@@ -431,12 +427,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RTL_SPEED", 15, ParametersG2, rtl_speed, 0.0f),
 
-    // @Param: FRAME_CLASS
-    // @DisplayName: Frame Class
-    // @Description: Frame Class
-    // @Values: 0:Undefined,1:Rover,2:Boat,3:BalanceBot
-    // @User: Standard
-    AP_GROUPINFO("FRAME_CLASS", 16, ParametersG2, frame_class, 1),
+    // 16 reserved for a removed parameter
 
 #if HAL_PROXIMITY_ENABLED
     // @Group: PRX
@@ -452,14 +443,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // 20 was PIVOT_TURN_RATE and should not be re-used
 
-    // @Param: BAL_PITCH_MAX
-    // @DisplayName: BalanceBot Maximum Pitch
-    // @Description: Pitch angle in degrees at 100% throttle
-    // @Units: deg
-    // @Range: 0 15
-    // @Increment: 0.1
-    // @User: Standard
-    AP_GROUPINFO("BAL_PITCH_MAX", 21, ParametersG2, bal_pitch_max, 10),
+    // 21 reserved for a removed parameter
 
     // @Param: CRASH_ANGLE
     // @DisplayName: Crash Angle
@@ -470,13 +454,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CRASH_ANGLE", 22, ParametersG2, crash_angle, 0),
 
-    // @Param: FRAME_TYPE
-    // @DisplayName: Frame Type
-    // @Description: Frame Type
-    // @Values: 0:Undefined,1:Omni3,2:OmniX,3:OmniPlus,4:Omni3Mecanum
-    // @User: Standard
-    // @RebootRequired: True
-    AP_GROUPINFO("FRAME_TYPE", 24, ParametersG2, frame_type, 0),
+    // 24 reserved for a removed parameter
 
     // @Param: LOIT_TYPE
     // @DisplayName: Loiter type
@@ -512,9 +490,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LOIT_RADIUS", 30, ParametersG2, loit_radius, 2),
 
-    // 32 to 36 were old sailboat params
+    // 32 to 36 were removed parameters
 
-    // 37 was airspeed
+    // 37 reserved for a removed parameter
 
     // @Param: MIS_DONE_BEHAVE
     // @DisplayName: Mission done behave
@@ -523,14 +501,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
 
-    // @Param: BAL_PITCH_TRIM
-    // @DisplayName: Balance Bot pitch trim angle
-    // @Description: Balance Bot pitch trim for balancing. This offsets the tilt of the center of mass.
-    // @Units: deg
-    // @Range: -2 2
-    // @Increment: 0.1
-    // @User: Standard
-    AP_GROUPINFO("BAL_PITCH_TRIM", 40, ParametersG2, bal_pitch_trim, 0),
+    // 40 reserved for a removed parameter
 
     // 41 was Scripting
 
@@ -699,11 +670,6 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_g2,               299,      AP_PARAM_INT16,  "WP_PIVOT_ANGLE" },
     { Parameters::k_param_g2,               363,      AP_PARAM_INT16,  "WP_PIVOT_RATE" },
     { Parameters::k_param_g2,               491,      AP_PARAM_FLOAT,  "WP_PIVOT_DELAY" },
-    { Parameters::k_param_g2,                32,      AP_PARAM_FLOAT,  "SAIL_ANGLE_MIN" },
-    { Parameters::k_param_g2,                33,      AP_PARAM_FLOAT,  "SAIL_ANGLE_MAX" },
-    { Parameters::k_param_g2,                34,      AP_PARAM_FLOAT,  "SAIL_ANGLE_IDEAL" },
-    { Parameters::k_param_g2,                35,      AP_PARAM_FLOAT,  "SAIL_HEEL_MAX" },
-    { Parameters::k_param_g2,                36,      AP_PARAM_FLOAT,  "SAIL_NO_GO_ANGLE" },
     { Parameters::k_param_arming,             2,     AP_PARAM_INT16,  "ARMING_CHECK" },
     { Parameters::k_param_turn_max_g_old,     0,     AP_PARAM_FLOAT,  "ATC_TURN_MAX_G" },
     { Parameters::k_param_g2,                82,     AP_PARAM_INT8 , "PRX1_TYPE" },
@@ -771,10 +737,6 @@ void Rover::load_parameters(void)
         { Parameters::k_param_g2, 28746, AP_PARAM_FLOAT, "ATC_STR_RAT_FF" },
         { Parameters::k_param_g2, 24714, AP_PARAM_FLOAT, "ATC_SPEED_FLTE" },
         { Parameters::k_param_g2, 28810, AP_PARAM_FLOAT, "ATC_SPEED_FF" },
-        { Parameters::k_param_g2, 25226, AP_PARAM_FLOAT, "ATC_BAL_FLTE" },
-        { Parameters::k_param_g2, 29322, AP_PARAM_FLOAT, "ATC_BAL_FF" },
-        { Parameters::k_param_g2, 25354, AP_PARAM_FLOAT, "ATC_SAIL_FLTE" },
-        { Parameters::k_param_g2, 29450, AP_PARAM_FLOAT, "ATC_SAIL_FF" },
     };
     AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[0], ARRAY_SIZE(ff_and_filt_conversion_info));
 

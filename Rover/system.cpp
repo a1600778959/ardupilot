@@ -22,9 +22,6 @@ void Rover::init_ardupilot()
     rssi.init();
 #endif
 
-    // init baro before we start the GCS, so that the CLI baro test works
-    barometer.init();
-
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
@@ -43,10 +40,6 @@ void Rover::init_ardupilot()
     g2.proximity.init();
 #endif
 
-    // and baro for EKF
-    barometer.set_log_baro_bit(MASK_LOG_IMU);
-    barometer.calibrate();
-
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init();
@@ -54,7 +47,7 @@ void Rover::init_ardupilot()
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     init_rc_in();            // sets up rc channels deadzone
-    g2.motors.init(get_frame_type());        // init motors including setting servo out channels ranges
+    g2.motors.init();        // init motors including setting servo out channels ranges
     AP::srv().enable_aux_servos();
 
     // init wheel encoders
@@ -271,5 +264,3 @@ bool Rover::should_log(uint32_t mask)
     return logger.should_log(mask);
 }
 #endif
-
-

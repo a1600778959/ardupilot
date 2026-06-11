@@ -87,14 +87,6 @@ enum class PilotSteerType : uint8_t {
     DIR_UNCHANGED_WHEN_REVERSING = 3,
 };
 
-// frame class enum used for FRAME_CLASS parameter
-enum frame_class {
-    FRAME_UNDEFINED = 0,
-    FRAME_ROVER = 1,
-    FRAME_BOAT = 2,
-    FRAME_BALANCEBOT = 3,
-};
-
 // manual mode options
 enum ManualOptions {
     SPEED_SCALING = (1 << 0),

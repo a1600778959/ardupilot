@@ -77,7 +77,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(update_current_mode,   400,    200,  12),
     SCHED_TASK(set_servos,            400,    200,  15),
     SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300,  18),
-    SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200,  21),
 #if HAL_PROXIMITY_ENABLED
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200,  27),
 #endif
@@ -401,7 +400,7 @@ void Rover::one_second_loop(void)
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
-    // attempt to update home position and baro calibration if not armed:
+    // attempt to update home position if not armed:
     if (!hal.util->get_soft_armed()) {
         update_home();
     }

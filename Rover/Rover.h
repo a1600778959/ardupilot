@@ -117,9 +117,6 @@ private:
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
     RC_Channel *channel_lateral;
-    RC_Channel *channel_roll;
-    RC_Channel *channel_pitch;
-    RC_Channel *channel_walking_height;
 
     // flight modes convenience array
     AP_Int8 *modes;
@@ -175,11 +172,6 @@ private:
 
     // true if we have a position estimate from AHRS
     bool have_position;
-
-#if AP_RANGEFINDER_ENABLED
-    // range finder last update for each instance (used for DPTH logging)
-    uint32_t rangefinder_last_reading_ms[RANGEFINDER_MAX_INSTANCES];
-#endif
 
     AP_MultiDistanceSensor dist;
 
@@ -400,7 +392,6 @@ public:
     void motor_test_stop();
 
     // frame type
-    uint8_t get_frame_type() const { return g2.frame_type.get(); }
     AP_WheelRateControl& get_wheel_rate_control() { return g2.wheel_rate_control; }
 
     // Simple mode

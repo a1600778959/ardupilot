@@ -143,14 +143,6 @@ protected:
     // decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
     void get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out) const;
 
-    // decode pilot roll and pitch inputs and return in roll_out and pitch_out arguments
-    // outputs are in the range -1 to +1
-    void get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out) const;
-
-    // decode pilot height inputs and return in height_out arguments
-    // outputs are in the range -1 to +1
-    void get_pilot_desired_walking_height(float &walking_height_out) const;
-
     // high level call to navigate to waypoint
     void navigate_to_waypoint();
 
@@ -196,9 +188,6 @@ protected:
     class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
     class RC_Channel *&channel_lateral;
-    class RC_Channel *&channel_roll;
-    class RC_Channel *&channel_pitch;
-    class RC_Channel *&channel_walking_height;
     class AR_AttitudeControl &attitude_control;
 
     // private members for waypoint navigation

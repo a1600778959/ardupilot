@@ -107,7 +107,7 @@ void GCS_MAVLINK_Rover::send_nav_controller_output() const
     mavlink_msg_nav_controller_output_send(
         chan,
         0,  // roll
-        degrees(rover.g2.attitude_control.get_desired_pitch()),
+        0,  // pitch
         control_mode->nav_bearing(),
         control_mode->wp_bearing(),
         MIN(control_mode->get_distance_to_destination(), UINT16_MAX),
@@ -211,23 +211,6 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info->target,
                                     pid_info->actual,
-                                    pid_info->FF,
-                                    pid_info->P,
-                                    pid_info->I,
-                                    pid_info->D,
-                                    pid_info->slew_rate,
-                                    pid_info->Dmod);
-        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
-            return;
-        }
-    }
-
-    // pitch to throttle pid
-    if (g.gcs_pid_mask & 4) {
-        pid_info = &g2.attitude_control.get_pitch_to_throttle_pid().get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH,
-                                    degrees(pid_info->target),
-                                    degrees(pid_info->actual),
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
@@ -372,7 +355,7 @@ void GCS_MAVLINK_Rover::packetReceived(const mavlink_status_t &status, const mav
 const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Param: RAW_SENS
     // @DisplayName: Raw sensor stream rate
-    // @Description: MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and AIRSPEED
+    // @Description: MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2 and SCALED_PRESSURE3
     // @Units: Hz
     // @Range: 0 50
     // @Increment: 1
@@ -1029,13 +1012,4 @@ uint16_t GCS_MAVLINK_Rover::high_latency_tgt_dist() const
     return 0;
 }
 
-uint8_t GCS_MAVLINK_Rover::high_latency_tgt_airspeed() const
-{
-    const Mode *control_mode = rover.control_mode;
-    if (rover.control_mode->is_autopilot_mode()) {
-        // return units are m/s*5
-        return MIN((vfr_hud_airspeed() - control_mode->speed_error()) * 5, UINT8_MAX);
-    }
-    return 0;
-}
 #endif // HAL_HIGH_LATENCY2_ENABLED
