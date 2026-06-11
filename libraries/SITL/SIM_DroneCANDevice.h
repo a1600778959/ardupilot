@@ -31,22 +31,9 @@ public:
     void update(void);
 
 private:
-    // barometer delay buffer variables
-    struct readings_baro {
-        uint32_t time;
-        float data;
-    };
-    uint8_t _store_index;
-    uint32_t _last_store_time;
-    static const uint8_t _buffer_length = 50;
-    VectorN<readings_baro, _buffer_length> _buffer;
-      float _last_altitude;
-    void update_baro(void);
-
     void update_compass(void);
     void update_rangefinder(void);
     void _setup_eliptical_correcion(uint8_t i);
-    uint64_t _baro_last_update_us;
     uint64_t _compass_last_update_us;
     uint64_t _rangefinder_last_update_us;
     Matrix3f _eliptical_corr;

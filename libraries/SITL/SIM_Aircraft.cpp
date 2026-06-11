@@ -38,6 +38,13 @@ using namespace SITL;
 
 extern const AP_HAL::HAL& hal;
 
+static float standard_air_density(float alt_amsl)
+{
+    const float temp_k = MAX(216.65f, 288.15f - 0.0065f * alt_amsl);
+    const float pressure_pa = 101325.0f * powf(temp_k / 288.15f, 5.25588f);
+    return pressure_pa / (287.05f * temp_k);
+}
+
 // the SITL HAL can add information about pausing the simulation and its effect on the UART.  Not present when we're compiling for simulation-on-hardware
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 extern const HAL_SITL& hal_sitl;
@@ -379,8 +386,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.pitchDeg = degrees(p);
     fdm.yawDeg   = degrees(y);
     fdm.quaternion.from_rotation_matrix(dcm);
-    fdm.airspeed = airspeed_pitot;
-    fdm.velocity_air_bf = velocity_air_bf;
+    fdm.velocity_wind_bf = velocity_wind_bf;
     fdm.battery_voltage = battery_voltage;
     fdm.battery_current = battery_current;
     fdm.motor_mask = motor_mask | sitl->vibe_motor_mask;
@@ -472,19 +478,19 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 // @Field: VN: Velocity north
 // @Field: VE: Velocity east
 // @Field: VD: Velocity down
-// @Field: As: Airspeed
+// @Field: WRS: Forward wind-relative speed
 // @Field: ASpdU: Achieved simulation speedup value
 // @Field: UFC: Number of times simulation paused for serial0 output
         Vector3d pos = get_position_relhome();
         Vector3f vel = get_velocity_ef();
         AP::logger().WriteStreaming(
             "SIM2",
-            "TimeUS,PN,PE,PD,VN,VE,VD,As,ASpdU,UFC",
+            "TimeUS,PN,PE,PD,VN,VE,VD,WRS,ASpdU,UFC",
             "QdddfffffI",
             AP_HAL::micros64(),
             pos.x, pos.y, pos.z,
             vel.x, vel.y, vel.z,
-            airspeed_pitot,
+            forward_wind_relative_speed,
             achieved_rate_hz/rate_hz,
             full_count
         );
@@ -669,17 +675,10 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
     WITH_SEMAPHORE(pose_sem);
 
-    // update eas2tas and air density
-#if AP_AHRS_ENABLED
-    eas2tas = AP::ahrs().get_EAS2TAS();
-#endif
-    air_density = SSL_AIR_DENSITY / sq(eas2tas);
-
     const float delta_time = frame_time_us * 1.0e-6f;
 
-    // update eas2tas and air density
-    eas2tas = AP_Baro::get_EAS2TAS_for_alt_amsl(location.alt*0.01);
-    air_density = AP_Baro::get_air_density_for_alt_amsl(location.alt*0.01);
+    air_density = get_air_density(location.alt * 0.01f);
+    density_speed_scale = sqrtf(SSL_AIR_DENSITY / air_density);
 
     // update rotational rates in body frame
     gyro += rot_accel * delta_time;
@@ -719,13 +718,13 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     position += (velocity_ef * delta_time).todouble();
 
     // velocity relative to air mass, in earth frame
-    velocity_air_ef = velocity_ef - wind_ef;
+    velocity_wind_ef = velocity_ef - wind_ef;
 
     // velocity relative to airmass in body frame
-    velocity_air_bf = dcm.transposed() * velocity_air_ef;
+    velocity_wind_bf = dcm.transposed() * velocity_wind_ef;
 
-    // airspeed
-    update_eas_airspeed();
+    // wind_relative_speed
+    update_wind_relative_speed();
 
     // constrain height to the ground
     if (on_ground()) {
@@ -1000,8 +999,8 @@ void Aircraft::extrapolate_sensors(float delta_time)
     // new velocity and position vectors
     velocity_ef += accel_earth * delta_time;
     position += (velocity_ef * delta_time).todouble();
-    velocity_air_ef = velocity_ef - wind_ef;
-    velocity_air_bf = dcm.transposed() * velocity_air_ef;
+    velocity_wind_ef = velocity_ef - wind_ef;
+    velocity_wind_bf = dcm.transposed() * velocity_wind_ef;
 }
 
 bool Aircraft::Clamp::clamped(Aircraft &aircraft, const struct sitl_input &input)
@@ -1261,37 +1260,28 @@ Vector3d Aircraft::get_position_relhome() const
     return pos;
 }
 
-// get air density in kg/m^3
 float Aircraft::get_air_density(float alt_amsl) const
 {
-    return AP_Baro::get_air_density_for_alt_amsl(alt_amsl);
+    return standard_air_density(alt_amsl);
 }
 
 /*
-  update EAS airspeed and pitot speed
+  update wind-relative speed and forward-axis speed
  */
-void Aircraft::update_eas_airspeed()
+void Aircraft::update_wind_relative_speed()
 {
-    airspeed = velocity_air_ef.length() / eas2tas;
+    wind_relative_speed = velocity_wind_ef.length() / density_speed_scale;
 
-    /*
-      airspeed as seen by a fwd pitot tube (limited to 120m/s)
-    */
-    airspeed_pitot = airspeed;
+    forward_wind_relative_speed = wind_relative_speed;
 
-    // calculate angle between the local flow vector and a pitot tube aligned with the X body axis
-    const float pitot_aoa =  atan2f(sqrtf(sq(velocity_air_bf.y) + sq(velocity_air_bf.z)), velocity_air_bf.x);
+    const float flow_angle = atan2f(sqrtf(sq(velocity_wind_bf.y) + sq(velocity_wind_bf.z)), velocity_wind_bf.x);
 
-    /*
-      assume the pitot can correctly capture airspeed up to 20 degrees off the nose
-      and follows a cose law outside that range
-    */
-    const float max_pitot_aoa = radians(20);
-    if (pitot_aoa > radians(90)) {
-        airspeed_pitot = 0;
-    } else if (pitot_aoa > max_pitot_aoa) {
-        const float gain_factor = M_PI_2 / (radians(90) - max_pitot_aoa);
-        airspeed_pitot *= cosf((pitot_aoa - max_pitot_aoa) * gain_factor);
+    const float max_forward_flow_angle = radians(20);
+    if (flow_angle > radians(90)) {
+        forward_wind_relative_speed = 0;
+    } else if (flow_angle > max_forward_flow_angle) {
+        const float gain_factor = M_PI_2 / (radians(90) - max_forward_flow_angle);
+        forward_wind_relative_speed *= cosf((flow_angle - max_forward_flow_angle) * gain_factor);
     }
 }
 

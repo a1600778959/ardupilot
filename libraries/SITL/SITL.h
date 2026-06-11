@@ -6,7 +6,6 @@
 
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -60,8 +59,7 @@ struct sitl_fdm {
     double rollRate, pitchRate, yawRate; // degrees/s in body frame
     double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
     Quaternion quaternion;
-    double airspeed; // m/s, EAS
-    Vector3f velocity_air_bf; // velocity relative to airmass, body frame, TAS
+    Vector3f velocity_wind_bf; // velocity relative to airmass, body frame
     double battery_voltage; // Volts
     double battery_current; // Amps
     double battery_remaining; // Ah, if non-zero capacity
@@ -116,9 +114,6 @@ public:
 #ifdef SFML_JOYSTICK
         AP_Param::setup_object_defaults(this, var_sfml_joystick);
 #endif // SFML_JOYSTICK
-        for (uint8_t i=0; i<BARO_MAX_INSTANCES; i++) {
-            AP_Param::setup_object_defaults(&baro[i], baro[i].var_info);
-        }
         // set compass offset
         for (uint8_t i = 0; i < HAL_COMPASS_MAX_SENSORS; i++) {
             mag_ofs[i].set(Vector3f(5, 13, -18));
@@ -237,7 +232,6 @@ public:
     AP_Int8  odom_enable; // enable visual odometry data
     AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
     AP_Float flow_noise; // optical flow measurement noise (rad/sec)
-    AP_Int8  baro_count; // number of simulated baros to create
     AP_Int8  imu_count; // number of simulated IMUs to create
     AP_Int32 loop_delay; // extra delay to add to every loop
     AP_Float mag_scaling[MAX_CONNECTED_MAGS]; // scaling factor
@@ -254,27 +248,6 @@ public:
     AP_Int8 sfml_joystick_id;
     AP_Int8 sfml_joystick_axis[8];
 #endif
-
-    // baro parameters
-    class BaroParm {
-    public:
-        static const struct AP_Param::GroupInfo var_info[];
-        AP_Float noise;  // in metres
-        AP_Float drift;  // in metres per second
-        AP_Float glitch; // glitch in meters
-        AP_Int8  freeze; // freeze baro to last recorded altitude
-        AP_Int8  disable; // disable simulated barometers
-        AP_Int16 delay;  // barometer data delay in ms
-
-        // wind coefficients
-        AP_Float wcof_xp;
-        AP_Float wcof_xn;
-        AP_Float wcof_yp;
-        AP_Float wcof_yn;
-        AP_Float wcof_zp;
-        AP_Float wcof_zn;
-    };
-    BaroParm baro[BARO_MAX_INSTANCES];
 
     class ServoParams {
     public:
@@ -346,12 +319,6 @@ public:
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
 
-    // barometer temperature control
-    AP_Float temp_start;            // [deg C] Barometer start temperature
-    AP_Float temp_board_offset;     // [deg C] Barometer board temperature offset from atmospheric temperature
-    AP_Float temp_tconst;           // [deg C] Barometer warmup temperature time constant
-    AP_Float temp_baro_factor;
-    
     AP_Int8 thermal_scenario;
 
     // weight on wheels pin
@@ -506,9 +473,6 @@ public:
     // gyro and accel fail masks
     AP_Int8 gyro_fail_mask;
     AP_Int8 accel_fail_mask;
-
-    // Sailboat sim only
-    AP_Int8 sail_type;
 
     // Master instance to use servos from with slave instances
     AP_Int8 ride_along_master;

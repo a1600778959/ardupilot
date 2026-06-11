@@ -81,8 +81,7 @@ class WebotsArduVehicle():
             rangefinder_stream_port (int, optional): Port to stream rangefinder images to.
                                                      If no port is supplied the camera will not be streamed. Defaults to None.
             instance (int, optional): Vehicle instance number to match the SITL. This allows multiple vehicles. Defaults to 0.
-            motor_velocity_cap (float, optional): Motor velocity cap. This is useful for the crazyflie
-                                                  which default has way too much power. Defaults to float('inf').
+            motor_velocity_cap (float, optional): Motor velocity cap. Defaults to float('inf').
             reversed_motors (list[int], optional): Reverse the motors (indexed from 1). Defaults to None.
             bidirectional_motors (bool, optional): Enable bidirectional motors. Defaults to False.
             uses_propellers (bool, optional): Whether the vehicle uses propellers.

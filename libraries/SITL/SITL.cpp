@@ -37,10 +37,6 @@
   #endif
 #endif // SFML_JOYSTICK
 
-#include "SIM_StratoBlimp.h"
-#include "SIM_Glider.h"
-#include "SIM_FlightAxis.h"
-
 extern const AP_HAL::HAL& hal;
 
 #ifndef SIM_RATE_HZ_DEFAULT
@@ -236,30 +232,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
 
 // second table of user settable parameters for SITL. 
 const AP_Param::GroupInfo SIM::var_info2[] = {
-    // @Param: TEMP_START
-    // @DisplayName: Start temperature
-    // @Description: Baro start temperature
-    // @Units: degC
-    // @User: Advanced
-    AP_GROUPINFO("TEMP_START",   1, SIM,  temp_start,  25),
-    // @Param: TEMP_BRD_OFF
-    // @DisplayName: Baro temperature offset
-    // @Description: Barometer board temperature offset from atmospheric temperature
-    // @Units: degC
-    // @User: Advanced
-    AP_GROUPINFO("TEMP_BRD_OFF", 2, SIM,  temp_board_offset, 20),
-    // @Param: TEMP_TCONST
-    // @DisplayName: Warmup time constant
-    // @Description: Barometer warmup temperature time constant
-    // @Units: degC
-    // @User: Advanced
-    AP_GROUPINFO("TEMP_TCONST",  3, SIM,  temp_tconst, 30),
-
-    // @Param: TEMP_BFACTOR
-    // @DisplayName: Baro temperature factor
-    // @Description: A pressure change with temperature that closely matches what has been observed with a ICM-20789
-    // @User: Advanced
-    AP_GROUPINFO("TEMP_BFACTOR", 4, SIM,  temp_baro_factor, 0),
+    // 1 through 4 reserved for removed pressure-temperature simulation.
     // @Param: WIND_DIR_Z
     // @DisplayName: Simulated wind vertical direction
     // @Description: Allows you to set vertical wind direction (true deg) in sim. 0 means pure horizontal wind. 90 means pure updraft.
@@ -501,8 +474,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: Scenario for thermalling simulation, for soaring
     AP_GROUPINFO("THML_SCENARI",  12, SIM,  thermal_scenario, 0),
 
-    // Buyoancy for submarines
-    AP_GROUPINFO_FRAME("BUOYANCY", 15, SIM, buoyancy, 1, AP_PARAM_FRAME_SUB),
+    // 15 reserved for a removed parameter
 
     // @Param: RATE_HZ
     // @DisplayName: Loop rate
@@ -521,27 +493,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Path: ./SIM_IntelligentEnergy24.cpp
     AP_SUBGROUPINFO(ie24_sim, "IE24_", 32, SIM, IntelligentEnergy24),
 
-    // user settable barometer parameters
-
-    // @Param: BARO_COUNT
-    // @DisplayName: Baro count
-    // @Description: Number of simulated baros to create in SITL
-    // @Range: 0 3
-    AP_GROUPINFO("BARO_COUNT",    33, SIM,  baro_count, 2),
-
-    // @Group: BARO_
-    // @Path: ./SITL_Baro.cpp
-    AP_SUBGROUPINFO(baro[0], "BARO_", 34, SIM, BaroParm),
-#if BARO_MAX_INSTANCES > 1
-    // @Group: BAR2_
-    // @Path: ./SITL_Baro.cpp
-    AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SIM, BaroParm),
-#endif
-#if BARO_MAX_INSTANCES > 2
-    // @Group: BAR3_
-    // @Path: ./SITL_Baro.cpp
-    AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SIM, BaroParm),
-#endif
+    // 33 through 36 reserved for removed pressure-sensor simulation.
 
     // @Param: TIME_JITTER
     // @DisplayName: Loop time jitter
@@ -1110,12 +1062,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #endif
     AP_GROUPINFO("ACC_TRIM",     25, SIM, accel_trim, 0),
 
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
-    // @Param{Rover}: SAIL_TYPE
-    // @DisplayName: Sailboat simulation sail type
-    // @Description: 0: mainsail with sheet, 1: directly actuated wing
-    AP_GROUPINFO("SAIL_TYPE",     26, SIM, sail_type, 0),
-#endif
+    // 26 reserved.
 
     // @Param: JSON_MASTER
     // @DisplayName: JSON master instance
@@ -1343,23 +1290,7 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     // @Path: ./SIM_Ship.cpp
     AP_SUBGROUPINFO(shipsim, "SHIP_", 1, SIM::ModelParm, ShipSim),
 #endif
-#if AP_SIM_STRATOBLIMP_ENABLED
-    // @Group: SB_
-    // @Path: ./SIM_StratoBlimp.cpp
-    AP_SUBGROUPPTR(stratoblimp_ptr, "SB_",  2, SIM::ModelParm, StratoBlimp),
-#endif
-
-#if AP_SIM_GLIDER_ENABLED
-    // @Group: GLD_
-    // @Path: ./SIM_Glider.cpp
-    AP_SUBGROUPPTR(glider_ptr, "GLD_",  3, SIM::ModelParm, Glider),
-#endif
-
-#if AP_SIM_FLIGHTAXIS_ENABLED
-    // @Group: RFL_
-    // @Path: ./SIM_FlightAxis.cpp
-    AP_SUBGROUPPTR(flightaxis_ptr, "RFL_", 5, SIM::ModelParm, FlightAxis),
-#endif
+    // 2, 3 and 5 reserved for removed non-Rover physics backends.
 
     AP_GROUPEND
 };

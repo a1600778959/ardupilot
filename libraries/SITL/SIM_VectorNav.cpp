@@ -25,6 +25,17 @@
 
 using namespace SITL;
 
+static float standard_temperature_c(float alt_amsl)
+{
+    return (288.15f - 0.0065f * alt_amsl) - C_TO_KELVIN(0);
+}
+
+static float standard_pressure_pa(float alt_amsl)
+{
+    const float temp_k = MAX(216.65f, 288.15f - 0.0065f * alt_amsl);
+    return 101325.0f * powf(temp_k / 288.15f, 5.25588f);
+}
+
 VectorNav::VectorNav() :
     SerialDevice::SerialDevice()
 {
@@ -124,9 +135,9 @@ void VectorNav::send_imu_packet(void)
     pkt.mag[1] = fdm.bodyMagField.y*0.001;
     pkt.mag[2] = fdm.bodyMagField.z*0.001;
 
-    pkt.temp = AP_Baro::get_temperatureC_for_alt_amsl(fdm.altitude);
+    pkt.temp = standard_temperature_c(fdm.altitude);
 
-    const float pressure_Pa = AP_Baro::get_pressure_for_alt_amsl(fdm.altitude);
+    const float pressure_Pa = standard_pressure_pa(fdm.altitude);
     pkt.pressure = pressure_Pa*0.001 + rand_float() * 0.01;
 
     const uint8_t sync_byte = 0xFA;
@@ -294,4 +305,3 @@ void VectorNav::update(void)
     }
     write_to_autopilot(receive_buf, n);
 }
-

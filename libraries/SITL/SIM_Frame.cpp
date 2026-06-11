@@ -17,7 +17,6 @@
 */
 
 #include "SIM_Frame.h"
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "SIM_Aircraft.h"
 
@@ -25,6 +24,13 @@
 #include <sys/stat.h>
 
 using namespace SITL;
+
+static float standard_air_density(float alt_amsl)
+{
+    const float temp_k = MAX(216.65f, 288.15f - 0.0065f * alt_amsl);
+    const float pressure_pa = 101325.0f * powf(temp_k / 288.15f, 5.25588f);
+    return pressure_pa / (287.05f * temp_k);
+}
 
 static Motor quad_plus_motors[] =
 {
@@ -319,10 +325,9 @@ static Frame supported_frames[] =
     Frame("tilt",      4, tiltquad),
 };
 
-// get air density in kg/m^3
 float Frame::get_air_density(float alt_amsl) const
 {
-    return AP_Baro::get_air_density_for_alt_amsl(alt_amsl);
+    return standard_air_density(alt_amsl);
 }
 
 /*
@@ -465,19 +470,19 @@ void Frame::init(const char *frame_str, Battery *_battery)
     const float drag_force = model.mass * GRAVITY_MSS * tanf(radians(model.refAngle));
 
     const float cos_tilt = cosf(radians(model.refAngle));
-    const float airspeed_bf = model.refSpd * cos_tilt;
+    const float body_flow_speed = model.refSpd * cos_tilt;
     const float ref_thrust = model.mass * GRAVITY_MSS / cos_tilt;
     float ref_air_density = get_air_density(model.refAlt);
 
-    const float momentum_drag = cos_tilt * model.mdrag_coef * airspeed_bf * sqrtf(ref_thrust * ref_air_density * model.disc_area);
+    const float momentum_drag = cos_tilt * model.mdrag_coef * body_flow_speed * sqrtf(ref_thrust * ref_air_density * model.disc_area);
 
     if (momentum_drag > drag_force) {
         model.mdrag_coef *= drag_force / momentum_drag;
         areaCd = 0.0;
-        ::printf("Suggested EK3_DRAG_BCOEF_* = 0, EK3_DRAG_MCOEF = %.3f\n", (momentum_drag / (model.mass * airspeed_bf)) * sqrtf(1.225f / ref_air_density));
+        ::printf("Suggested EK3_DRAG_BCOEF_* = 0, EK3_DRAG_MCOEF = %.3f\n", (momentum_drag / (model.mass * body_flow_speed)) * sqrtf(1.225f / ref_air_density));
     } else {
         areaCd = (drag_force - momentum_drag) / (0.5f * ref_air_density * sq(model.refSpd));
-        ::printf("Suggested EK3_DRAG_BCOEF_* = %.3f, EK3_DRAG_MCOEF = %.3f\n", model.mass / areaCd, (momentum_drag / (model.mass * airspeed_bf)) * sqrtf(1.225f / ref_air_density));
+        ::printf("Suggested EK3_DRAG_BCOEF_* = %.3f, EK3_DRAG_MCOEF = %.3f\n", model.mass / areaCd, (momentum_drag / (model.mass * body_flow_speed)) * sqrtf(1.225f / ref_air_density));
     }
 
     terminal_rotation_rate = model.refRotRate;
@@ -549,7 +554,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     const float air_density = get_air_density(aircraft.get_location().alt*0.01);
     const Vector3f gyro = aircraft.get_gyro();
 
-    Vector3f vel_air_bf = aircraft.get_dcm().transposed() * aircraft.get_velocity_air_ef();
+    Vector3f vel_air_bf = aircraft.get_dcm().transposed() * aircraft.get_velocity_wind_ef();
 
     const auto *_sitl = AP::sitl();
     for (uint8_t i=0; i<num_motors; i++) {

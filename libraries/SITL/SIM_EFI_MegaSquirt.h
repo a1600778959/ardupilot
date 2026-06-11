@@ -15,14 +15,14 @@
 /*
   simulate MegaSquirt EFI system
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduPlane -A --serial5=sim:megasquirt --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v Rover -A --serial5=sim:megasquirt --speedup=1
 param set SERIAL5_PROTOCOL 24
 param set SIM_EFI_TYPE 1
 param set EFI_TYPE 1
 reboot
 status EFI_STATUS
 
-./Tools/autotest/autotest.py --gdb --debug build.Plane test.Plane.MegaSquirt
+./Tools/autotest/autotest.py --gdb --debug build.Rover test.Rover.MegaSquirt
 
 */
 
@@ -68,7 +68,7 @@ private:
         uint8_t afr_target2;
         uint8_t wbo2_en1;
         uint8_t wbo2_en2;
-        int16_t baro_hPa;
+        int16_t ambient_hPa;
         int16_t map_hPa;
         int16_t mat_cF;
         int16_t ct_cF;
@@ -82,7 +82,7 @@ private:
         int16_t warmcor;
         int16_t accel_enrich;
         int16_t tps_fuel_cut;
-        int16_t baroCorrection;
+        int16_t ambient_pressure_correction;
         int16_t gammaEnrich;
         int16_t ve1;
         int16_t ve2;

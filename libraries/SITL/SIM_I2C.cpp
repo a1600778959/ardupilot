@@ -33,7 +33,6 @@
 #include "SIM_IS31FL3195.h"
 #include "SIM_LP5562.h"
 #include "SIM_LM2755.h"
-#include "SIM_MS5611.h"
 #include "SIM_QMC5883L.h"
 
 #include <signal.h>
@@ -67,7 +66,6 @@ static TSYS03 tsys03;
 #endif
 static MCP9600 mcp9600;
 static ICM40609 icm40609;
-static MS5611 ms5611;
 #if AP_SIM_LP5562_ENABLED
 static LP5562 lp5562;
 #endif
@@ -113,7 +111,6 @@ struct i2c_device_at_address {
 #if AP_SIM_TSYS03_ENABLED
     { 2, 0x40, tsys03 },
 #endif
-    { 2, 0x77, ms5611 },        // MS5611: BARO_PROBE_EXT = 2
 #if AP_SIM_COMPASS_QMC5883L_ENABLED
     { 2, 0x0D, qmc5883l },
 #endif

@@ -21,7 +21,7 @@
         param set EAHRS_TYPE 2
         param set SERIAL3_PROTOCOL 36
         param set SERIAL3_BAUD 115
-    sim_vehicle.py -v Plane -A "--serial3=sim:MicroStrain5" --console --map -DG
+    sim_vehicle.py -v Rover -A "--serial3=sim:MicroStrain5" --console --map -DG
 */
 #include "SIM_MicroStrain.h"
 #include <stdio.h>
@@ -32,6 +32,12 @@
 #include <GCS_MAVLink/GCS.h>
 
 using namespace SITL;
+
+static float standard_pressure_pa(float alt_amsl)
+{
+    const float temp_k = MAX(216.65f, 288.15f - 0.0065f * alt_amsl);
+    return 101325.0f * powf(temp_k / 288.15f, 5.25588f);
+}
 
 MicroStrain::MicroStrain() :SerialDevice::SerialDevice()
 {
@@ -103,7 +109,7 @@ void MicroStrain::send_imu_packet(void)
     packet.payload[packet.payload_size++] = 0x06; // Ambient Pressure Field Size
     packet.payload[packet.payload_size++] = 0x17; // Descriptor
 
-    float pressure_Pa = AP_Baro::get_pressure_for_alt_amsl(fdm.altitude);
+    float pressure_Pa = standard_pressure_pa(fdm.altitude);
     put_float(packet, pressure_Pa*0.001 + rand_float() * 0.1);
 
     // Add scaled magnetometer field
@@ -311,4 +317,3 @@ void MicroStrain::put_int(MicroStrain_Packet &packet, uint16_t t)
     put_be16_ptr(&packet.payload[packet.payload_size], t);
     packet.payload_size += sizeof(uint16_t);
 }
-

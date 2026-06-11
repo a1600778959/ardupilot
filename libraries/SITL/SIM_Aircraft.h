@@ -110,9 +110,9 @@ public:
         return velocity_ef;
     }
 
-    // return TAS airspeed in earth frame
-    const Vector3f &get_velocity_air_ef(void) const {
-        return velocity_air_ef;
+    // return wind-relative velocity in earth frame
+    const Vector3f &get_velocity_wind_ef(void) const {
+        return velocity_wind_ef;
     }
 
     const Matrix3f &get_dcm(void) const {
@@ -187,14 +187,14 @@ protected:
     Vector3f gyro;                       // rad/s
     Vector3f velocity_ef;                // m/s, earth frame
     Vector3f wind_ef;                    // m/s, earth frame
-    Vector3f velocity_air_ef;            // velocity relative to airmass, earth frame (true airspeed)
-    Vector3f velocity_air_bf;            // velocity relative to airmass, body frame
+    Vector3f velocity_wind_ef;            // velocity relative to airmass, earth frame
+    Vector3f velocity_wind_bf;            // velocity relative to airmass, body frame
     Vector3d position;                   // meters, NED from origin
     float mass;                          // kg
     float external_payload_mass;         // kg
     Vector3f accel_body{0.0f, 0.0f, -GRAVITY_MSS}; // m/s/s NED, body frame
-    float airspeed;                      // m/s, EAS airspeed
-    float airspeed_pitot;                // m/s, EAS airspeed, as seen by fwd pitot tube
+    float wind_relative_speed;            // m/s
+    float forward_wind_relative_speed;    // m/s, forward-axis component
     float battery_voltage;
     float battery_current;
     float local_ground_level;            // ground level at local position
@@ -252,7 +252,7 @@ protected:
     bool use_time_sync = true;
     float last_speedup = -1.0f;
     const char *config_ = "";
-    float eas2tas = 1.0;
+    float density_speed_scale = 1.0;
     float air_density = SSL_AIR_DENSITY;
 
     // allow for AHRS_ORIENTATION
@@ -327,8 +327,8 @@ protected:
     // get local thermal updraft
     float get_local_updraft(const Vector3d &currentPos);
 
-    // update EAS speeds
-    void update_eas_airspeed();
+    // update wind-relative speeds
+    void update_wind_relative_speed();
 
     // clamp support
     class Clamp {

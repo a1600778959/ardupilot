@@ -46,13 +46,6 @@ void InertialLabs::send_packet(void)
     pkt.gyro_data_hr.x = fdm.pitchRate * 1.0e5; // deg/s*1.0e5
     pkt.gyro_data_hr.z = -fdm.yawRate * 1.0e5;  // deg/s*1.0e5
 
-    // 0x25 Barometer data
-    float p, t_K;
-    AP_Baro::get_pressure_temperature_for_alt_amsl(fdm.altitude+rand_float()*0.25, p, t_K);
-
-    pkt.baro_data.pressure_pa2 = p * 0.5; // Pa/2
-    pkt.baro_data.baro_alt = fdm.altitude * 100; // m
-
     // 0x24 Magnetometer data
     pkt.mag_data.x = (fdm.bodyMagField.y / NTESLA_TO_MGAUSS) * 0.1;  // nT/10
     pkt.mag_data.y = (fdm.bodyMagField.x / NTESLA_TO_MGAUSS) * 0.1;  // nT/10
@@ -92,22 +85,16 @@ void InertialLabs::send_packet(void)
     // 0x53 Unit status word (USW)
     pkt.unit_status = 0; // INS data is valid
 
-    // 0x86 True airspeed (TAS)
-    pkt.true_airspeed = fdm.airspeed * 100; // m/s*100
-
     // 0x8A Wind speed
     pkt.wind_speed.x = fdm.wind_ef.y * 100;
     pkt.wind_speed.y = fdm.wind_ef.x * 100;
     pkt.wind_speed.z = 0;
 
-    // 0x8D ADU status
-    pkt.air_data_status = 0; // ADU data is valid
-
     // 0x50 Supply voltage
     pkt.supply_voltage = 12.3 * 100; // VDC*100
 
     // 0x52 Temperature
-    pkt.temperature = KELVIN_TO_C(t_K)*10; // degC
+    pkt.temperature = 25 * 10; // degC
 
     // 0x5A Unit status word (USW2)
     pkt.unit_status2 = 0; // INS data is valid

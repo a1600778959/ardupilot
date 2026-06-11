@@ -28,7 +28,6 @@ const char *Frsky::dataid_string(DataID id)
         case DataID::FUEL: return "FUEL";
         case DataID::TEMP2: return "TEMP2";
         case DataID::GPS_ALT_AP: return "GPS_ALT_AP";
-        case DataID::BARO_ALT_BP: return "BARO_ALT_BP";
         case DataID::GPS_SPEED_BP: return "GPS_SPEED_BP";
         case DataID::GPS_LONG_BP: return "GPS_LONG_BP";
         case DataID::GPS_LAT_BP: return "GPS_LAT_BP";
@@ -36,7 +35,6 @@ const char *Frsky::dataid_string(DataID id)
         case DataID::GPS_SPEED_AP: return "GPS_SPEED_AP";
         case DataID::GPS_LONG_AP: return "GPS_LONG_AP";
         case DataID::GPS_LAT_AP: return "GPS_LAT_AP";
-        case DataID::BARO_ALT_AP: return "BARO_ALT_AP";
         case DataID::GPS_LONG_EW: return "GPS_LONG_EW";
         case DataID::GPS_LAT_NS: return "GPS_LAT_NS";
         case DataID::CURRENT: return "CURRENT";

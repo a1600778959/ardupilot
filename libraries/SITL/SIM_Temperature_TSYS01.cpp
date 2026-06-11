@@ -194,5 +194,5 @@ float SITL::TSYS01::get_sim_temperature() const
     sim_alt += 2 * rand_float();
 
     // To Do: Add a sensor board temperature offset parameter
-    return AP_Baro::get_temperatureC_for_alt_amsl(sim_alt) + 25;
+    return (288.15f - 0.0065f * sim_alt) - C_TO_KELVIN(0) + 25;
 }

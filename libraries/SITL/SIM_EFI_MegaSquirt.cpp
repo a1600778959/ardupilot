@@ -24,6 +24,8 @@
 
 using namespace SITL;
 
+static constexpr float ambient_temperature_c = 25.0f;
+
 static uint32_t CRC32_MS(const uint8_t *buf, uint32_t len)
 {
     uint32_t crc = 0;
@@ -48,9 +50,9 @@ void EFI_MegaSquirt::update()
     table7.rpm = rpm;
     table7.fuelload = 20;
     table7.dwell = 2.0;
-    table7.baro_hPa = 1000;
+    table7.ambient_hPa = 1000;
     table7.map_hPa = 895;
-    table7.mat_cF = C_TO_F(AP::baro().get_temperature()) * 10;
+    table7.mat_cF = C_TO_F(ambient_temperature_c) * 10;
     table7.fuelPressure = 6280;
     table7.throttle_pos = tps * 10;
     table7.ct_cF = 3940;

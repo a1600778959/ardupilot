@@ -1,5 +1,3 @@
-FRAME_CLASS      1          # Rover
-
 SERVO1_FUNCTION  73         # (Throttle Left)
 SERVO2_FUNCTION  73         
 SERVO3_FUNCTION  74         # (Throttle Right)

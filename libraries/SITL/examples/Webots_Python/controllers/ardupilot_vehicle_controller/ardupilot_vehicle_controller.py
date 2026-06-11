@@ -16,24 +16,24 @@ def get_args():
 
     parser.add_argument("--motors", "-m",
                         type=str,
-                        default="m1_motor, m2_motor, m3_motor, m4_motor",
-                        help="Comma spaced list of motor names in ardupilot numerical order (ex --motors \"m1,m2,m3, m4\")")
+                        default="front left wheel, back left wheel, front right wheel, back right wheel",
+                        help="Comma spaced list of Rover motor names in ArduPilot numerical order")
     parser.add_argument("--reversed-motors", "-r",
                         type=str,
                         default=None,
                         help="Comma spaced list of motors to reverse (starting from 1, in ardupilot order)")
     parser.add_argument("--bidirectional-motors",
                         type=bool,
-                        default=False,
+                        default=True,
                         help="If the motors are bidirectional (as is the case for Rovers usually)")
     parser.add_argument("--uses-propellers",
                         type=bool,
-                        default=True,
-                        help="Whether the vehicle uses propellers. This is important as we need to linearize thrust if so")
+                        default=False,
+                        help="Whether the vehicle uses propellers")
     parser.add_argument("--motor-cap",
                         type=float,
                         default=float('inf'),
-                        help="Motor velocity cap. This is useful for the crazyflie which default has way too much power")
+                        help="Motor velocity cap")
 
     parser.add_argument("--accel",
                         type=str,
@@ -83,7 +83,7 @@ def get_args():
     parser.add_argument("--instance", "-i",
                         type=int,
                         default=0,
-                        help="Drone instance to match the SITL. This allows multiple vehicles")
+                        help="Vehicle instance to match the SITL. This allows multiple vehicles")
     parser.add_argument("--sitl-address",
                         type=str,
                         default="127.0.0.1",

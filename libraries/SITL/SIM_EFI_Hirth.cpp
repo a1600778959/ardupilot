@@ -26,6 +26,7 @@ using namespace SITL;
 
 // assume SERVO3 is throttle
 #define HIRTH_RPM_INDEX 2
+static constexpr float ambient_temperature_c = 25.0f;
 
 void EFI_Hirth::update_receive()
 {
@@ -135,20 +136,15 @@ void EFI_Hirth::update_engine_model()
 {
     auto sitl = AP::sitl();
 
-    // FIXME: this should come from simulation, not baro.  baro gets
-    // warmed by the simulated electronics!
-    const float ambient = AP::baro().get_temperature();
-
     const uint32_t now_ms = AP_HAL::millis();
 
     const float delta_t = (now_ms - engine.last_update_ms) * 1e-6;
     engine.last_update_ms = now_ms;
 
-    // lose heat to environment (air-cooling due to airspeed and prop
-    // airflow could be taken into account here)
+    // lose heat to environment
     const float ENV_LOSS_FACTOR = 25;
-    engine.cht1_temperature -= (engine.cht1_temperature - ambient) * delta_t * ENV_LOSS_FACTOR;
-    engine.cht2_temperature -= (engine.cht2_temperature - ambient) * delta_t * ENV_LOSS_FACTOR;
+    engine.cht1_temperature -= (engine.cht1_temperature - ambient_temperature_c) * delta_t * ENV_LOSS_FACTOR;
+    engine.cht2_temperature -= (engine.cht2_temperature - ambient_temperature_c) * delta_t * ENV_LOSS_FACTOR;
 
     const float rpm = sitl->state.rpm[HIRTH_RPM_INDEX];
     const float RPM_GAIN_FACTOR_CHT1 = 10;
@@ -159,15 +155,8 @@ void EFI_Hirth::update_engine_model()
 
 void EFI_Hirth::init()
 {
-    // auto sitl = AP::sitl();
-
-    if (is_zero(AP::baro().get_temperature())) {
-        // defer until the baro has had a chance to update....
-        return;
-    }
-
-    engine.cht1_temperature = AP::baro().get_temperature();
-    engine.cht2_temperature = AP::baro().get_temperature();
+    engine.cht1_temperature = ambient_temperature_c;
+    engine.cht2_temperature = ambient_temperature_c;
 
     init_done = true;
 }
@@ -197,7 +186,7 @@ uint16_t EFI_Hirth::engine_status_field_value() const
     return (
         0U << 0 |  // engine temperature sensor
         1U << 1 |  // air temperature sensor
-        1U << 2 |  // air pressure sensor
+        1U << 2 |  // ambient pressure sensor
         1U << 3    // throttle sensor OK
         );
 }
@@ -211,7 +200,7 @@ void SITL::EFI_Hirth::send_record1()
     auto &r = packed_record1.record;
     r.engine_status = engine_status_field_value();
     r.rpm = sitl->state.rpm[HIRTH_RPM_INDEX];
-    r.air_temperature = AP::baro().get_temperature();
+    r.air_temperature = ambient_temperature_c;
     r.throttle = settings.throttle / 10;  // just echo this back
 
     packed_record1.update_checksum();

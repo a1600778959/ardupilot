@@ -20,95 +20,12 @@
 
 #include <canard/publisher.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_Baro/AP_Baro_SITL.h>
 #include <dronecan_msgs.h>
 #include <SITL/SITL.h>
 #include <AP_DroneCAN/AP_Canard_iface.h>
 
 
 using namespace SITL;
-
-void DroneCANDevice::update_baro() {
-    const uint64_t now = AP_HAL::micros64();
-    if (((now - _baro_last_update_us) < 10000) && (_baro_last_update_us != 0)) {
-        return;
-    }
-    _baro_last_update_us = now;
-    const uint32_t now_ms = AP_HAL::millis();
-    float sim_alt = AP::sitl()->state.altitude;
-
-    if (AP::sitl()->baro_count < 1) {
-        // barometer is disabled
-        return;
-    }
-
-    sim_alt += AP::sitl()->baro[0].drift * now_ms * 0.001f;
-    sim_alt += AP::sitl()->baro[0].noise * rand_float();
-
-
-    // add baro glitch
-    sim_alt += AP::sitl()->baro[0].glitch;
-
-    // add delay
-    uint32_t best_time_delta = 200;  // initialise large time representing buffer entry closest to current time - delay.
-    uint8_t best_index = 0;  // initialise number representing the index of the entry in buffer closest to delay.
-
-    // storing data from sensor to buffer
-    if (now_ms - _last_store_time >= 10) {  // store data every 10 ms.
-        _last_store_time = now_ms;
-        if (_store_index > _buffer_length - 1) {  // reset buffer index if index greater than size of buffer
-            _store_index = 0;
-        }
-
-        // if freezed barometer, report altitude to last recorded altitude
-        if (AP::sitl()->baro[0].freeze == 1) {
-            sim_alt = _last_altitude;
-        } else {
-            _last_altitude = sim_alt;
-        }
-
-        _buffer[_store_index].data = sim_alt;  // add data to current index
-        _buffer[_store_index].time = _last_store_time;  // add time_stamp to current index
-        _store_index = _store_index + 1;  // increment index
-    }
-
-    // return delayed measurement
-    const uint32_t delayed_time = now_ms - AP::sitl()->baro[0].delay;  // get time corresponding to delay
-
-    // find data corresponding to delayed time in buffer
-    for (uint8_t i = 0; i <= _buffer_length - 1; i++) {
-        // find difference between delayed time and time stamp in buffer
-        uint32_t time_delta = abs(
-                (int32_t)(delayed_time - _buffer[i].time));
-        // if this difference is smaller than last delta, store this time
-        if (time_delta < best_time_delta) {
-            best_index = i;
-            best_time_delta = time_delta;
-        }
-    }
-    if (best_time_delta < 200) {  // only output stored state if < 200 msec retrieval error
-        sim_alt = _buffer[best_index].data;
-    }
-
-    float p, t_K;
-    AP_Baro::get_pressure_temperature_for_alt_amsl(sim_alt, p, t_K);
-    float T = KELVIN_TO_C(t_K);
-
-    AP_Baro_SITL::temperature_adjustment(p, T);
-    T = C_TO_KELVIN(T);
-
-    // add in correction for wind effects
-    p += AP_Baro_SITL::wind_pressure_correction(0);
-    static Canard::Publisher<uavcan_equipment_air_data_StaticPressure> press_pub{CanardInterface::get_test_iface()};
-    static Canard::Publisher<uavcan_equipment_air_data_StaticTemperature> temp_pub{CanardInterface::get_test_iface()};
-    uavcan_equipment_air_data_StaticPressure press_msg {};
-    press_msg.static_pressure = p;
-    press_pub.broadcast(press_msg);
-    uavcan_equipment_air_data_StaticTemperature temp_msg {};
-    temp_msg.static_temperature = T;
-    temp_pub.broadcast(temp_msg);
-}
 
 void DroneCANDevice::_setup_eliptical_correcion(uint8_t i)
 {
@@ -198,7 +115,6 @@ void DroneCANDevice::update_rangefinder() {
 
 void DroneCANDevice::update()
 {
-    update_baro();
     update_compass();
     update_rangefinder();
 }
