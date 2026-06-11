@@ -96,7 +96,7 @@ private:
     // delay buffer variables
     static const uint8_t wind_buffer_length = 50;
 
-    // airspeed sensor delay buffer variables
+    // wind delay buffer variables
     struct readings_wind {
         uint32_t time;
         float data;

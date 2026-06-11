@@ -122,7 +122,6 @@ protected:
     AP_Int8 _wp_comms_hold;
     AP_Int8 _wp_gps_loss;
 
-    AP_Float _qnh_pressure;
     AP_Int32 _amsl_limit;
     AP_Int32 _amsl_margin_gps;
     AP_Float _rc_fail_time_seconds;

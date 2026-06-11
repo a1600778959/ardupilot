@@ -36,7 +36,6 @@
 
 #include "AP_ExternalAHRS_MicroStrain7.h"
 #include "AP_Compass/AP_Compass_config.h"
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -70,7 +69,6 @@ AP_ExternalAHRS_MicroStrain7::AP_ExternalAHRS_MicroStrain7(AP_ExternalAHRS *_fro
 
     // don't offer IMU by default, at 100Hz it is too slow for many aircraft
     set_default_sensors(uint16_t(AP_ExternalAHRS::AvailableSensor::GPS) |
-                        uint16_t(AP_ExternalAHRS::AvailableSensor::BARO) |
                         uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS));
 
     hal.scheduler->delay(5000);
@@ -173,19 +171,6 @@ void AP_ExternalAHRS_MicroStrain7::post_imu() const
     }
 #endif
 
-#if AP_BARO_EXTERNALAHRS_ENABLED
-    {
-        // *INDENT-OFF*
-        const AP_ExternalAHRS::baro_data_message_t baro {
-            instance: 0,
-            pressure_pa: imu_data.pressure,
-            // setting temp to 25 effectively disables barometer temperature calibrations - these are already performed by MicroStrain
-            temperature: 25,
-        };
-        // *INDENT-ON*
-        AP::baro().handle_external(baro);
-    }
-#endif
 }
 
 void AP_ExternalAHRS_MicroStrain7::post_filter() const
@@ -318,12 +303,12 @@ void AP_ExternalAHRS_MicroStrain7::get_filter_status(nav_filter_status &status) 
 }
 
 // get variances
-bool AP_ExternalAHRS_MicroStrain7::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+bool AP_ExternalAHRS_MicroStrain7::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar) const
 {
     velVar = filter_data.ned_velocity_uncertainty.length() * vel_gate_scale;
     posVar = filter_data.ned_position_uncertainty.xy().length() * pos_gate_scale;
     hgtVar = filter_data.ned_position_uncertainty.z * hgt_gate_scale;
-    tasVar = 0;
+    reservedVar = 0;
     return true;
 }
 

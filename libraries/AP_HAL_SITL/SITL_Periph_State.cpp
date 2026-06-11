@@ -16,7 +16,6 @@
 #include <sys/select.h>
 
 #include <AP_Param/AP_Param.h>
-#include <SITL/SIM_JSBSim.h>
 #include <AP_HAL/utility/Socket_native.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <SITL/SITL.h>

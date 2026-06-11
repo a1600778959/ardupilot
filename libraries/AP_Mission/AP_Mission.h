@@ -89,7 +89,7 @@ public:
 
     // change speed command structure
     struct PACKED Change_Speed_Command {
-        uint8_t speed_type;     // 0=airspeed, 1=ground speed
+        uint8_t speed_type;     // MAVLink speed type, 1=ground speed
         float target_ms;        // target speed in m/s, -1 means no change
         float throttle_pct;     // throttle as a percentage (i.e. 1 ~ 100), 0 means no change
     };

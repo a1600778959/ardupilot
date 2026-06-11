@@ -95,9 +95,6 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedMag.init(obs_buffer_length)) {
         return false;
     }
-    if(!storedBaro.init(obs_buffer_length)) {
-        return false;
-    }
     if(dal.opticalflow_enabled() && !storedOF.init(flow_buffer_length)) {
         return false;
     }
@@ -175,13 +172,10 @@ void NavEKF3_core::InitialiseVariables()
 
     // initialise time stamps
     imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
-    prevTasStep_ms = imuSampleTime_ms;
     prevBetaDragStep_ms = imuSampleTime_ms;
-    lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = 0;
     lastGpsPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
-    lastTasPassTime_ms = 0;
     lastSynthYawTime_ms = 0;
     lastTimeGpsReceived_ms = 0;
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
@@ -192,7 +186,6 @@ void NavEKF3_core::InitialiseVariables()
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
     lastGpsAidBadTime_ms = 0;
-    timeTasReceived_ms = 0;
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
     lastPosReset_ms = 0;
     lastVelReset_ms = 0;
@@ -204,7 +197,6 @@ void NavEKF3_core::InitialiseVariables()
 	dvelBiasAxisVarPrev.zero();
     gpsNoiseScaler = 1.0f;
     hgtTimeout = true;
-    tasTimeout = true;
     dragTimeout = true;
     badIMUdata = false;
     badIMUdata_ms = 0;
@@ -246,7 +238,6 @@ void NavEKF3_core::InitialiseVariables()
     inhibitWindStates = true;
     windStateIsObservable = false;
     treatWindStatesAsTruth = false;
-    lastAspdEstIsValid = false;
     windStatesAligned = false;
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;
@@ -255,7 +246,6 @@ void NavEKF3_core::InitialiseVariables()
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
     gpsHgtAccuracy = 0.0f;
-    baroHgtOffset = 0.0f;
     rngOnGnd = 0.05f;
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
@@ -293,9 +283,7 @@ void NavEKF3_core::InitialiseVariables()
     memset(&vertCompFiltState, 0, sizeof(vertCompFiltState));
     posVelFusionDelayed = false;
     flowFusionActive = false;
-    airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
-    airDataFusionWindOnly = false;
     posResetNE.zero();
     velResetNE.zero();
     posResetD = 0.0f;
@@ -311,7 +299,7 @@ void NavEKF3_core::InitialiseVariables()
     gpsYawResetRequest = false;
     delAngBiasLearned = false;
     memset(&filterStatus, 0, sizeof(filterStatus));
-    activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
+    activeHgtSource = AP_NavEKF_Source::SourceZ::NONE;
     prevHgtSource = activeHgtSource;
 #if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     memset(&rngMeasIndex, 0, sizeof(rngMeasIndex));
@@ -360,8 +348,6 @@ void NavEKF3_core::InitialiseVariables()
     // zero data buffers
     storedIMU.reset();
     storedGPS.reset();
-    storedBaro.reset();
-    storedTAS.reset();
 #if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     storedRange.reset();
 #endif
@@ -447,7 +433,6 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     readMagData();
     readGpsData();
     readGpsYawData();
-    readBaroData();
 
     if (statesInitialised) {
         // we are initialised, but we don't return true until the IMU
@@ -552,7 +537,7 @@ void NavEKF3_core::CovarianceInit()
     // positions
     P[7][7]   = sq(frontend->_gpsHorizPosNoise);
     P[8][8]   = P[7][7];
-    P[9][9]   = sq(frontend->_baroAltNoise);
+    P[9][9]   = sq(frontend->_hgtObsNoise);
     // gyro delta angle biases
     P[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
     P[11][11] = P[10][10];
@@ -607,7 +592,7 @@ void NavEKF3_core::UpdateFilter(bool predict)
         CovariancePrediction(nullptr);
 
         // Run the IMU prediction step for the GSF yaw estimator algorithm
-        // using IMU and optionally true airspeed data.
+        // using IMU data.
         // Must be run before SelectMagFusion() to provide an up to date yaw estimate
         runYawEstimatorPrediction();
 
@@ -785,8 +770,7 @@ void NavEKF3_core::calcOutputStates()
     outputDataNew.velocity += delVelNav;
 
     // Implement third order complementary filter for height and height rate
-    // Reference Paper :
-    // Optimizing the Gains of the Baro-Inertial Vertical Channel
+    // Reference Paper for vertical complementary filter gains:
     // Widnall W.S, Sinha P.K,
     // AIAA Journal of Guidance and Control, 78-1307R
 
@@ -1042,10 +1026,6 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 }
             }
 	        ftype windVelVar  = sq(dt * constrain_ftype(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_ftype(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsF(hgtRate)));
-	        if (!tasDataDelayed.allowFusion) {
-	            // Allow wind states to recover faster when using sideslip fusion with a failed airspeed sesnor
-	            windVelVar *= 10.0f;
-	        }
 	        for (uint8_t i=12; i<=13; i++) processNoiseVariance[i] = windVelVar;
         }
     }
@@ -1811,7 +1791,7 @@ void NavEKF3_core::ConstrainVariances()
     // if vibration affected use sensor observation variances to set a floor on the state variances
     if (badIMUdata) {
         P[6][6] = fmaxF(P[6][6], sq(frontend->_gpsVertVelNoise));
-        P[9][9] = fmaxF(P[9][9], sq(frontend->_baroAltNoise));
+        P[9][9] = fmaxF(P[9][9], sq(frontend->_hgtObsNoise));
     } else if (P[6][6] < VEL_STATE_MIN_VARIANCE) {
         // handle collapse of the vertical velocity variance
         P[6][6] = VEL_STATE_MIN_VARIANCE;
@@ -1930,7 +1910,7 @@ void NavEKF3_core::ConstrainStates()
 {
     // quaternions are limited between +-1
     for (uint8_t i=0; i<=3; i++) statesArray[i] = constrain_ftype(statesArray[i],-1.0f,1.0f);
-    // velocity limit 500 m/sec (could set this based on some multiple of max airspeed * EAS2TAS)
+    // velocity limit 500 m/sec
     for (uint8_t i=4; i<=6; i++) statesArray[i] = constrain_ftype(statesArray[i],-5.0e2f,5.0e2f);
     // position limit TODO apply circular limit
     for (uint8_t i=7; i<=8; i++) statesArray[i] = constrain_ftype(statesArray[i],-EK3_POSXY_STATE_LIMIT,EK3_POSXY_STATE_LIMIT);
@@ -1950,7 +1930,7 @@ void NavEKF3_core::ConstrainStates()
     }
     // body magnetic field limit
     for (uint8_t i=19; i<=21; i++) statesArray[i] = constrain_ftype(statesArray[i],-0.5f,0.5f);
-    // wind velocity limit 100 m/s (could be based on some multiple of max airspeed * EAS2TAS) - TODO apply circular limit
+    // wind velocity limit 100 m/s - TODO apply circular limit
     for (uint8_t i=22; i<=23; i++) statesArray[i] = constrain_ftype(statesArray[i],-100.0f,100.0f);
     // constrain the terrain state to be below the vehicle height unless we are using terrain as the height datum
     if (!inhibitGndState) {

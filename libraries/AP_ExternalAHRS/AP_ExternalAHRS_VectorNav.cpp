@@ -25,7 +25,6 @@
 #include "AP_ExternalAHRS_VectorNav.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -541,17 +540,6 @@ void AP_ExternalAHRS_VectorNav::process_imu_packet(const uint8_t *b)
         }
     }
 
-#if AP_BARO_EXTERNALAHRS_ENABLED
-    {
-        AP_ExternalAHRS::baro_data_message_t baro;
-        baro.instance = 0;
-        baro.pressure_pa = pkt.pressure * 1e3;
-        baro.temperature = pkt.temp;
-
-        AP::baro().handle_external(baro);
-    }
-#endif
-
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
     {
         AP_ExternalAHRS::mag_data_message_t mag;
@@ -789,13 +777,13 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
 }
 
 // get variances
-bool AP_ExternalAHRS_VectorNav::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+bool AP_ExternalAHRS_VectorNav::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar) const
 {
     const struct VN_INS_ekf_packet &pkt = *(struct VN_INS_ekf_packet *)latest_ins_ekf_packet;
     velVar = pkt.velU * vel_gate_scale;
     posVar = pkt.posU * pos_gate_scale;
     hgtVar = pkt.posU * hgt_gate_scale;
-    tasVar = 0;
+    reservedVar = 0;
     return true;
 }
 

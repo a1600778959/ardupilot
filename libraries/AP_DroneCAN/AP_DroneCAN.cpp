@@ -28,7 +28,6 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_GPS/AP_GPS_DroneCAN.h>
 #include <AP_Compass/AP_Compass_DroneCAN.h>
-#include <AP_Baro/AP_Baro_DroneCAN.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BattMonitor/AP_BattMonitor_DroneCAN.h>
 #include <AP_RangeFinder/AP_RangeFinder_DroneCAN.h>
@@ -365,9 +364,6 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
 #endif
 #if AP_COMPASS_DRONECAN_ENABLED
     AP_Compass_DroneCAN::subscribe_msgs(this);
-#endif
-#if AP_BARO_DRONECAN_ENABLED
-    AP_Baro_DroneCAN::subscribe_msgs(this);
 #endif
     AP_BattMonitor_DroneCAN::subscribe_msgs(this);
 #if AP_RANGEFINDER_DRONECAN_ENABLED

@@ -22,7 +22,6 @@
 
 #include "AP_ExternalAHRS_MicroStrain5.h"
 #include "AP_Compass/AP_Compass_config.h"
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -141,17 +140,6 @@ void AP_ExternalAHRS_MicroStrain5::post_imu() const
     }
 #endif
 
-#if AP_BARO_EXTERNALAHRS_ENABLED
-    {
-        const AP_ExternalAHRS::baro_data_message_t baro {
-            instance: 0,
-            pressure_pa: imu_data.pressure,
-            // setting temp to 25 effectively disables barometer temperature calibrations - these are already performed by MicroStrain
-            temperature: 25,
-        };        
-        AP::baro().handle_external(baro);
-    }
-#endif
 }
 
 void AP_ExternalAHRS_MicroStrain5::post_filter() const
@@ -269,12 +257,12 @@ void AP_ExternalAHRS_MicroStrain5::get_filter_status(nav_filter_status &status) 
 }
 
 // get variances
-bool AP_ExternalAHRS_MicroStrain5::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+bool AP_ExternalAHRS_MicroStrain5::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar) const
 {
     velVar = gnss_data[gnss_instance].speed_accuracy * vel_gate_scale;
     posVar = gnss_data[gnss_instance].horizontal_position_accuracy * pos_gate_scale;
     hgtVar = gnss_data[gnss_instance].vertical_position_accuracy * hgt_gate_scale;
-    tasVar = 0;
+    reservedVar = 0;
     return true;
 }
 

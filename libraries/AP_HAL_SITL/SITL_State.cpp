@@ -22,7 +22,6 @@
 #include <fcntl.h>
 
 #include <AP_Param/AP_Param.h>
-#include <SITL/SIM_JSBSim.h>
 #include <AP_HAL/utility/Socket_native.h>
 
 extern const AP_HAL::HAL& hal;
@@ -73,7 +72,6 @@ void SITL_State::_sitl_setup()
 
     fprintf(stdout, "Starting SITL input\n");
 
-    // find the barometer object if it exists
     _sitl = AP::sitl();
 
     if (_sitl != nullptr) {
@@ -211,7 +209,7 @@ void SITL_State::_output_to_flightgear(void)
     fdm.phi   = radians(sfdm.rollDeg);
     fdm.theta = radians(sfdm.pitchDeg);
     fdm.psi   = radians(sfdm.yawDeg);
-    fdm.vcas  = sfdm.velocity_air_bf.length()/0.3048;
+    fdm.vcas  = sfdm.velocity_wind_bf.length()/0.3048;
     if (_vehicle == ArduCopter) {
         fdm.num_engines = 4;
         for (uint8_t i=0; i<4; i++) {
@@ -318,12 +316,12 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     uint32_t now = AP_HAL::micros();
     last_update_usec = now;
 
-    float altitude = AP::baro().get_altitude();
+    float altitude = _sitl ? _sitl->state.altitude : 0.0f;
     float wind_speed = 0;
     float wind_direction = 0;
     float wind_dir_z = 0;
 
-    // give 5 seconds to calibrate airspeed sensor at 0 wind speed
+    // give 5 seconds before applying simulated wind
     if (wind_start_delay_micros == 0) {
         wind_start_delay_micros = now;
     } else if (_sitl && (now - wind_start_delay_micros) > 5000000 ) {

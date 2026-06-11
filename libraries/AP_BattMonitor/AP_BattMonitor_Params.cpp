@@ -40,15 +40,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CAPACITY", 7, AP_BattMonitor_Params, _pack_capacity, AP_BATT_MONITOR_BATTERY_CAPACITY),
 
-#if AP_BATTERY_WATT_MAX_ENABLED
-    // @Param{Plane}: WATT_MAX
-    // @DisplayName: Maximum allowed power (Watts)
-    // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
-    // @Units: W
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO_FRAME("WATT_MAX", 8, AP_BattMonitor_Params, _watt_max, 0, AP_PARAM_FRAME_PLANE),
-#endif
+    // 8 reserved for a removed parameter
 
     // @Param: SERIAL_NUM
     // @DisplayName: Battery serial number
@@ -108,24 +100,14 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: FS_LOW_ACT
     // @DisplayName: Low battery failsafe action
     // @Description: What action the vehicle should perform if it hits a low battery failsafe
-    // @Values{Plane}: 0:None,1:RTL,2:Land,3:Terminate,4:QLand,6:Loiter to QLand
-    // @Values{Copter}: 0:None,1:Land,2:RTL,3:SmartRTL or RTL,4:SmartRTL or Land,5:Terminate,6:Auto DO_LAND_START or RTL,7:Brake or Land
-    // @Values{Sub}: 0:None,2:Disarm,3:Enter surface mode
     // @Values{Rover}: 0:None,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate
-    // @Values{Tracker}: 0:None
-    // @Values{Blimp}: 0:None,1:Land
     // @User: Standard
     AP_GROUPINFO("FS_LOW_ACT", 16, AP_BattMonitor_Params, _failsafe_low_action, 0),
 
     // @Param: FS_CRT_ACT
     // @DisplayName: Critical battery failsafe action
     // @Description: What action the vehicle should perform if it hits a critical battery failsafe
-    // @Values{Plane}: 0:None,1:RTL,2:Land,3:Terminate,4:QLand,5:Parachute,6:Loiter to QLand
-    // @Values{Copter}: 0:None,1:Land,2:RTL,3:SmartRTL or RTL,4:SmartRTL or Land,5:Terminate,6:Auto DO_LAND_START or RTL,7:Brake or Land
-    // @Values{Sub}: 0:None,2:Disarm,3:Enter surface mode
     // @Values{Rover}: 0:None,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate
-    // @Values{Tracker}: 0:None
-    // @Values{Blimp}: 0:None,1:Land
     // @User: Standard
     AP_GROUPINFO("FS_CRT_ACT", 17, AP_BattMonitor_Params, _failsafe_critical_action, 0),
 

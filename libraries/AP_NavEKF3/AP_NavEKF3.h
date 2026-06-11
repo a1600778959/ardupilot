@@ -54,9 +54,14 @@ public:
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
+    // Check filter health for horizontal navigation without treating height
+    // innovation consistency as a blocking condition.
+    bool healthy_for_horizontal_nav(void) const;
+
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const;
+    bool pre_arm_check(bool requires_position, bool require_height, char *failure_msg, uint8_t failure_msg_len) const;
 
     // returns the index of the primary core
     // return -1 if no primary core selected
@@ -79,14 +84,6 @@ public:
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
 
-    // return estimate of true airspeed vector in body frame in m/s
-    // returns false if estimate is unavailable
-    bool getAirSpdVec(Vector3f &vel) const;
-
-    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
-    // returns false if the data is unavilable
-    bool getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const;
-
     // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
     // but will always be kinematically consistent with the z component of the EKF position state
@@ -106,7 +103,7 @@ public:
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
-    // Resets the baro so that it reads zero at the current height
+    // Resets the height datum to the current height
     // Resets the EKF height to zero
     // Adjusts the EKF origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
@@ -127,9 +124,6 @@ public:
 
     // return body magnetic field estimates in measurement units / 1000
     void getMagXYZ(Vector3f &magXYZ) const;
-
-    // return the airspeed sensor in use
-    uint8_t getActiveAirspeed() const;
 
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
@@ -174,10 +168,10 @@ public:
     void getQuaternion(Quaternion &quat) const;
 
     // return the innovations
-    bool getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
+    bool getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &reservedInnov, float &yawInnov) const;
 
     // return the innovation consistency test ratios
-    bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+    bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar, Vector2f &offset) const;
 
     // return the EKF attitude covariance as roll/pitch/yaw covariance in rad^2
     bool getOrientationCovariance(Matrix3f &covariance) const;
@@ -269,9 +263,8 @@ public:
      2 = badly conditioned X magnetometer fusion
      3 = badly conditioned Y magnetometer fusion
      4 = badly conditioned Z magnetometer fusion
-     5 = badly conditioned airspeed fusion
-     6 = badly conditioned synthetic sideslip fusion
-     7 = filter is not initialised
+     5 = badly conditioned synthetic sideslip fusion
+     6 = filter is not initialised
     */
     void getFilterFaults(uint16_t &faults) const;
 
@@ -304,8 +297,8 @@ public:
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosDownReset(float &posDelta);
 
-    // set and save the _baroAltNoise parameter
-    void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
+    // set and save the height observation noise parameter
+    void set_altitude_noise(float noise) { _hgtObsNoise.set_and_save(noise); };
 
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
@@ -342,9 +335,6 @@ public:
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;
     
-    // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
-    void writeDefaultAirSpeed(float airspeed, float uncertainty);
-
     // parameter conversion
     void convert_parameters();
 
@@ -381,9 +371,8 @@ private:
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
     AP_Float _gpsHorizPosNoise;     // GPS horizontal position measurement noise m
-    AP_Float _baroAltNoise;         // Baro height measurement noise : m
+    AP_Float _hgtObsNoise;          // height observation noise : m
     AP_Float _magNoise;             // magnetometer measurement noise : gauss
-    AP_Float _easNoise;             // equivalent airspeed measurement noise : m/s
     AP_Float _windVelProcessNoise;  // wind velocity state process noise : m/s^2
     AP_Float _wndVarHgtRateScale;   // scale factor applied to wind process noise due to height rate
     AP_Float _magEarthProcessNoise; // Earth magnetic field process noise : gauss/sec
@@ -397,7 +386,6 @@ private:
     AP_Int16  _gpsPosInnovGate;     // Percentage number of standard deviations applied to GPS position innovation consistency check
     AP_Int16  _hgtInnovGate;        // Percentage number of standard deviations applied to height innovation consistency check
     AP_Int16  _magInnovGate;        // Percentage number of standard deviations applied to magnetometer innovation consistency check
-    AP_Int16  _tasInnovGate;        // Percentage number of standard deviations applied to true airspeed innovation consistency check
     AP_Int8  _magCal;               // Sets activation condition for in-flight magnetometer calibration
     AP_Int8 _gpsGlitchRadiusMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal position before GPS glitch is declared : m
     AP_Int16  _rngInnovGate;        // Percentage number of standard deviations applied to range finder innovation consistency check
@@ -434,7 +422,6 @@ private:
     AP_Float _momentumDragCoef;     // lift rotor momentum drag coefficient
     AP_Int8 _betaMask;              // Bitmask controlling when sideslip angle fusion is used to estimate non wind states
     AP_Float _ognmTestScaleFactor;  // Scale factor applied to the thresholds used by the on ground not moving test
-    AP_Float _baroGndEffectDeadZone;// Dead zone applied to positive baro height innovations when in ground effect (m)
     AP_Int8 _primary_core;          // initial core number
     AP_Enum<LogLevel> _log_level;   // log verbosity level
     AP_Float _gpsVAccThreshold;     // vertical accuracy threshold to use GPS as an altitude source
@@ -456,13 +443,11 @@ private:
     const float gpsPosVarAccScale = 0.05f;         // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     const float extNavVelVarAccScale = 0.05f;      // Scale factor applied to ext nav velocity measurement variance due to manoeuvre acceleration
     const uint16_t magDelay_ms = 60;               // Magnetometer measurement delay (msec)
-    const uint16_t tasDelay_ms = 100;              // Airspeed measurement delay (msec)
-    const uint16_t tiltDriftTimeMax_ms = 15000;    // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
+    const uint16_t tiltDriftTimeMax_ms = 15000;    // Maximum number of ms allowed without tilt aiding
     const uint16_t posRetryTimeUseVel_ms = 10000;  // Position aiding retry time with velocity measurements (msec)
     const uint16_t posRetryTimeNoVel_ms = 7000;    // Position aiding retry time without velocity measurements (msec)
     const uint16_t hgtRetryTimeMode0_ms = 10000;   // Height retry time with vertical velocity measurement (msec)
     const uint16_t hgtRetryTimeMode12_ms = 5000;   // Height retry time without vertical velocity measurement (msec)
-    const uint16_t tasRetryTime_ms = 5000;         // True airspeed timeout and retry interval (msec)
     const uint16_t dragFailTimeLimit_ms = 5000;    // Drag timeout (msec)
     const uint32_t magFailTimeLimit_ms = 10000;    // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     const float magVarRateScale = 0.005f;          // scale factor applied to magnetometer variance due to angular rate
@@ -475,7 +460,6 @@ private:
     const float fScaleFactorPnoise = 1e-10f;       // Process noise added to focal length scale factor state variance at each time step
     const uint8_t flowTimeDeltaAvg_ms = 100;       // average interval between optical flow measurements (msec)
     const uint32_t flowIntervalMax_ms = 100;       // maximum allowable time between flow fusion events
-    const float gndEffectBaroScaler = 4.0f;        // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t gndGradientSigma = 50;           // RMS terrain gradient percentage assumed by the terrain height estimation
     const uint16_t fusionTimeStep_ms = 10;         // The minimum time interval between covariance predictions and measurement fusions in msec
     const uint8_t sensorIntervalMin_ms = 50;       // The minimum allowed time between measurements from any non-IMU sensor (msec)

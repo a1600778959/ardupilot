@@ -66,12 +66,7 @@ const AP_Param::GroupInfo AP_OABendyRuler::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CONT_ANGLE", 3, AP_OABendyRuler, _bendy_angle, OA_BENDYRULER_ANGLE_DEFAULT),
 
-    // @Param{Copter}: TYPE
-    // @DisplayName: Type of BendyRuler
-    // @Description: BendyRuler will search for clear path along the direction defined by this parameter
-    // @Values: 1:Horizontal search, 2:Vertical search
-    // @User: Standard
-    AP_GROUPINFO_FRAME("TYPE", 4, AP_OABendyRuler, _bendy_type, OA_BENDYRULER_TYPE_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    // 4 reserved for a removed parameter
 
     AP_GROUPEND
 };
@@ -161,7 +156,7 @@ bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location
             const float bearing_delta = i * OA_BENDYRULER_BEARING_INC_XY * (bdir == 0 ? -1.0f : 1.0f);
             const float bearing_test = wrap_180(bearing_to_dest + bearing_delta);
 
-            // ToDo: add effective groundspeed calculations using airspeed
+            // ToDo: add effective groundspeed calculations using wind-relative velocity
             // ToDo: add prediction of vehicle's position change as part of turn to desired heading
 
             // test location is projected from current location at test bearing

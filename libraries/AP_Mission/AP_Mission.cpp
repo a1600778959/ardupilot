@@ -38,9 +38,7 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Mission options bitmask
     // @Description: Bitmask of what options to use in missions.
-    // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe,2:ContinueAfterLand
-    // @Bitmask{Copter}: 0:Clear Mission on reboot, 2:ContinueAfterLand
-    // @Bitmask{Rover, Sub}: 0:Clear Mission on reboot
+    // @Bitmask{Rover}: 0:Clear Mission on reboot
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
 
@@ -1153,7 +1151,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_CHANGE_SPEED:                       // MAV ID: 178
-        cmd.content.speed.speed_type = packet.param1;   // 0 = airspeed, 1 = ground speed
+        cmd.content.speed.speed_type = packet.param1;   // MAVLink speed type, 1 = ground speed
         cmd.content.speed.target_ms = packet.param2;    // target speed in m/s
         cmd.content.speed.throttle_pct = packet.param3; // throttle as a percentage from 1 ~ 100%
         break;
@@ -1606,7 +1604,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_DO_CHANGE_SPEED:                       // MAV ID: 178
-        packet.param1 = cmd.content.speed.speed_type;   // 0 = airspeed, 1 = ground speed
+        packet.param1 = cmd.content.speed.speed_type;   // MAVLink speed type, 1 = ground speed
         packet.param2 = cmd.content.speed.target_ms;    // speed in m/s
         packet.param3 = cmd.content.speed.throttle_pct; // throttle as a percentage from 1 ~ 100%
         break;

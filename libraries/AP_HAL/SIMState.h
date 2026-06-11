@@ -48,9 +48,8 @@
 class AP_HAL::SIMState {
 public:
 
-    // simulated airspeed, sonar and battery monitor
+    // simulated sonar and battery monitor
     uint16_t sonar_pin_value;    // pin 0
-    uint16_t airspeed_pin_value[2]; // pin 1
     uint16_t voltage_pin_value;  // pin 13
     uint16_t current_pin_value;  // pin 12
     uint16_t voltage2_pin_value;  // pin 15
@@ -73,7 +72,6 @@ private:
     void set_height_agl(void);
     void _set_signal_handlers(void) const;
 
-    void _update_airspeed(float airspeed);
     void _simulator_servos(struct sitl_input &input);
     void _fdm_input_step(void);
     void fdm_input_local(void);

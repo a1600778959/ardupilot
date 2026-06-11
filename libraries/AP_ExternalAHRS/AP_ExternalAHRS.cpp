@@ -79,9 +79,9 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Param: _SENSORS
     // @DisplayName: External AHRS sensors
     // @Description: External AHRS sensors bitmask
-    // @Bitmask: 0:GPS,1:IMU,2:Baro,3:Compass
+    // @Bitmask: 0:GPS,1:IMU,3:Compass
     // @User: Advanced
-    AP_GROUPINFO("_SENSORS", 4, AP_ExternalAHRS, sensors, 0xF),
+    AP_GROUPINFO("_SENSORS", 4, AP_ExternalAHRS, sensors, 0xB),
 
     // @Param: _LOG_RATE
     // @DisplayName: AHRS logging rate
@@ -292,10 +292,10 @@ void AP_ExternalAHRS::get_filter_status(nav_filter_status &status) const
 /*
   get estimated variances, return false if not implemented
  */
-bool AP_ExternalAHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+bool AP_ExternalAHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar) const
 {
     if (backend != nullptr) {
-        return backend->get_variances(velVar, posVar, hgtVar, magVar, tasVar);
+        return backend->get_variances(velVar, posVar, hgtVar, magVar, reservedVar);
     }
     return false;
 }
@@ -323,9 +323,9 @@ bool AP_ExternalAHRS::get_accel(Vector3f &accel)
 // send an EKF_STATUS message to GCS
 void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
 {
-    float velVar, posVar, hgtVar, tasVar;
+    float velVar, posVar, hgtVar, reservedVar;
     Vector3f magVar;
-    if (backend == nullptr || !backend->get_variances(velVar, posVar, hgtVar, magVar, tasVar)) {
+    if (backend == nullptr || !backend->get_variances(velVar, posVar, hgtVar, magVar, reservedVar)) {
         return;
     }
 
@@ -425,17 +425,17 @@ void AP_ExternalAHRS::update(void)
         // @Field: MagX: magnetic variance, X
         // @Field: MagY: magnetic variance, Y
         // @Field: MagZ: magnetic variance, Z
-        // @Field: TAS: true airspeed variance
+        // @Field: Res: reserved
 
-        float velVar, posVar, hgtVar, tasVar;
+        float velVar, posVar, hgtVar, reservedVar;
         Vector3f magVar;
-        if (backend != nullptr && backend->get_variances(velVar, posVar, hgtVar, magVar, tasVar)) {
-            AP::logger().WriteStreaming("EAHV", "TimeUS,Vel,Pos,Hgt,MagX,MagY,MagZ,TAS",
+        if (backend != nullptr && backend->get_variances(velVar, posVar, hgtVar, magVar, reservedVar)) {
+            AP::logger().WriteStreaming("EAHV", "TimeUS,Vel,Pos,Hgt,MagX,MagY,MagZ,Res",
                                         "Qfffffff",
                                         AP_HAL::micros64(),
                                         velVar, posVar, hgtVar,
                                         magVar.x, magVar.y, magVar.z,
-                                        tasVar);
+                                        reservedVar);
         }
     }
 #endif  // HAL_LOGGING_ENABLED
@@ -460,4 +460,3 @@ AP_ExternalAHRS &externalAHRS()
 };
 
 #endif  // HAL_EXTERNAL_AHRS_ENABLED
-

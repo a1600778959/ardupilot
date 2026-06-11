@@ -183,12 +183,12 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: ALT_M_NSE
     // @DisplayName: Altitude measurement noise (m)
-    // @Description: This is the RMS value of noise in the altitude measurement. Increasing it reduces the weighting of the baro measurement and will make the filter respond more slowly to baro measurement errors, but will make it more sensitive to GPS and accelerometer errors. A larger value for EK3_ALT_M_NSE may be required when operating with EK3_SRCx_POSZ = 0. This parameter also sets the noise for the 'synthetic' zero height measurement that is used when EK3_SRCx_POSZ = 0.
+    // @Description: This is the RMS value of noise in the GPS-independent height observation. Increasing it reduces the weighting of the synthetic zero height measurement that is used when EK3_SRCx_POSZ = 0. A larger value for EK3_ALT_M_NSE may be required when operating with EK3_SRCx_POSZ = 0.
     // @Range: 0.1 100.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m
-    AP_GROUPINFO("ALT_M_NSE", 10, NavEKF3, _baroAltNoise, ALT_M_NSE_DEFAULT),
+    AP_GROUPINFO("ALT_M_NSE", 10, NavEKF3, _hgtObsNoise, ALT_M_NSE_DEFAULT),
 
     // @Param: HGT_I_GATE
     // @DisplayName: Height measurement gate size
@@ -235,24 +235,8 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MAG_I_GATE", 15, NavEKF3, _magInnovGate, MAG_I_GATE_DEFAULT),
 
-    // Airspeed measurement parameters
-
-    // @Param: EAS_M_NSE
-    // @DisplayName: Equivalent airspeed measurement noise (m/s)
-    // @Description: This is the RMS value of noise in equivalent airspeed measurements used by planes. Increasing it reduces the weighting of airspeed measurements and will make wind speed estimates less noisy and slower to converge. Increasing also increases navigation errors when dead-reckoning without GPS measurements.
-    // @Range: 0.5 5.0
-    // @Increment: 0.1
-    // @User: Advanced
-    // @Units: m/s
-    AP_GROUPINFO("EAS_M_NSE", 16, NavEKF3, _easNoise, 1.4f),
-
-    // @Param: EAS_I_GATE
-    // @DisplayName: Airspeed measurement gate size
-    // @Description: This sets the percentage number of standard deviations applied to the airspeed measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 100 1000
-    // @Increment: 25
-    // @User: Advanced
-    AP_GROUPINFO("EAS_I_GATE", 17, NavEKF3, _tasInnovGate, 400),
+    // 16 reserved for a removed parameter
+    // 17 reserved for a removed parameter
 
     // Rangefinder measurement parameters
 
@@ -301,7 +285,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: rad/s/s
     AP_GROUPINFO("GBIAS_P_NSE", 26, NavEKF3, _gyroBiasProcessNoise, GBIAS_P_NSE_DEFAULT),
 
-    // 27 previously used for EK2_GSCL_P_NSE parameter that has been removed
+    // 27 reserved for a removed parameter
 
     // @Param: ABIAS_P_NSE
     // @DisplayName: Accelerometer bias stability (m/s^3)
@@ -311,7 +295,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: m/s/s/s
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF3, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
 
-    // 29 previously used for EK2_MAG_P_NSE parameter that has been replaced with EK3_MAGE_P_NSE and EK3_MAGB_P_NSE
+    // 29 reserved for a removed parameter
 
     // @Param: WIND_P_NSE
     // @DisplayName: Wind velocity process noise (m/s^2)
@@ -415,7 +399,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: RNG_USE_HGT
     // @DisplayName: Range finder switch height percentage
-    // @Description: Range finder can be used as the primary height source when below this percentage of its maximum range (see RNGFNDx_MAX_CM) and the primary height source is Baro or GPS (see EK3_SRCx_POSZ).  This feature should not be used for terrain following as it is designed for vertical takeoff and landing with climb above the range finder use height before commencing the mission, and with horizontal position changes below that height being limited to a flat region around the takeoff and landing point.
+    // @Description: Range finder can be used as the primary height source when below this percentage of its maximum range (see RNGFNDx_MAX_CM) and the primary height source is GPS (see EK3_SRCx_POSZ). This feature should not be used for terrain following as it is designed for vertical takeoff and landing with climb above the range finder use height before commencing the mission, and with horizontal position changes below that height being limited to a flat region around the takeoff and landing point.
     // @Range: -1 70
     // @Increment: 1
     // @User: Advanced
@@ -486,7 +470,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: OGN_HGT_MASK
     // @DisplayName: Bitmask control of EKF reference height correction
     // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference. If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be corrected so that the height returned by the getLLH() function is compensated for primary height sensor drift and change in datum over time. The first two bit positions control when the height datum will be corrected. Correction is performed using a Bayes filter and only operates when GPS quality permits. The third bit position controls where the corrections to the GPS reference datum are applied. Corrections can be applied to the local vertical position or to the reported EKF origin height (default).
-    // @Bitmask: 0:Correct when using Baro height,1:Correct when using range finder height,2:Apply corrections to local position
+    // @Bitmask: 0:Reserved,1:Correct when using range finder height,2:Apply corrections to local position
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("OGN_HGT_MASK", 50, NavEKF3, _originHgtMode, 0),
@@ -535,7 +519,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: GSF_RUN_MASK
     // @DisplayName: Bitmask of which EKF-GSF yaw estimators run
-    // @Description: 1 byte bitmap of which EKF3 instances run an independant EKF-GSF yaw estimator to provide a backup yaw estimate that doesn't rely on magnetometer data. This estimator uses IMU, GPS and, if available, airspeed data. EKF-GSF yaw estimator data for the primary EKF3 instance will be logged as GSF0 and GSF1 messages. Use of the yaw estimate generated by this algorithm is controlled by the EK3_GSF_USE_MASK and EK3_GSF_RST_MAX parameters. To run the EKF-GSF yaw estimator in ride-along and logging only, set EK3_GSF_USE to 0. 
+    // @Description: 1 byte bitmap of which EKF3 instances run an independant EKF-GSF yaw estimator to provide a backup yaw estimate that doesn't rely on magnetometer data. This estimator uses IMU and GPS data. EKF-GSF yaw estimator data for the primary EKF3 instance will be logged as GSF0 and GSF1 messages. Use of the yaw estimate generated by this algorithm is controlled by the EK3_GSF_USE_MASK and EK3_GSF_RST_MAX parameters. To run the EKF-GSF yaw estimator in ride-along and logging only, set EK3_GSF_USE to 0.
     // @Bitmask: 0:FirstEKF,1:SecondEKF,2:ThirdEKF,3:FourthEKF,4:FifthEKF,5:SixthEKF
     // @User: Advanced
     // @RebootRequired: True
@@ -572,7 +556,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @DisplayName: EKF3 Sensor Affinity Options
     // @Description: These options control the affinity between sensor instances and EKF cores
     // @User: Advanced
-    // @Bitmask: 0:EnableGPSAffinity,1:EnableBaroAffinity,2:EnableCompassAffinity,3:EnableAirspeedAffinity
+    // @Bitmask: 0:EnableGPSAffinity,1:Reserved,2:EnableCompassAffinity
     // @RebootRequired: True
 
     AP_GROUPINFO("AFFINITY", 62, NavEKF3, _affinity, 0),
@@ -631,13 +615,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("OGNM_TEST_SF", 6, NavEKF3, _ognmTestScaleFactor, 2.0f),
 
-    // @Param: GND_EFF_DZ
-    // @DisplayName: Baro height ground effect dead zone
-    // @Description: This parameter sets the size of the dead zone that is applied to negative baro height spikes that can occur when taking off or landing when a vehicle with lift rotors is operating in ground effect ground effect. Set to about 0.5m less than the amount of negative offset in baro height that occurs just prior to takeoff when lift motors are spooling up. Set to 0 if no ground effect is present.
-    // @Range: 0.0 10.0
-    // @Increment: 0.5
-    // @User: Advanced
-    AP_GROUPINFO("GND_EFF_DZ", 7, NavEKF3, _baroGndEffectDeadZone, 4.0f),
+    // 7 was GND_EFF_DZ
 
     // @Param: PRIMARY
     // @DisplayName: Primary core number
@@ -657,7 +635,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     
     // @Param: GPS_VACC_MAX
     // @DisplayName: GPS vertical accuracy threshold
-    // @Description: Vertical accuracy threshold for GPS as the altitude source. The GPS will not be used as an altitude source if the reported vertical accuracy of the GPS is larger than this threshold, falling back to baro instead. Set to zero to deactivate the threshold check.
+    // @Description: Vertical accuracy threshold for GPS as the altitude source. The GPS will not be used as an altitude source if the reported vertical accuracy of the GPS is larger than this threshold, falling back to the synthetic height constraint instead. Set to zero to deactivate the threshold check.
     // @Range: 0.0 10.0
     // @Increment: 0.1
     // @User: Advanced
@@ -1052,9 +1030,22 @@ bool NavEKF3::healthy(void) const
     return core[primary].healthy();
 }
 
+bool NavEKF3::healthy_for_horizontal_nav(void) const
+{
+    if (!core) {
+        return false;
+    }
+    return core[primary].healthy_for_horizontal_nav();
+}
+
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 // requires_position should be true if horizontal position configuration should be checked
 bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
+{
+    return pre_arm_check(requires_position, true, failure_msg, failure_msg_len);
+}
+
+bool NavEKF3::pre_arm_check(bool requires_position, bool require_height, char *failure_msg, uint8_t failure_msg_len) const
 {
     // check source configuration
     if (!sources.pre_arm_check(requires_position, failure_msg, failure_msg_len)) {
@@ -1075,7 +1066,8 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         return false;
     }
     for (uint8_t i = 0; i < num_cores; i++) {
-        if (!core[i].healthy()) {
+        const bool core_healthy = require_height ? core[i].healthy() : core[i].healthy_for_horizontal_nav();
+        if (!core_healthy) {
             const char *failure = core[i].prearm_failure_reason();
             if (failure != nullptr) {
                 dal.snprintf(failure_msg, failure_msg_len, failure);
@@ -1142,25 +1134,6 @@ void NavEKF3::getVelNED(Vector3f &vel) const
     }
 }
 
-// return estimate of true airspeed vector in body frame in m/s
-// returns false if estimate is unavailable
-bool NavEKF3::getAirSpdVec(Vector3f &vel) const
-{
-    if (core) {
-        return core[primary].getAirSpdVec(vel);
-    }
-    return false;
-}
-
-// return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
-bool NavEKF3::getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const
-{
-    if (core) {
-        return core[primary].getAirSpdHealthData(innovation, innovationVariance, age_ms);
-    }
-    return false;
-}
-
 // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
 float NavEKF3::getPosDownDerivative() const
 {
@@ -1207,7 +1180,7 @@ void NavEKF3::resetGyroBias(void)
     }
 }
 
-// Resets the baro so that it reads zero at the current height
+// Resets the height datum to the current height
 // Resets the EKF height to zero
 // Adjusts the EKF origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
@@ -1264,16 +1237,6 @@ void NavEKF3::getMagXYZ(Vector3f &magXYZ) const
 {
     if (core) {
         core[primary].getMagXYZ(magXYZ);
-    }
-}
-
-// return the airspeed sensor in use
-uint8_t NavEKF3::getActiveAirspeed() const
-{
-    if (core) {
-        return core[primary].getActiveAirspeed();
-    } else {
-        return UINT8_MAX;
     }
 }
 
@@ -1414,23 +1377,23 @@ void NavEKF3::getQuaternion(Quaternion &quat) const
 }
 
 // return the innovations
-bool NavEKF3::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+bool NavEKF3::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &reservedInnov, float &yawInnov) const
 {
     if (core == nullptr) {
         return false;
     }
 
-    return core[primary].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    return core[primary].getInnovations(velInnov, posInnov, magInnov, reservedInnov, yawInnov);
 }
 
-// return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-bool NavEKF3::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+// return the innovation consistency test ratios for the velocity, position and magnetometer measurements
+bool NavEKF3::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar, Vector2f &offset) const
 {
     if (core == nullptr) {
         return false;
     }
 
-    return core[primary].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    return core[primary].getVariances(velVar, posVar, hgtVar, magVar, reservedVar, offset);
 }
 
 bool NavEKF3::getOrientationCovariance(Matrix3f &covariance) const
@@ -1653,7 +1616,8 @@ void NavEKF3::convert_parameters()
     if (AP_Param::find_old_parameter(&alt_source_info, &alt_source_old)) {
         switch (alt_source_old.get()) {
         case 0:
-            // EK3_ALT_SOURCE = BARO, the default so do nothing
+            // EK3_ALT_SOURCE = legacy default altitude source, no longer supported
+            AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::NONE);
             break;
         case 1:
             // EK3_ALT_SOURCE == 1 (RangeFinder)
@@ -1717,9 +1681,8 @@ void NavEKF3::setTerrainHgtStable(bool val)
   2 = badly conditioned X magnetometer fusion
   3 = badly conditioned Y magnetometer fusion
   4 = badly conditioned Z magnetometer fusion
-  5 = badly conditioned airspeed fusion
-  6 = badly conditioned synthetic sideslip fusion
-  7 = filter is not initialised
+  5 = badly conditioned synthetic sideslip fusion
+  6 = filter is not initialised
 */
 void NavEKF3::getFilterFaults(uint16_t &faults) const
 {
@@ -1961,21 +1924,6 @@ void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
     pos_down_reset_data.last_primary_change = imuSampleTime_us / 1000;
     pos_down_reset_data.core_changed = true;
 
-}
-
-// Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
-void NavEKF3::writeDefaultAirSpeed(float airspeed, float uncertainty)
-{
-    // ignore any data if the EKF is not started
-    if (!core) {
-        return;
-    }
-
-    dal.log_writeDefaultAirSpeed3(airspeed, uncertainty);
-
-    for (uint8_t i=0; i<num_cores; i++) {
-        core[i].writeDefaultAirSpeed(airspeed, uncertainty);
-    }
 }
 
 // returns true when the yaw angle has been aligned

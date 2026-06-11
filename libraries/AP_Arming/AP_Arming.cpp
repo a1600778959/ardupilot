@@ -35,7 +35,6 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Declination/AP_Declination.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
@@ -87,14 +86,14 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
-    // @Param{Plane, Rover}: REQUIRE
+    // @Param{Rover}: REQUIRE
     // @DisplayName: Require Arming Motors 
-    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, sends the minimum throttle PWM value to the throttle channel when disarmed. If 2, send 0 PWM (no signal) to throttle channel when disarmed. On planes with ICE enabled and the throttle while disarmed option set in ICE_OPTIONS, the motor will always get THR_MIN when disarmed. Arming will occur using either rudder stick arming (if enabled) or GCS command when all mandatory and ARMING_CHECK items are satisfied. Note, when setting this parameter to 0, a reboot is required to immediately arm the plane.
+    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately). If 1, sends the minimum throttle PWM value to the throttle channel when disarmed. If 2, send 0 PWM (no signal) to throttle channel when disarmed. Arming will occur using either steering stick arming (if enabled) or GCS command when all mandatory and ARMING_CHECK items are satisfied.
     // @Values: 0:Disabled,1:minimum PWM when disarmed,2:0 PWM when disarmed
     // @User: Advanced
     AP_GROUPINFO_FLAGS_FRAME("REQUIRE",     0,      AP_Arming,  require, float(Required::YES_MIN_PWM),
                              AP_PARAM_FLAG_NO_SHIFT,
-                             AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_ROVER),
+                             AP_PARAM_FRAME_ROVER),
 
     // 2 was the CHECK paramter stored in a AP_Int16
 
@@ -109,17 +108,12 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // index 4 was VOLT_MIN, moved to AP_BattMonitor
     // index 5 was VOLT2_MIN, moved to AP_BattMonitor
 
-    // @Param{Plane,Rover,Copter,Blimp}: RUDDER
-    // @DisplayName: Arming with Rudder enable/disable
-    // @Description: Allow arm/disarm by rudder input. When enabled arming can be done with right rudder, disarming with left rudder. Rudder arming only works with throttle at zero +- deadzone (RCx_DZ). Depending on vehicle type, arming in certain modes is prevented. See the wiki for each vehicle. Caution is recommended when arming if it is allowed in an auto-throttle mode!
+    // @Param{Rover}: RUDDER
+    // @DisplayName: Arming with steering input enable/disable
+    // @Description: Allow arm/disarm by steering input. When enabled arming can be done with right steering input, disarming with left steering input. Steering arming only works with throttle at zero +- deadzone (RCx_DZ).
     // @Values: 0:Disabled,1:ArmingOnly,2:ArmOrDisarm
     // @User: Advanced
-    AP_GROUPINFO_FRAME("RUDDER",  6,     AP_Arming, _rudder_arming, ARMING_RUDDER_DEFAULT, AP_PARAM_FRAME_PLANE |
-                                                                                           AP_PARAM_FRAME_ROVER |
-                                                                                           AP_PARAM_FRAME_COPTER |
-                                                                                           AP_PARAM_FRAME_TRICOPTER |
-                                                                                           AP_PARAM_FRAME_HELI |
-                                                                                           AP_PARAM_FRAME_BLIMP),
+    AP_GROUPINFO_FRAME("RUDDER",  6,     AP_Arming, _rudder_arming, ARMING_RUDDER_DEFAULT, AP_PARAM_FRAME_ROVER),
 
     // @Param: MIS_ITEMS
     // @DisplayName: Required mission items
@@ -131,8 +125,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: CHECK
     // @DisplayName: Arm Checks to Perform (bitmask)
     // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. For most users it is recommended to leave this at the default of 1 (all checks enabled). You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72.
-    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
-    // @Bitmask{Plane}: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT
+    // @Bitmask: 0:All,1:Reserved,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
     // @User: Standard
     AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
@@ -165,7 +158,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @DisplayName: Require vehicle location
     // @Description: Require that the vehicle have an absolute position before it arms.  This can help ensure that the vehicle can Return To Launch.
     // @User: Advanced
-    // @Values{Copter}: 0:Do not require location,1:Require Location
+    // @Values: 0:Do not require location,1:Require Location
     AP_GROUPINFO("NEED_LOC", 12, AP_Arming, require_location, float(AP_ARMING_NEED_LOC_DEFAULT)),
 #endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
 
@@ -309,28 +302,6 @@ void AP_Arming::check_failed(bool report, const char *fmt, ...) const
     gcs().send_textv(MAV_SEVERITY_CRITICAL, taggedfmt, arg_list);
     va_end(arg_list);
 #endif  // HAL_GCS_ENABLED
-}
-
-bool AP_Arming::barometer_checks(bool report)
-{
-#ifdef HAL_BARO_ALLOW_INIT_NO_BARO
-    return true;
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (AP::sitl()->baro_count == 0) {
-        // simulate no baro boards
-        return true;
-    }
-#endif
-    if (check_enabled(ARMING_CHECK_BARO)) {
-        char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
-        if (!AP::baro().arming_checks(sizeof(buffer), buffer)) {
-            check_failed(ARMING_CHECK_BARO, report, "Baro: %s", buffer);
-            return false;
-        }
-    }
-
-    return true;
 }
 
 #if HAL_LOGGING_ENABLED
@@ -1361,9 +1332,6 @@ bool AP_Arming::pre_arm_checks(bool report)
     bool checks_result = hardware_safety_check(report)
 #if HAL_HAVE_IMU_HEATER
         &  heater_min_temperature_checks(report)
-#endif
-#if AP_BARO_ENABLED
-        &  barometer_checks(report)
 #endif
 #if AP_INERTIALSENSOR_ENABLED
         &  ins_checks(report)

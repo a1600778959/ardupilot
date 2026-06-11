@@ -22,7 +22,6 @@ public:
     AP_Int8 relay_on;           // relay value to trigger camera
     AP_Float interval_min;      // minimum time (in seconds) between shots required by camera
     AP_Int8 options;            // whether to start recording when armed and stop when disarmed
-    AP_Int8 mount_instance;     // mount instance to which camera is associated with
     AP_Float hfov;              // horizontal field of view in degrees
     AP_Float vfov;              // vertical field of view in degrees
 

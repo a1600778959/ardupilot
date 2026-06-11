@@ -18,8 +18,6 @@
 class AP_Camera_Backend;
 class AP_Camera_Servo;
 class AP_Camera_Relay;
-class AP_Camera_SoloGimbal;
-class AP_Camera_Mount;
 class AP_Camera_MAVLink;
 class AP_Camera_MAVLinkCamV2;
 class AP_Camera_Scripting;
@@ -32,8 +30,6 @@ class AP_Camera {
     friend class AP_Camera_Backend;
     friend class AP_Camera_Servo;
     friend class AP_Camera_Relay;
-    friend class AP_Camera_SoloGimbal;
-    friend class AP_Camera_Mount;
     friend class AP_Camera_MAVLink;
     friend class AP_Camera_MAVLinkCamV2;
     friend class AP_Camera_Scripting;

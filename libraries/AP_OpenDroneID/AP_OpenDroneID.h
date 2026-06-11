@@ -102,7 +102,6 @@ private:
     bool _initialised;
     // parameters
     AP_Int8  _enable;
-    AP_Float _baro_accuracy;    // Vertical accuracy of the barometer when installed
     AP_Int16 _options;
     AP_Int8  _mav_port;
     AP_Int8  _can_driver;

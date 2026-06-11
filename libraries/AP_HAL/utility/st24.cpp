@@ -109,14 +109,14 @@ typedef struct {
  * - primary gyro y
  * - primary gyro z
  *
- * pressCompassStatus
+ * sensorStatus
  * 8 bit total
  * bits 0-3 for compass status
  * - value 0 is FAILED
  * - value 1 is INITIALIZING
  * - value 2 is RUNNING
  * - value 3 - 15 are reserved
- * bits 4-7 for pressure status
+ * bits 4-7 are reserved status
  * - value 0 is FAILED
  * - value 1 is INITIALIZING
  * - value 2 is RUNNING
@@ -135,7 +135,7 @@ typedef struct {
 	int16_t	roll, pitch, yaw;	///< 0.01 degree resolution
 	uint8_t	motorStatus;		///< 1 bit per motor for status 1=good, 0= fail
 	uint8_t	imuStatus;		///< inertial measurement unit status
-	uint8_t	pressCompassStatus;	///< baro / compass status
+	uint8_t	sensorStatus;		///< compass / reserved status
 } TelemetryData;
 
 #pragma pack(pop)

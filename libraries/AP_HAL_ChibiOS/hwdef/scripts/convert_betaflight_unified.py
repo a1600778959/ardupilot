@@ -402,17 +402,6 @@ define HAL_GPIO_%s_LED_PIN %u
     if 'max7456_spi_bus' in settings:
         write_osd_config(f, settings['max7456_spi_bus'])
 
-    if 'baro_i2c_device' in settings:
-        for define in defines:
-            if define.startswith('USE_BARO_'):
-                baro = define[len('USE_BARO_'):]
-                f.write('''
-# Barometer setup
-BARO %s I2C:%s:0x76
-        ''' % (baro, int(settings['baro_i2c_device']) - 1))
-    else:
-        f.write("define HAL_BARO_ALLOW_INIT_NO_BARO 1\n")
-
     f.write('''
 # IMU setup
 ''')

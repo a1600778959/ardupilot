@@ -59,7 +59,6 @@
 #include <sys/types.h>
 #include <vector>
 
-#include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Compass/AP_Compass.h>
 #include <SITL/SITL.h>

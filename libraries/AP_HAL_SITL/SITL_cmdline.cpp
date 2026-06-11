@@ -10,36 +10,11 @@
 #include <AP_HAL_SITL/Storage.h>
 #include <AP_Param/AP_Param.h>
 
-#include <SITL/SIM_Multicopter.h>
-#include <SITL/SIM_Helicopter.h>
-#include <SITL/SIM_SingleCopter.h>
-#include <SITL/SIM_Plane.h>
-#include <SITL/SIM_Glider.h>
-#include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
-#include <SITL/SIM_BalanceBot.h>
-#include <SITL/SIM_Sailboat.h>
-#include <SITL/SIM_MotorBoat.h>
-#include <SITL/SIM_CRRCSim.h>
 #include <SITL/SIM_Gazebo.h>
-#include <SITL/SIM_last_letter.h>
-#include <SITL/SIM_JSBSim.h>
-#include <SITL/SIM_Tracker.h>
-#include <SITL/SIM_Balloon.h>
-#include <SITL/SIM_FlightAxis.h>
 #include <SITL/SIM_Calibration.h>
-#include <SITL/SIM_XPlane.h>
-#include <SITL/SIM_Submarine.h>
-#include <SITL/SIM_SilentWings.h>
-#include <SITL/SIM_Morse.h>
 #include <SITL/SIM_AirSim.h>
-#include <SITL/SIM_Scrimmage.h>
-#include <SITL/SIM_Webots.h>
-#include <SITL/SIM_Webots_Python.h>
-#include <SITL/SIM_JSON.h>
-#include <SITL/SIM_Blimp.h>
 #include <SITL/SIM_NoVehicle.h>
-#include <SITL/SIM_StratoBlimp.h>
 
 #include <AP_Filesystem/AP_Filesystem.h>
 
@@ -124,64 +99,11 @@ static const struct {
     const char *name;
     Aircraft *(*constructor)(const char *frame_str);
 } model_constructors[] = {
-    { "quadplane",          QuadPlane::create },
-    { "xplane",             XPlane::create },
-    { "firefly",            QuadPlane::create },
-    { "+",                  MultiCopter::create },
-    { "quad",               MultiCopter::create },
-    { "copter",             MultiCopter::create },
-    { "x",                  MultiCopter::create },
-    { "bfxrev",             MultiCopter::create },
-    { "bfx",                MultiCopter::create },
-    { "djix",               MultiCopter::create },
-    { "cwx",                MultiCopter::create },
-    { "hexa",               MultiCopter::create },
-    { "hexax",              MultiCopter::create },
-    { "hexa-cwx",           MultiCopter::create },
-    { "hexa-dji",           MultiCopter::create },
-    { "octa",               MultiCopter::create },
-    { "octa-cwx",           MultiCopter::create },
-    { "octa-dji",           MultiCopter::create },
-    { "octa-quad-cwx",      MultiCopter::create },
-    { "dodeca-hexa",        MultiCopter::create },
-    { "tri",                MultiCopter::create },
-    { "y6",                 MultiCopter::create },
-    { "deca",               MultiCopter::create },
-    { "deca-cwx",           MultiCopter::create },
-    { "heli",               Helicopter::create },
-    { "heli-dual",          Helicopter::create },
-    { "heli-compound",      Helicopter::create },
-    { "heli-blade360",         Helicopter::create },
-    { "singlecopter",       SingleCopter::create },
-    { "coaxcopter",         SingleCopter::create },
     { "rover",              SimRover::create },
-    { "balancebot",         BalanceBot::create },
-    { "sailboat",           Sailboat::create },
-    { "motorboat",          MotorBoat::create },
-    { "crrcsim",            CRRCSim::create },
-    { "jsbsim",             JSBSim::create },
-    { "flightaxis",         FlightAxis::create },
     { "gazebo",             Gazebo::create },
-    { "last_letter",        last_letter::create },
-    { "tracker",            Tracker::create },
-    { "balloon",            Balloon::create },
-    { "glider",             Glider::create },
-    { "plane",              Plane::create },
     { "calibration",        Calibration::create },
-    { "vectored",           Submarine::create },
-    { "vectored_6dof",      Submarine::create },
-    { "silentwings",        SilentWings::create },
-    { "morse",              Morse::create },
     { "airsim",             AirSim::create},
-    { "scrimmage",          Scrimmage::create },
-    { "webots-python",      WebotsPython::create },
-    { "webots",             Webots::create },
-    { "JSON",               JSON::create },
-    { "blimp",              Blimp::create },
     { "novehicle",          NoVehicle::create },
-#if AP_SIM_STRATOBLIMP_ENABLED
-    { "stratoblimp",        StratoBlimp::create },
-#endif
 };
 
 void SITL_State::_set_signal_handlers(void) const

@@ -35,7 +35,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
@@ -69,13 +68,6 @@ const AP_Param::GroupInfo AP_OpenDroneID::var_info[] = {
     // @Description: Options for OpenDroneID subsystem
     // @Bitmask: 0:EnforceArming, 1:AllowNonGPSPosition, 2:LockUASIDOnFirstBasicIDRx
     AP_GROUPINFO("OPTIONS", 4, AP_OpenDroneID, _options, 0),
-
-    // @Param: BARO_ACC
-    // @DisplayName: Barometer vertical accuraacy
-    // @Description: Barometer Vertical Accuracy when installed in the vehicle. Note this is dependent upon installation conditions and thus disabled by default
-    // @Units: m
-    // @User: Advanced
-    AP_GROUPINFO("BARO_ACC", 5, AP_OpenDroneID, _baro_accuracy, -1.0),
 
     AP_GROUPEND
 };
@@ -335,7 +327,6 @@ void AP_OpenDroneID::send_static_out()
 void AP_OpenDroneID::send_location_message()
 {
     auto &ahrs = AP::ahrs();
-    const auto &barometer = AP::baro();
     const auto &gps = AP::gps();
 
     const AP_GPS::GPS_Status gps_status = gps.status();
@@ -388,9 +379,7 @@ void AP_OpenDroneID::send_location_message()
         longitude = current_location.lng;
     }
 
-    // altitude referenced against 1013.2mb
-    const float base_press_mbar = 1013.2;
-    const float altitude_barometric = create_altitude(barometer.get_altitude_difference(base_press_mbar*100, barometer.get_pressure()));
+    const float altitude_barometric = ODID_INV_ALT;
 
     float altitude_geodetic = -1000;
     int32_t alt_amsl_cm;
@@ -440,13 +429,7 @@ void AP_OpenDroneID::send_location_message()
     // accuracy, as we use system timer to propogate time
     timestamp_accuracy_mav =  create_enum_timestamp_accuracy(1.0);
 
-    // Barometer altitude accuraacy will be highly dependent on the airframe and installation of the barometer in use
-    // thus ArduPilot cannot reasonably fill this in.
-    // Instead allow a manufacturer to use a parameter to fill this in
-    uint8_t barometer_accuracy = MAV_ODID_VER_ACC_UNKNOWN; //ahrs class does not provide accuracy readings
-    if (!is_equal(_baro_accuracy.get(), -1.0f)) {
-        barometer_accuracy = create_enum_vertical_accuracy(_baro_accuracy);
-    }
+    uint8_t barometer_accuracy = MAV_ODID_VER_ACC_UNKNOWN;
 
     // Timestamp here is the number of seconds after into the current hour referenced to UTC time (up to one hour)
 

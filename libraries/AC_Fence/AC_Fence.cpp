@@ -48,30 +48,19 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 
     // @Param: TYPE
     // @DisplayName: Fence Type
-    // @Description: Configured fence types held as bitmask. Max altitide, Circle and Polygon fences will be immediately enabled if configured. Min altitude fence will only be enabled once the minimum altitude is reached.
+    // @Description: Configured Rover fence types held as bitmask.
     // @Bitmask{Rover}: 1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons
-    // @Bitmask{Copter, Plane, Sub}: 0:Max altitude,1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons,3:Min altitude
     // @User: Standard
     AP_GROUPINFO("TYPE",        1,  AC_Fence,   _configured_fences,  AC_FENCE_TYPE_DEFAULT),
 
     // @Param: ACTION
     // @DisplayName: Fence Action
     // @Description: What action should be taken when fence is breached
-    // @Values{Copter}: 0:Report Only,1:RTL or Land,2:Always Land,3:SmartRTL or RTL or Land,4:Brake or Land,5:SmartRTL or Land
     // @Values{Rover}: 0:Report Only,1:RTL or Hold,2:Hold,3:SmartRTL or RTL or Hold,4:SmartRTL or Hold
-    // @Values{Plane}: 0:Report Only,1:RTL,6:Guided,7:GuidedThrottlePass
-    // @Values: 0:Report Only,1:RTL or Land
     // @User: Standard
     AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        AC_FENCE_ACTION_RTL_AND_LAND),
 
-    // @Param{Copter, Plane, Sub}: ALT_MAX
-    // @DisplayName: Fence Maximum Altitude
-    // @Description: Maximum altitude allowed before geofence triggers
-    // @Units: m
-    // @Range: 10 1000
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO_FRAME("ALT_MAX", 3, AC_Fence, _alt_max, AC_FENCE_ALT_MAX_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_PLANE),
+    // 3 reserved for a removed parameter
 
     // @Param: RADIUS
     // @DisplayName: Circular Fence Radius
@@ -96,48 +85,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TOTAL",       6,  AC_Fence,   _total, 0),
 
-    // @Param{Copter, Plane, Sub}: ALT_MIN
-    // @DisplayName: Fence Minimum Altitude
-    // @Description: Minimum altitude allowed before geofence triggers
-    // @Units: m
-    // @Range: -100 100
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO_FRAME("ALT_MIN",     7,  AC_Fence,   _alt_min,       AC_FENCE_ALT_MIN_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_PLANE),
-
-    // @Param{Plane}: RET_RALLY
-    // @DisplayName: Fence Return to Rally
-    // @Description: Should the vehicle return to fence return point or rally point
-    // @Values: 0:Fence Return Point,1:Nearest Rally Point
-    // @Range: 0 1
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO_FRAME("RET_RALLY",   8,  AC_Fence,   _ret_rally,       0, AP_PARAM_FRAME_PLANE),
-
-    // @Param{Plane}: RET_ALT
-    // @DisplayName: Fence Return Altitude
-    // @Description: Altitude the vehicle will transit to when a fence breach occurs
-    // @Units: m
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO_FRAME("RET_ALT",   9,  AC_Fence,   _ret_altitude,       0.0f, AP_PARAM_FRAME_PLANE),
-
-    // @Param{Plane, Copter}: AUTOENABLE
-    // @DisplayName: Fence Auto-Enable
-    // @Description: Auto-enable of fences. AutoEnableOnTakeoff enables all configured fences, except the minimum altitude fence (which is enabled when the minimum altitude is reached), after autotakeoffs reach altitude. During autolandings the fences will be disabled.  AutoEnableDisableFloorOnLanding enables all configured fences, except the minimum altitude fence (which is enabled when the minimum altitude is reached), after autotakeoffs reach altitude. During autolandings only the Minimum Altitude fence will be disabled. AutoEnableOnlyWhenArmed enables all configured fences on arming, except the minimum altitude fence (which is enabled when the minimum altitude is reached), but no fences are disabled during autolandings. However, fence breaches are ignored while executing prior breach recovery actions which may include autolandings.
-    // @Values{Plane, Copter}: 0:AutoEnableOff,1:AutoEnableOnTakeoff,2:AutoEnableDisableFloorOnLanding,3:AutoEnableOnlyWhenArmed
-    // @Range: 0 3
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO_FRAME("AUTOENABLE", 10, AC_Fence, _auto_enabled, static_cast<uint8_t>(AutoEnable::ALWAYS_DISABLED), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
-
-    // @Param{Plane, Copter}: OPTIONS
-    // @DisplayName: Fence options
-    // @Description: When bit 0 is set sisable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
-    // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas
-    // @User: Standard
-    AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
+    // 7 to 11 reserved for removed parameters
 
     AP_GROUPEND
 };

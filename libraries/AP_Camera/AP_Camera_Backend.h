@@ -170,11 +170,7 @@ protected:
     void Write_Trigger();
     void Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us=0);
 
-    // get corresponding mount instance for the camera
-    uint8_t get_mount_instance() const;
-
-    // get mavlink gimbal device id which is normally mount_instance+1
-    uint8_t get_gimbal_device_id() const;
+    uint8_t get_gimbal_device_id() const { return 0; }
 
 #if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
     mavlink_camera_information_t _camera_info;

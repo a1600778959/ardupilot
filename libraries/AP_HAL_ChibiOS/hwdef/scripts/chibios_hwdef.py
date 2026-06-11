@@ -116,7 +116,6 @@ class ChibiOSHWDef(object):
         self.imu_list = []
         self.compass_list = []
         self.baro_list = []
-        self.airspeed_list = []
 
         # output lines:
         self.all_lines = []
@@ -1721,65 +1720,9 @@ INCLUDE common.ld
             f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
     def write_BARO_config(self, f):
-        '''write barometer config defines'''
-        devlist = []
-        seen = set()
-        for dev in self.baro_list:
-            if self.seen_str(dev) in seen:
-                self.error("Duplicate BARO: %s" % self.seen_str(dev))
-            seen.add(self.seen_str(dev))
-            driver = dev[0]
-            probe = 'probe'
-            wrapper = ''
-            a = driver.split(':')
-            driver = a[0]
-            if len(a) > 1 and a[1].startswith('probe'):
-                probe = a[1]
-            for i in range(1, len(dev)):
-                if dev[i].startswith("SPI:"):
-                    dev[i] = self.parse_spi_device(dev[i])
-                elif dev[i].startswith("I2C:"):
-                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
-                    if dev[i].startswith('hal.i2c_mgr'):
-                        dev[i] = 'std::move(%s)' % dev[i]
-            n = len(devlist)+1
-            devlist.append('HAL_BARO_PROBE%u' % n)
-            args = ['*this'] + dev[1:]
-            f.write(
-                '#define HAL_BARO_PROBE%u %s ADD_BACKEND(AP_Baro_%s::%s(%s))\n'
-                % (n, wrapper, driver, probe, ','.join(args)))
-        if len(devlist) > 0:
-            f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
-
-    def write_AIRSPEED_config(self, f):
-        '''write airspeed config defines'''
-        devlist = []
-        seen = set()
-        idx = 0
-        for dev in self.airspeed_list:
-            if self.seen_str(dev) in seen:
-                self.error("Duplicate AIRSPEED: %s" % self.seen_str(dev))
-            seen.add(self.seen_str(dev))
-            driver = dev[0]
-            wrapper = ''
-            a = driver.split(':')
-            driver = a[0]
-            for i in range(1, len(dev)):
-                if dev[i].startswith("SPI:"):
-                    dev[i] = self.parse_spi_device(dev[i])
-                elif dev[i].startswith("I2C:"):
-                    (wrapper, dev[i]) = self.parse_i2c_device(dev[i])
-                    if dev[i].startswith('hal.i2c_mgr'):
-                        dev[i] = 'std::move(%s)' % dev[i]
-            n = len(devlist)+1
-            devlist.append('HAL_AIRSPEED_PROBE%u' % n)
-            args = ['*this', str(idx)] + dev[1:]
-            f.write(
-                '#define HAL_AIRSPEED_PROBE%u %s ADD_BACKEND(AP_Airspeed_%s::probe(%s))\n'
-                % (n, wrapper, driver, ','.join(args)))
-            idx += 1
-        if len(devlist) > 0:
-            f.write('#define HAL_AIRSPEED_PROBE_LIST %s\n\n' % ';'.join(devlist))
+        '''removed pressure-sensor directives are not supported'''
+        if len(self.baro_list) > 0:
+            self.error("BARO entries are not supported")
 
     def write_board_validate_macro(self, f):
         '''write board validation macro'''
@@ -2644,7 +2587,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.write_IMU_config(f)
         self.write_MAG_config(f)
         self.write_BARO_config(f)
-        self.write_AIRSPEED_config(f)
         self.write_board_validate_macro(f)
         self.write_check_firmware(f)
 
@@ -3071,9 +3013,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         elif a[0] == 'COMPASS':
             self.compass_list.append(a[1:])
         elif a[0] == 'BARO':
-            self.baro_list.append(a[1:])
-        elif a[0] == 'AIRSPEED':
-            self.airspeed_list.append(a[1:])
+            self.error("BARO entries are not supported")
         elif a[0] == 'ROMFS':
             self.romfs_add(a[1], a[2])
         elif a[0] == 'ROMFS_WILDCARD':
@@ -3118,8 +3058,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     self.compass_list = []
                 if u == 'BARO':
                     self.baro_list = []
-                if u == 'AIRSPEED':
-                    self.airspeed_list = []
                 if u == 'ROMFS':
                     self.romfs = {}
         elif a[0] == 'env':

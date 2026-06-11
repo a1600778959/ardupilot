@@ -64,7 +64,6 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;
     _RFRN.alt = _home.alt;
-    _RFRN.EAS2TAS = ahrs.get_EAS2TAS();
     _RFRN.vehicle_class = (uint8_t)ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
@@ -79,7 +78,6 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _rotation_vehicle_body_to_autopilot_body = ahrs.get_rotation_vehicle_body_to_autopilot_body();
 
     _ins.start_frame();
-    _baro.start_frame();
     _gps.start_frame();
     _compass.start_frame();
 #if AP_RANGEFINDER_ENABLED
@@ -142,40 +140,6 @@ void AP_DAL::end_frame(void)
     }
 }
 
-void AP_DAL::log_event2(AP_DAL::Event event)
-{
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
-    end_frame();
-    struct log_REV2 pkt{
-        event          : uint8_t(event),
-    };
-    WRITE_REPLAY_BLOCK(REV2, pkt);
-#endif
-}
-
-void AP_DAL::log_SetOriginLLH2(const Location &loc)
-{
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
-    struct log_RSO2 pkt{
-        lat            : loc.lat,
-        lng            : loc.lng,
-        alt            : loc.alt,
-    };
-    WRITE_REPLAY_BLOCK(RSO2, pkt);
-#endif
-}
-
-void AP_DAL::log_writeDefaultAirSpeed2(const float aspeed, const float uncertainty)
-{
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
-    struct log_RWA2 pkt{
-        airspeed:      aspeed,
-        uncertainty:   uncertainty,
-    };
-    WRITE_REPLAY_BLOCK(RWA2, pkt);
-#endif
-}
-
 void AP_DAL::log_event3(AP_DAL::Event event)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -196,17 +160,6 @@ void AP_DAL::log_SetOriginLLH3(const Location &loc)
         alt            : loc.alt,
     };
     WRITE_REPLAY_BLOCK(RSO3, pkt);
-#endif
-}
-
-void AP_DAL::log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty)
-{
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
-    struct log_RWA3 pkt{
-        airspeed:      aspeed,
-        uncertainty:   uncertainty
-    };
-    WRITE_REPLAY_BLOCK(RWA3, pkt);
 #endif
 }
 
@@ -369,28 +322,17 @@ void AP_DAL::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vec
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 /*
-  handle frame message. This message triggers the EKF2/EKF3 updates and logging
+  handle frame message. This message triggers the EKF3 updates and logging
  */
-void AP_DAL::handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+void AP_DAL::handle_message(const log_RFRF &msg, NavEKF3 &ekf3)
 {
     _RFRF.core_slow = msg.core_slow;
 
     /*
       note that we need to handle the case of LOG_REPLAY=1 with
       LOG_DISARMED=0. To handle this we need to record the start of the filter
-     */
+    */
     const uint8_t frame_types = msg.frame_types;
-    if (frame_types & uint8_t(AP_DAL::FrameType::InitialiseFilterEKF2)) {
-        ekf2_init_done = ekf2.InitialiseFilter();
-    }
-    if (frame_types & uint8_t(AP_DAL::FrameType::UpdateFilterEKF2)) {
-        if (!ekf2_init_done) {
-            ekf2_init_done = ekf2.InitialiseFilter();
-        }
-        if (ekf2_init_done) {
-            ekf2.UpdateFilter();
-        }
-    }
     if (frame_types & uint8_t(AP_DAL::FrameType::InitialiseFilterEKF3)) {
         ekf3_init_done = ekf3.InitialiseFilter();
     }
@@ -402,9 +344,6 @@ void AP_DAL::handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
             ekf3.UpdateFilter();
         }
     }
-    if (frame_types & uint8_t(AP_DAL::FrameType::LogWriteEKF2)) {
-        ekf2.Log_Write();
-    }
     if (frame_types & uint8_t(AP_DAL::FrameType::LogWriteEKF3)) {
         ekf3.Log_Write();
     }
@@ -413,50 +352,45 @@ void AP_DAL::handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 /*
   handle external position data
  */
-void AP_DAL::handle_message(const log_REPH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+void AP_DAL::handle_message(const log_REPH &msg, NavEKF3 &ekf3)
 {
     _REPH = msg;
-    ekf2.writeExtNavData(msg.pos, msg.quat, msg.posErr, msg.angErr, msg.timeStamp_ms, msg.delay_ms, msg.resetTime_ms);
     ekf3.writeExtNavData(msg.pos, msg.quat, msg.posErr, msg.angErr, msg.timeStamp_ms, msg.delay_ms, msg.resetTime_ms);
 }
 
 /*
   handle external velocity data
  */
-void AP_DAL::handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+void AP_DAL::handle_message(const log_REVH &msg, NavEKF3 &ekf3)
 {
     _REVH = msg;
-    ekf2.writeExtNavVelData(msg.vel, msg.err, msg.timeStamp_ms, msg.delay_ms);
     ekf3.writeExtNavVelData(msg.vel, msg.err, msg.timeStamp_ms, msg.delay_ms);
 }
 
 /*
   handle wheel odometry data
  */
-void AP_DAL::handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+void AP_DAL::handle_message(const log_RWOH &msg, NavEKF3 &ekf3)
 {
     _RWOH = msg;
-    // note that EKF2 does not support wheel odometry
     ekf3.writeWheelOdom(msg.delAng, msg.delTime, msg.timeStamp_ms, msg.posOffset, msg.radius);
 }
 
 /*
   handle body frame odometry
  */
-void AP_DAL::handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+void AP_DAL::handle_message(const log_RBOH &msg, NavEKF3 &ekf3)
 {
     _RBOH = msg;
-    // note that EKF2 does not support body frame odometry
     ekf3.writeBodyFrameOdom(msg.quality, msg.delPos, msg.delAng, msg.delTime, msg.timeStamp_ms, msg.delay_ms, msg.posOffset);
 }
 
 /*
   handle position reset
  */
-void AP_DAL::handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+void AP_DAL::handle_message(const log_RSLL &msg, NavEKF3 &ekf3)
 {
     _RSLL = msg;
-    // note that EKF2 does not support body frame odometry
     const Location loc {msg.lat, msg.lng, 0, Location::AltFrame::ABSOLUTE };
     ekf3.setLatLng(loc, msg.posAccSD, msg.timestamp_ms);
 }
@@ -473,7 +407,7 @@ AP_DAL &dal()
 
 /*
   replay printf. To debug replay failures add rprintf() calls into
-  EKF2/EKF3 and compare /tmp/replay.log to /tmp/real.log
+  EKF3 and compare /tmp/replay.log to /tmp/real.log
  */
 void rprintf(const char *format, ...)
 {
@@ -495,4 +429,3 @@ void rprintf(const char *format, ...)
     va_end(ap);
 #endif
 }
-

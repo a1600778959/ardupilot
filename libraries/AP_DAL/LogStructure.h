@@ -9,25 +9,17 @@
 #define LOG_IDS_FROM_DAL \
     LOG_RFRH_MSG, \
     LOG_RFRF_MSG, \
-    LOG_REV2_MSG, \
-    LOG_RSO2_MSG, \
-    LOG_RWA2_MSG, \
     LOG_REV3_MSG, \
     LOG_RSO3_MSG, \
-    LOG_RWA3_MSG, \
     LOG_REY3_MSG, \
     LOG_RFRN_MSG, \
     LOG_RISH_MSG, \
     LOG_RISI_MSG, \
-    LOG_RBRH_MSG, \
-    LOG_RBRI_MSG, \
     LOG_RRNH_MSG, \
     LOG_RRNI_MSG, \
     LOG_RGPH_MSG, \
     LOG_RGPI_MSG, \
     LOG_RGPJ_MSG, \
-    LOG_RASH_MSG, \
-    LOG_RASI_MSG, \
     LOG_RBCH_MSG, \
     LOG_RBCI_MSG, \
     LOG_RVOH_MSG, \
@@ -62,7 +54,6 @@ struct log_RFRN {
     int32_t lat;
     int32_t lng;
     int32_t alt;
-    float EAS2TAS;
     uint32_t available_memory;
     Vector3f ahrs_trim;
     uint8_t vehicle_class;
@@ -104,40 +95,21 @@ struct log_RISI {
     uint8_t _end;
 };
 
-// @LoggerMessage: REV2
-// @Description: Replay Event (EKF2)
-struct log_REV2 {
+// @LoggerMessage: REV3
+// @Description: Replay Event (EKF3)
+struct log_REV3 {
     uint8_t event;
     uint8_t _end;
 };
 
-// @LoggerMessage: RSO2
-// @Description: Replay Set Origin event (EKF2)
-struct log_RSO2 {
+// @LoggerMessage: RSO3
+// @Description: Replay Set Origin event (EKF3)
+struct log_RSO3 {
     int32_t lat;
     int32_t lng;
     int32_t alt;
     uint8_t _end;
 };
-
-// @LoggerMessage: RWA2
-// @Description: Replay set-default-airspeed event (EKF2)
-struct log_RWA2 {
-    float airspeed;
-    float uncertainty;
-    uint8_t _end;
-};
-
-// same structures for EKF3
-// @LoggerMessage: REV3
-// @Description: Replay Event (EKF3)
-#define log_REV3 log_REV2
-// @LoggerMessage: RSO3
-// @Description: Replay Set Origin event (EKF3)
-#define log_RSO3 log_RSO2
-// @LoggerMessage: RWA3
-// @Description: Replay set-default-airspeed event (EKF3)
-#define log_RWA3 log_RWA2
 
 // @LoggerMessage: REY3
 // @Description: Replay Euler Yaw event
@@ -146,24 +118,6 @@ struct log_REY3 {
     float yawangleerr;
     uint32_t timestamp_ms;
     uint8_t type;
-    uint8_t _end;
-};
-
-// @LoggerMessage: RBRH
-// @Description: Replay Data Barometer Header
-struct log_RBRH {
-    uint8_t primary;
-    uint8_t num_instances;
-    uint8_t _end;
-};
-
-// @LoggerMessage: RBRI
-// @Description: Replay Data Barometer Instance
-struct log_RBRI {
-    uint32_t last_update_ms;
-    float altitude;  // from get_altitude
-    bool healthy;
-    uint8_t instance;
     uint8_t _end;
 };
 
@@ -228,25 +182,6 @@ struct log_RGPJ {
     float hacc;
     float vacc;
     uint16_t hdop;
-    uint8_t instance;
-    uint8_t _end;
-};
-
-// @LoggerMessage: RASH
-// @Description: Replay Airspeed Sensor Header
-struct log_RASH {
-    uint8_t num_sensors;
-    uint8_t primary;
-    uint8_t _end;
-};
-
-// @LoggerMessage: RASI
-// @Description: Replay Airspeed Sensor Instance data
-struct log_RASI {
-    float airspeed;
-    uint32_t last_update_ms;
-    bool healthy;
-    bool use;
     uint8_t instance;
     uint8_t _end;
 };
@@ -391,33 +326,17 @@ struct log_RBOH {
     { LOG_RFRF_MSG, RLOG_SIZE(RFRF),                          \
       "RFRF", "BB", "FTypes,Slow", "--", "--" }, \
     { LOG_RFRN_MSG, RLOG_SIZE(RFRN),                            \
-      "RFRN", "IIIfIfffBBB", "HLat,HLon,HAlt,E2T,AM,TX,TY,TZ,VC,EKT,Flags", "DUm????????", "GGB--------" }, \
-    { LOG_REV2_MSG, RLOG_SIZE(REV2),                                   \
-      "REV2", "B", "Event", "-", "-" }, \
-    { LOG_RSO2_MSG, RLOG_SIZE(RSO2),                         \
-      "RSO2", "III", "Lat,Lon,Alt", "DUm", "GGB" }, \
-    { LOG_RWA2_MSG, RLOG_SIZE(RWA2),                         \
-      "RWA2", "ff", "Airspeed,uncertainty", "nn", "00" }, \
+      "RFRN", "IIIIfffBBB", "HLat,HLon,HAlt,AM,TX,TY,TZ,VC,EKT,Flags", "DUm???????", "GGB-------" }, \
     { LOG_REV3_MSG, RLOG_SIZE(REV3),                \
       "REV3", "B", "Event", "-", "-" }, \
     { LOG_RSO3_MSG, RLOG_SIZE(RSO3),                         \
       "RSO3", "III", "Lat,Lon,Alt", "DUm", "GGB" }, \
-    { LOG_RWA3_MSG, RLOG_SIZE(RWA3),                         \
-      "RWA3", "ff", "Airspeed,Uncertainty", "nn", "00" }, \
     { LOG_REY3_MSG, RLOG_SIZE(REY3),                                   \
       "REY3", "ffIB", "yawangle,yawangleerr,timestamp_ms,type", "???-", "???-" }, \
     { LOG_RISH_MSG, RLOG_SIZE(RISH),                                   \
       "RISH", "HBBfBB", "LR,PG,PA,LD,AC,GC", "------", "------" }, \
     { LOG_RISI_MSG, RLOG_SIZE(RISI),                                   \
       "RISI", "ffffffffBB", "DVX,DVY,DVZ,DAX,DAY,DAZ,DVDT,DADT,Flags,I", "---------#", "----------" }, \
-    { LOG_RASH_MSG, RLOG_SIZE(RASH),                                   \
-      "RASH", "BB", "Primary,NumInst", "--", "--" },  \
-    { LOG_RASI_MSG, RLOG_SIZE(RASI),                                   \
-      "RASI", "fIBBB", "pd,UpdateMS,H,Use,I", "----#", "-----" }, \
-    { LOG_RBRH_MSG, RLOG_SIZE(RBRH),                                   \
-      "RBRH", "BB", "Primary,NumInst", "--", "--" },  \
-    { LOG_RBRI_MSG, RLOG_SIZE(RBRI),                                   \
-      "RBRI", "IfBB", "LastUpdate,Alt,H,I", "---#", "----" }, \
     { LOG_RRNH_MSG, RLOG_SIZE(RRNH),                                   \
       "RRNH", "hhB", "GCl,MaxD,NumSensors", "???", "???" },  \
     { LOG_RRNI_MSG, RLOG_SIZE(RRNI),                                   \

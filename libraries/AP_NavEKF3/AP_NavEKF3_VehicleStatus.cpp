@@ -22,6 +22,7 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
 
     // User defined multiplier to be applied to check thresholds
     ftype checkScaler = 0.01f*(ftype)frontend->_gpsCheckScaler;
+    const bool use_vertical_gps_checks = dal.get_vehicle_class() != AP_DAL::VehicleClass::GROUND;
 
     if (gpsGoodToAlign) {
         /*
@@ -218,7 +219,8 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     }
 
     // record time of pass or fail
-    if (gpsSpdAccFail || numSatsFail || hdopFail || hAccFail || vAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail) {
+    const bool gpsVertFail = use_vertical_gps_checks && (vAccFail || gpsVertVelFail);
+    if (gpsSpdAccFail || numSatsFail || hdopFail || hAccFail || gpsVertFail || yawFail || gpsDriftFail || gpsHorizVelFail) {
         lastGpsVelFail_ms = imuSampleTime_ms;
     } else {
         lastGpsVelPass_ms = imuSampleTime_ms;

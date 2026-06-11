@@ -130,7 +130,6 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_InertialSensor/LogStructure.h>
 #include <AP_AHRS/LogStructure.h>
 #include <AP_Camera/LogStructure.h>
-#include <AP_Baro/LogStructure.h>
 #include <AP_CANManager/LogStructure.h>
 #include <AP_Proximity/LogStructure.h>
 #include <AC_Avoidance/LogStructure.h>
@@ -473,22 +472,6 @@ struct PACKED log_CSRV {
     uint8_t error;
 };
 
-struct PACKED log_ARSP {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t instance;
-    float   airspeed;
-    float   diffpressure;
-    int16_t temperature;
-    float   rawpressure;
-    float   offset;
-    bool    use;
-    bool    healthy;
-    float   health_prob;
-    float   test_ratio;
-    uint8_t primary;
-};
-
 struct PACKED log_MAV_Stats {
     LOG_PACKET_HEADER;
     uint64_t timestamp;
@@ -651,21 +634,6 @@ struct PACKED log_VER {
 // @Field: Forced: true if arm/disarm was forced
 // @Field: Method: method used for arming
 // @FieldValueEnum: Method: AP_Arming::Method
-
-// @LoggerMessage: ARSP
-// @Description: Airspeed sensor data
-// @Field: TimeUS: Time since system startup
-// @Field: I: Airspeed sensor instance number
-// @Field: Airspeed: Current airspeed
-// @Field: DiffPress: Pressure difference between static and dynamic port
-// @Field: Temp: Temperature used for calculation
-// @Field: RawPress: Raw pressure less offset
-// @Field: Offset: Offset from parameter
-// @Field: U: True if sensor is being used
-// @Field: H: True if sensor is healthy
-// @Field: Hp: Probability sensor is healthy
-// @Field: TR: innovation test ratio
-// @Field: Pri: True if sensor is the primary sensor
 
 // @LoggerMessage: CSRV
 // @Description: Servo feedback data
@@ -1153,7 +1121,6 @@ LOG_STRUCTURE_FROM_GPS \
       "RCO3",  "QHHHHHHHHHHHHHH",     "TimeUS,C19,C20,C21,C22,C23,C24,C25,C26,C27,C28,C29,C30,C31,C32", "sYYYYYYYYYYYYYY", "F--------------", true  }, \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qff",     "TimeUS,RXRSSI,RXLQ", "s-%", "F--", true  }, \
-LOG_STRUCTURE_FROM_BARO \
 LOG_STRUCTURE_FROM_CANMANAGER \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---", true }, \
@@ -1165,7 +1132,6 @@ LOG_STRUCTURE_FROM_MISSION \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------", true }, \
 LOG_STRUCTURE_FROM_CAMERA \
-    { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBffB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hp,TR,Pri", "s#nPOPP-----", "F-00B00-----", true }, \
     LOG_STRUCTURE_FROM_BATTMONITOR \
     { LOG_MAG_MSG, sizeof(log_MAG), \
       "MAG", "QBhhhhhhhhhBI",    "TimeUS,I,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOX,MOY,MOZ,Health,S", "s#GGGGGGGGG-s", "F-CCCCCCCCC-F", true }, \
@@ -1246,14 +1212,12 @@ LOG_STRUCTURE_FROM_FENCE \
 // message types for common messages
 enum LogMessages : uint8_t {
     LOG_PARAMETER_MSG = 32,
-    LOG_IDS_FROM_NAVEKF2,
     LOG_IDS_FROM_NAVEKF3,
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,
     LOG_RCI2_MSG,
     LOG_RCOUT_MSG,
     LOG_RSSI_MSG,
-    LOG_IDS_FROM_BARO,
     LOG_IDS_FROM_CANMANAGER,
     LOG_POWR_MSG,
     LOG_MCU_MSG,
@@ -1282,7 +1246,6 @@ enum LogMessages : uint8_t {
     LOG_PIDE_MSG,
     LOG_IDS_FROM_LANDING,
     LOG_MAG_MSG,
-    LOG_ARSP_MSG,
     LOG_IDS_FROM_RPM,
     LOG_RFND_MSG,
     LOG_MAV_STATS,

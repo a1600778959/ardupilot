@@ -66,7 +66,7 @@ void NavEKF3_core::Log_Write_XKF2(uint64_t time_us) const
     getMagXYZ(magXYZ);
     Vector2f dragInnov;
     float betaInnov = 0;
-    getSynthAirDataInnovations(dragInnov, betaInnov);
+    getDragSideslipInnovations(dragInnov, betaInnov);
     const struct log_XKF2 pkt2{
         LOG_PACKET_HEADER_INIT(LOG_XKF2_MSG),
         time_us : time_us,
@@ -97,9 +97,8 @@ void NavEKF3_core::Log_Write_XKFS(uint64_t time_us) const
         time_us : time_us,
         core    : DAL_CORE(core_index),
         mag_index      : magSelectIndex,
-        baro_index     : selected_baro,
+        reserved_index : 0,
         gps_index      : selected_gps,
-        airspeed_index : getActiveAirspeed(),
         source_set     : frontend->sources.getPosVelYawSourceSet(),
         gps_good_to_align : gpsGoodToAlign,
         wait_for_gps_checks : waitingForGpsChecks,
@@ -114,9 +113,9 @@ void NavEKF3_core::Log_Write_XKF3(uint64_t time_us) const
     Vector3f velInnov;
     Vector3f posInnov;
     Vector3f magInnov;
-    float tasInnov = 0;
+    float reservedInnov = 0;
     float yawInnov = 0;
-    getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    getInnovations(velInnov, posInnov, magInnov, reservedInnov, yawInnov);
     const struct log_XKF3 pkt3{
         LOG_PACKET_HEADER_INIT(LOG_XKF3_MSG),
         time_us : time_us,
@@ -131,7 +130,7 @@ void NavEKF3_core::Log_Write_XKF3(uint64_t time_us) const
         innovMY : (int16_t)(magInnov.y),
         innovMZ : (int16_t)(magInnov.z),
         innovYaw : (int16_t)(100*degrees(yawInnov)),
-        innovVT : (int16_t)(100*tasInnov),
+        innovVT : 0,
         rerr : frontend->coreRelativeErrors[core_index],
         errorScore : frontend->coreErrorScores[core_index]
     };
@@ -145,7 +144,7 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
     float posVar = 0;
     float hgtVar = 0;
     Vector3f magVar;
-    float tasVar = 0;
+    float reservedVar = 0;
     uint16_t _faultStatus=0;
     Vector2f offset;
     const uint8_t timeoutStatus =
@@ -153,11 +152,10 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         velTimeout<<1 |
         hgtTimeout<<2 |
         magTimeout<<3 |
-        tasTimeout<<4 |
-        dragTimeout<<5;
+        dragTimeout<<4;
 
     nav_filter_status solutionStatus {};
-    getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    getVariances(velVar, posVar, hgtVar, magVar, reservedVar, offset);
     float tempVar = fmaxF(fmaxF(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
     getFilterStatus(solutionStatus);
@@ -169,7 +167,7 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         sqrtvarP : (int16_t)(100*posVar),
         sqrtvarH : (int16_t)(100*hgtVar),
         sqrtvarM : (int16_t)(100*tempVar),
-        sqrtvarVT : (int16_t)(100*tasVar),
+        sqrtvarVT : 0,
         tiltErr : sqrtF(MAX(tiltErrorVariance,0.0f)),  // estimated 1-sigma tilt error in radians
         offsetNorth : offset.x,
         offsetEast : offset.y,

@@ -689,15 +689,6 @@ TEST(MathTest, LOWPASSALPHA)
     EXPECT_NEAR(0.926288f, calc_lowpass_alpha_dt(1.0f, 2.0f), accuracy);
 }
 
-TEST(MathTest, FIXEDWINGTURNRATE)
-{
-    const float accuracy = 1.0e-5f;
-
-    EXPECT_NEAR(-318.65771484375f, fixedwing_turn_rate(-90, 10.0f), accuracy);
-    EXPECT_NEAR(318.65771484375f, fixedwing_turn_rate(90, 10.0f), accuracy);
-    EXPECT_NEAR(56.187965393066406f, fixedwing_turn_rate(45, 10.0f), accuracy);
-}
-
 TEST(CRCTest, parity)
 {
     EXPECT_EQ(parity(0b1), 1);

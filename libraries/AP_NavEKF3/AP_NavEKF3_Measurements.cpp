@@ -686,42 +686,6 @@ bool NavEKF3_core::readDeltaAngle(uint8_t ins_index, Vector3F &dAng, ftype &dAng
 *                  Height Measurements                  *
 ********************************************************/
 
-// check for new pressure altitude measurement data and update stored measurement if available
-void NavEKF3_core::readBaroData()
-{
-    // check to see if baro measurement has changed so we know if a new measurement has arrived
-    // limit update rate to avoid overflowing the FIFO buffer
-    const auto &baro = dal.baro();
-    if (baro.get_last_update(selected_baro) - lastBaroReceived_ms > frontend->sensorIntervalMin_ms) {
-
-        baroDataNew.hgt = baro.get_altitude(selected_baro);
-
-        // time stamp used to check for new measurement
-        lastBaroReceived_ms = baro.get_last_update(selected_baro);
-
-        // estimate of time height measurement was taken, allowing for delays
-        baroDataNew.time_ms = lastBaroReceived_ms - frontend->_hgtDelay_ms;
-
-        // Correct for the average intersampling delay due to the filter updaterate
-        baroDataNew.time_ms -= localFilterTimeStep_ms/2;
-
-        // Prevent time delay exceeding age of oldest IMU data in the buffer
-        baroDataNew.time_ms = MAX(baroDataNew.time_ms,imuDataDelayed.time_ms);
-
-        // save baro measurement to buffer to be fused later
-        storedBaro.push(baroDataNew);
-    }
-}
-
-// calculate filtered offset between baro height measurement and EKF height estimate
-// offset should be subtracted from baro measurement to match filter estimate
-// offset is used to enable reversion to baro from alternate height data source
-void NavEKF3_core::calcFiltBaroOffset()
-{
-    // Apply a first order LPF with spike protection
-    baroHgtOffset += 0.1f * constrain_ftype(baroDataDelayed.hgt + stateStruct.position.z - baroHgtOffset, -5.0f, 5.0f);
-}
-
 // correct the height of the EKF origin to be consistent with GPS Data using a Bayes filter.
 void NavEKF3_core::correctEkfOriginHeight()
 {
@@ -729,11 +693,7 @@ void NavEKF3_core::correctEkfOriginHeight()
 
     // calculate the variance of our a-priori estimate of the ekf origin height
     ftype deltaTime = constrain_ftype(0.001f * (imuDataDelayed.time_ms - lastOriginHgtTime_ms), 0.0, 1.0);
-    if (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
-        // Use the baro drift rate
-        const ftype baroDriftRate = 0.05;
-        ekfOriginHgtVar += sq(baroDriftRate * deltaTime);
-    } else if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
+    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
         // use the worse case expected terrain gradient and vehicle horizontal speed
         const ftype maxTerrGrad = 0.25;
         ekfOriginHgtVar += sq(maxTerrGrad * stateStruct.velocity.xy().length() * deltaTime);
@@ -764,49 +724,6 @@ void NavEKF3_core::correctEkfOriginHeight()
 }
 
 /********************************************************
-*                Air Speed Measurements                 *
-********************************************************/
-
-// check for new airspeed data and update stored measurements if available
-void NavEKF3_core::readAirSpdData()
-{
-    const float EAS2TAS = dal.get_EAS2TAS();
-    // if airspeed reading is valid and is set by the user to be used and has been updated then
-    // we take a new reading, convert from EAS to TAS and set the flag letting other functions
-    // know a new measurement is available
-
-
-        if (is_positive(defaultAirSpeed)) {
-            // this is the preferred method with the autopilot providing a model based airspeed estimate
-            if (imuDataDelayed.time_ms - prevTasStep_ms > 200 ) {
-                tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
-                tasDataDelayed.tasVariance = MAX(defaultAirSpeedVariance, sq(MAX(frontend->_easNoise, 0.5f)));
-                tasDataToFuse = true;
-                tasDataDelayed.allowFusion = true;
-                tasDataDelayed.time_ms = imuDataDelayed.time_ms;
-            } else {
-                tasDataToFuse = false;
-                tasDataDelayed.allowFusion = false;
-            }
-        } else if (lastAspdEstIsValid && !windStateIsObservable) {
-            // this uses the last airspeed estimated before dead reckoning started and
-            // wind states became unobservable
-            if (lastAspdEstIsValid && imuDataDelayed.time_ms - prevTasStep_ms > 200) {
-                tasDataDelayed.tas = lastAirspeedEstimate;
-                // this airspeed estimate has a lot of uncertainty
-                tasDataDelayed.tasVariance = sq(MAX(MAX(frontend->_easNoise, 0.5f), 0.5f * lastAirspeedEstimate));
-                tasDataToFuse = true;
-                tasDataDelayed.allowFusion = true;
-                tasDataDelayed.time_ms = imuDataDelayed.time_ms;
-            } else {
-                tasDataToFuse = false;
-                tasDataDelayed.allowFusion = false;
-            }
-        }
-    
-}
-
-/********************************************************
 *              Independant yaw sensor measurements      *
 ********************************************************/
 
@@ -832,13 +749,6 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     storedYawAng.push(yawAngDataNew);
 
     yawMeasTime_ms = timeStamp_ms;
-}
-
-// Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
-void NavEKF3_core::writeDefaultAirSpeed(float airspeed, float uncertainty)
-{
-    defaultAirSpeed = airspeed;
-    defaultAirSpeedVariance = sq(uncertainty);
 }
 
 /********************************************************
@@ -978,32 +888,12 @@ void NavEKF3_core::update_mag_selection(void)
 }
 
 /*
-  update the baro selection
- */
-void NavEKF3_core::update_baro_selection(void)
-{
-    auto &baro = dal.baro();
-
-    // in normal operation use the primary baro
-    selected_baro = baro.get_primary();
-
-    if (frontend->_affinity & EKF_AFFINITY_BARO) {
-        if (core_index < baro.num_instances() &&
-            baro.healthy(core_index)) {
-            // use core_index baro if it is healthy
-            selected_baro = core_index;
-        }
-    }
-}
-
-/*
   update sensor selections
  */
 void NavEKF3_core::update_sensor_selection(void)
 {
     update_gps_selection();
     update_mag_selection();
-    update_baro_selection();
 }
 
 /*

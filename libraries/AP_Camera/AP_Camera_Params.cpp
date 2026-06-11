@@ -8,7 +8,7 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Camera shutter (trigger) type
     // @Description: how to trigger the camera to take a picture
-    // @Values: 0:None, 1:Servo, 2:Relay, 3:GoPro in Solo Gimbal, 4:Mount (Siyi/Topotek/Viewpro/Xacti), 5:MAVLink, 6:MAVLinkCamV2, 7:Scripting
+    // @Values: 0:None,1:Servo,2:Relay,5:MAVLink,6:MAVLinkCamV2,7:Scripting
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE",  1, AP_Camera_Params, type, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -81,11 +81,7 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 10, AP_Camera_Params, options, 0),
 
-    // @Param: _MNT_INST
-    // @DisplayName: Camera Mount instance
-    // @Description: Mount instance camera is associated with. 0 means camera and mount have identical instance numbers e.g. camera1 and mount1
-    // @User: Standard
-    AP_GROUPINFO("_MNT_INST", 11, AP_Camera_Params, mount_instance, 0),
+    // 11 reserved.
 
     // @Param: _HFOV
     // @DisplayName: Camera horizontal field of view

@@ -79,7 +79,7 @@ public:
     enum class AvailableSensor {
         GPS = (1U<<0),
         IMU = (1U<<1),
-        BARO = (1U<<2),
+        // bit 2 reserved
         COMPASS = (1U<<3),
     };
 
@@ -120,7 +120,7 @@ public:
     bool get_gyro(Vector3f &gyro);
     bool get_accel(Vector3f &accel);
     void send_status_report(class GCS_MAVLINK &link) const;
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar) const;
 
     // update backend
     void update();
@@ -128,12 +128,6 @@ public:
     /*
       structures passed to other subsystems
      */
-    typedef struct {
-        uint8_t instance;
-        float pressure_pa;
-        float temperature;
-    } baro_data_message_t;
-
     typedef struct {
         Vector3f field;
     } mag_data_message_t;
@@ -161,11 +155,6 @@ public:
         Vector3f gyro;
         float temperature;
     } ins_data_message_t;
-
-    typedef struct {
-        float differential_pressure; // Pa
-        float temperature; // degC
-    } airspeed_data_message_t;
 
     // set GNSS disable for auxillary function GPS_DISABLE
     void set_gnss_disable(bool disable) {
@@ -211,4 +200,3 @@ namespace AP {
 };
 
 #endif  // HAL_EXTERNAL_AHRS_ENABLED
-

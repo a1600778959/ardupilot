@@ -262,8 +262,8 @@ def body_frame_accel_observation(P,state,R_to_body,vx,vy,vz,wx,wy):
     Kaccx = symbols("Kaccx", real=True) # measurement noise variance
     Kaccy = symbols("Kaccy", real=True) # measurement noise variance
 
-    # use relationship between airspeed along the X and Y body axis and the
-    # drag to predict the lateral acceleration for a multirotor vehicle type
+    # use relationship between relative wind velocity along the X and Y body axis
+    # and drag to predict the lateral acceleration for a multirotor vehicle type
     # where propulsion forces are generated primarily along the Z body axis
 
     vrel = R_to_body*Matrix([vx-wx,vy-wy,vz]) # predicted wind relative velocity
@@ -392,20 +392,6 @@ def mag_observation(P,state,R_to_body,i,ib):
     mag_code_generator_alt  = CodeGenerator("./generated/3Dmag_generated_alt.cpp")
     write_equations_to_file(equations,mag_code_generator_alt,3)
     mag_code_generator_alt.close()
-
-    return
-
-# airspeed fusion
-def tas_observation(P,state,vx,vy,vz,wx,wy):
-    obs_var = symbols("R_TAS", real=True) # true airspeed measurement noise variance
-
-    observation = sqrt((vx-wx)*(vx-wx)+(vy-wy)*(vy-wy)+vz*vz)
-
-    equations = generate_observation_equations(P,state,observation,obs_var)
-
-    tas_code_generator = CodeGenerator("./generated/tas_generated.cpp")
-    write_equations_to_file(equations,tas_code_generator,1)
-    tas_code_generator.close()
 
     return
 
@@ -689,8 +675,6 @@ def generate_code():
     # mag_observation(P,state,R_to_body,i,ib)
     # print('Generating declination observation code ...')
     # declination_observation(P,state,ix,iy)
-    # print('Generating airspeed observation code ...')
-    # tas_observation(P,state,vx,vy,vz,wx,wy)
     # print('Generating sideslip observation code ...')
     # beta_observation(P,state,R_to_body,vx,vy,vz,wx,wy)
     # print('Generating optical flow observation code ...')

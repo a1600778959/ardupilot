@@ -795,9 +795,9 @@ void AP_Camera::convert_params()
         // CAM_TRIGG_TYPE was 0 (Servo) and camera trigger servo function was assigned so set CAM1_TYPE = 1 (Servo)
         cam1_type = 1;
     }
-    if ((cam_trigg_type >= 1) && (cam_trigg_type <= 3)) {
-        // CAM_TRIGG_TYPE was set to Relay, GoPro or Mount
-        cam1_type = cam_trigg_type + 1;
+    if (cam_trigg_type == 1) {
+        // CAM_TRIGG_TYPE was set to Relay.
+        cam1_type = 2;
     }
     _params[0].type.set_and_save(cam1_type);
 

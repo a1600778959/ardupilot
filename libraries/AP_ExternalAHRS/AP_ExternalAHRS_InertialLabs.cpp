@@ -23,7 +23,6 @@
 #include "AP_ExternalAHRS_InertialLabs.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -58,26 +57,11 @@ extern const AP_HAL::HAL &hal;
 #define ILABS_UNIT_STATUS2_ACCEL_X_HIGH           0x0001
 #define ILABS_UNIT_STATUS2_ACCEL_Y_HIGH           0x0002
 #define ILABS_UNIT_STATUS2_ACCEL_Z_HIGH           0x0004
-#define ILABS_UNIT_STATUS2_BARO_FAIL              0x0008
-#define ILABS_UNIT_STATUS2_DIFF_PRESS_FAIL        0x0010
 #define ILABS_UNIT_STATUS2_MAGCAL_2D_ACT          0x0020
 #define ILABS_UNIT_STATUS2_MAGCAL_3D_ACT          0x0040
 #define ILABS_UNIT_STATUS2_GNSS_FUSION_OFF        0x0080
-#define ILABS_UNIT_STATUS2_DIFF_PRESS_FUSION_OFF  0x0100
 #define ILABS_UNIT_STATUS2_MAG_FUSION_OFF         0x0200
 #define ILABS_UNIT_STATUS2_GNSS_POS_VALID         0x0400
-
-// air data status bits
-#define ILABS_AIRDATA_INIT_FAIL                   0x0001
-#define ILABS_AIRDATA_DIFF_PRESS_INIT_FAIL        0x0002
-#define ILABS_AIRDATA_STATIC_PRESS_FAIL           0x0004
-#define ILABS_AIRDATA_DIFF_PRESS_FAIL             0x0008
-#define ILABS_AIRDATA_STATIC_PRESS_RANGE_ERR      0x0010
-#define ILABS_AIRDATA_DIFF_PRESS_RANGE_ERR        0x0020
-#define ILABS_AIRDATA_PRESS_ALT_FAIL              0x0100
-#define ILABS_AIRDATA_AIRSPEED_FAIL               0x0200
-#define ILABS_AIRDATA_BELOW_THRESHOLD             0x0400
-
 
 // constructor
 AP_ExternalAHRS_InertialLabs::AP_ExternalAHRS_InertialLabs(AP_ExternalAHRS *_frontend,
@@ -95,7 +79,6 @@ AP_ExternalAHRS_InertialLabs::AP_ExternalAHRS_InertialLabs(AP_ExternalAHRS *_fro
 
     // don't offer IMU by default, at 200Hz it is too slow for many aircraft
     set_default_sensors(uint16_t(AP_ExternalAHRS::AvailableSensor::GPS) |
-                        uint16_t(AP_ExternalAHRS::AvailableSensor::BARO) |
                         uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS));
     
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_InertialLabs::update_thread, void), "ILabs", 2048, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
@@ -275,10 +258,8 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
             ins_data.gyro = u.gyro_data_hr.tofloat().rfu_to_frd()*DEG_TO_RAD*1.0e-5; // rad/s
             break;
         }
-        case MessageType::BARO_DATA: {
-            CHECK_SIZE(u.baro_data);
-            baro_data.pressure_pa = u.baro_data.pressure_pa2*2; // Pa
-            state2.baro_alt = u.baro_data.baro_alt*0.01; // m
+        case MessageType::RESERVED_0X25: {
+            CHECK_SIZE(u.reserved_0x25);
             break;
         }
         case MessageType::MAG_DATA: {
@@ -383,24 +364,13 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
             gnss_data.jam_status = u.gnss_jam_status;
             break;
         }
-        case MessageType::DIFFERENTIAL_PRESSURE: {
-            CHECK_SIZE(u.differential_pressure);
-            airspeed_data.differential_pressure = u.differential_pressure*1.0e-4*100; // 100: mbar to Pa
-            break;
-        }
-        case MessageType::TRUE_AIRSPEED: {
-            CHECK_SIZE(u.true_airspeed);
-            state2.true_airspeed = u.true_airspeed*0.01; // m/s
-            break;
-        }
         case MessageType::WIND_SPEED: {
             CHECK_SIZE(u.wind_speed);
             state2.wind_speed = u.wind_speed.tofloat().rfu_to_frd()*0.01; // m/s
             break;
         }
-        case MessageType::AIR_DATA_STATUS: {
-            CHECK_SIZE(u.air_data_status);
-            state2.air_data_status = u.air_data_status;
+        case MessageType::RESERVED_0X8D: {
+            CHECK_SIZE(u.reserved_0x8d);
             break;
         }
         case MessageType::SUPPLY_VOLTAGE: {
@@ -410,9 +380,6 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::TEMPERATURE: {
             CHECK_SIZE(u.temperature);
-            // assume same temperature for baro and airspeed
-            baro_data.temperature = u.temperature*0.1; // degC
-            airspeed_data.temperature = u.temperature*0.1; // degC
             ins_data.temperature = u.temperature*0.1;
             break;
         }
@@ -599,41 +566,6 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
 #endif // HAL_LOGGING_ENABLED
     }
 
-#if AP_BARO_EXTERNALAHRS_ENABLED
-    if (GOT_MSG(BARO_DATA) &&
-        GOT_MSG(TEMPERATURE)) {
-        AP::baro().handle_external(baro_data);
-
-#if HAL_LOGGING_ENABLED
-        uint64_t now_us = AP_HAL::micros64();
-
-        // @LoggerMessage: ILB3
-        // @Description: InertialLabs AHRS data3
-        // @Field: TimeUS: Time since system startup
-        // @Field: GMS: GPS INS time (round)
-        // @Field: Press: Static pressure
-        // @Field: Diff: Differential pressure
-        // @Field: Temp: Temperature
-        // @Field: Alt: Baro altitude
-        // @Field: TAS: true airspeed
-        // @Field: VWN: Wind velocity north
-        // @Field: VWE: Wind velocity east
-        // @Field: VWD: Wind velocity down
-        // @Field: ADU: Air Data Unit status
-
-        AP::logger().WriteStreaming("ILB3", "TimeUS,GMS,Press,Diff,Temp,Alt,TAS,VWN,VWE,VWD,ADU",
-                                    "s-PPOmnnnn-",
-                                    "F----------",
-                                    "QIffffffffH",
-                                    now_us, gps_data.ms_tow,
-                                    baro_data.pressure_pa, airspeed_data.differential_pressure, baro_data.temperature,
-                                    state2.baro_alt, state2.true_airspeed,
-                                    state2.wind_speed.x, state2.wind_speed.y, state2.wind_speed.z,
-                                    state2.air_data_status);
-#endif // HAL_LOGGING_ENABLED
-    }
-#endif // AP_BARO_EXTERNALAHRS_ENABLED
-
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
     if (GOT_MSG(MAG_DATA)) {
         AP::compass().handle_external(mag_data);
@@ -731,7 +663,6 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
     // InertialLabs critical messages to GCS (sending messages once every 10 seconds)
     if ((last_unit_status != state2.unit_status) ||
         (last_unit_status2 != state2.unit_status2) ||
-        (last_air_data_status != state2.air_data_status) ||
         (now_usw - last_critical_msg_ms > dt_critical_usw)) {
 
         // Critical USW message
@@ -760,32 +691,6 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
 
         if (state2.unit_status & ILABS_UNIT_STATUS_GNSS_FAIL) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: GNSS receiver failure");
-        }
-
-        // Critical USW2 message
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_BARO_FAIL) {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Baro altimeter failure");
-        }
-
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_DIFF_PRESS_FAIL) {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Diff. pressure sensor failure");
-        }
-
-        // Critical ADU message
-        if (state2.air_data_status & ILABS_AIRDATA_INIT_FAIL) {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Static pressure sensor unsuccessful initialization");
-        }
-
-        if (state2.air_data_status & ILABS_AIRDATA_DIFF_PRESS_INIT_FAIL) {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Diff. pressure sensor unsuccessful initialization");
-        }
-
-        if (state2.air_data_status & ILABS_AIRDATA_STATIC_PRESS_FAIL) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ILAB: Static pressure sensor failure is detect");
-        }
-
-        if (state2.air_data_status & ILABS_AIRDATA_DIFF_PRESS_FAIL) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ILAB: Diff. pressure sensor failure is detect");
         }
 
         last_critical_msg_ms = AP_HAL::millis();
@@ -901,14 +806,6 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
             }
         }
 
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_DIFF_PRESS_FUSION_OFF) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Diff. pressure input switched off");
-        } else {
-            if (last_unit_status2 & ILABS_UNIT_STATUS2_DIFF_PRESS_FUSION_OFF) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Diff. pressure input switched on");
-            }
-        }
-
         if (state2.unit_status2 & ILABS_UNIT_STATUS2_MAG_FUSION_OFF) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Magnetometer input switched off");
         } else {
@@ -926,51 +823,6 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
 
         last_unit_status2 = state2.unit_status2;
-    }
-
-    // InertialLabs INS Air Data Unit (ADU) status messages to GCS
-    if (last_air_data_status != state2.air_data_status) {
-        if (state2.air_data_status & ILABS_AIRDATA_STATIC_PRESS_RANGE_ERR) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Static pressure is out of range");
-        } else {
-            if (last_air_data_status & ILABS_AIRDATA_STATIC_PRESS_RANGE_ERR) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Static pressure is in range");
-            }
-        }
-
-        if (state2.air_data_status & ILABS_AIRDATA_DIFF_PRESS_RANGE_ERR) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Diff. pressure is out of range");
-        } else {
-            if (last_air_data_status & ILABS_AIRDATA_DIFF_PRESS_RANGE_ERR) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Diff. pressure is in range");
-            }
-        }
-
-        if (state2.air_data_status & ILABS_AIRDATA_PRESS_ALT_FAIL) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Pressure altitude is incorrect");
-        } else {
-            if (last_air_data_status & ILABS_AIRDATA_PRESS_ALT_FAIL) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Pressure altitude is correct");
-            }
-        }
-
-        if (state2.air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Air speed is incorrect");
-        } else {
-            if (last_air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Air speed is correct");
-            }
-        }
-
-        if (state2.air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Air speed is below the threshold");
-        } else {
-            if (last_air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Air speed is above the threshold");
-            }
-        }
-
-        last_air_data_status = state2.air_data_status;
     }
 
     // InertialLabs INS spoofing detection messages to GCS
@@ -1094,18 +946,16 @@ void AP_ExternalAHRS_InertialLabs::get_filter_status(nav_filter_status &status) 
     status.flags.gps_quality_good = (now - last_gps_ms < dt_limit_gps) &&
         (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_POS_VALID) != 0 &&
         (state2.unit_status & ILABS_UNIT_STATUS_GNSS_FAIL) == 0;
-    status.flags.rejecting_airspeed = (state2.air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL);
 }
 
 // get variances
-bool AP_ExternalAHRS_InertialLabs::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+bool AP_ExternalAHRS_InertialLabs::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar) const
 {
     velVar = state2.kf_vel_covariance.length() * vel_gate_scale;
     posVar = state2.kf_pos_covariance.xy().length() * pos_gate_scale;
     hgtVar = state2.kf_pos_covariance.z * hgt_gate_scale;
-    tasVar = 0;
+    reservedVar = 0;
     return true;
 }
 
 #endif  // AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
-

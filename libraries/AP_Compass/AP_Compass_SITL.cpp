@@ -80,8 +80,6 @@ void AP_Compass_SITL::_setup_eliptical_correcion(uint8_t i)
 
 void AP_Compass_SITL::_timer()
 {
-    // TODO: Refactor delay buffer with AP_Baro_SITL.
-
     // Sampled at 100Hz
     uint32_t now = AP_HAL::millis();
     if ((now - _last_sample_time) < 10) {

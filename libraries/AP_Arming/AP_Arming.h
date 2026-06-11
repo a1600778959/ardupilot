@@ -23,7 +23,7 @@ public:
 
     enum ArmingChecks {
         ARMING_CHECK_ALL         = (1U << 0),
-        ARMING_CHECK_BARO        = (1U << 1),
+        ARMING_CHECK_RESERVED_1  = (1U << 1),
         ARMING_CHECK_COMPASS     = (1U << 2),
         ARMING_CHECK_GPS         = (1U << 3),
         ARMING_CHECK_INS         = (1U << 4),
@@ -31,7 +31,7 @@ public:
         ARMING_CHECK_RC          = (1U << 6),
         ARMING_CHECK_VOLTAGE     = (1U << 7),
         ARMING_CHECK_BATTERY     = (1U << 8),
-        ARMING_CHECK_AIRSPEED    = (1U << 9),
+        ARMING_CHECK_RESERVED_9  = (1U << 9),
         ARMING_CHECK_LOGGING     = (1U << 10),
         ARMING_CHECK_SWITCH      = (1U << 11),
         ARMING_CHECK_GPS_CONFIG  = (1U << 12),
@@ -176,10 +176,6 @@ protected:
     bool                    armed;
     uint32_t                last_accel_pass_ms;
     uint32_t                last_gyro_pass_ms;
-
-    virtual bool barometer_checks(bool report);
-
-    bool airspeed_checks(bool report);
 
     bool logging_checks(bool report);
 

@@ -478,16 +478,6 @@ uint16_t float2fixed(const float input, const uint8_t fractional_bits)
     return (uint16_t)(roundf(input * (1U << fractional_bits)));
 }
 
-/*
-  calculate turn rate in deg/sec given a bank angle and airspeed for a
-  fixed wing aircraft
- */
-float fixedwing_turn_rate(float bank_angle_deg, float airspeed)
-{
-    bank_angle_deg = constrain_float(bank_angle_deg, -80, 80);
-    return degrees(GRAVITY_MSS*tanf(radians(bank_angle_deg))/MAX(airspeed,1));
-}
-
 // convert degrees farenheight to Kelvin
 float degF_to_Kelvin(float temp_f)
 {

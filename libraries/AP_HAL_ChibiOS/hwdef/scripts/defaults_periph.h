@@ -72,20 +72,12 @@
 #define HAL_GENERATOR_ENABLED 0
 #endif
 
-#ifndef HAL_BARO_WIND_COMP_ENABLED
-#define HAL_BARO_WIND_COMP_ENABLED 0
-#endif
-
 #ifndef HAL_UART_STATS_ENABLED
 #define HAL_UART_STATS_ENABLED (HAL_GCS_ENABLED || HAL_LOGGING_ENABLED)
 #endif
 
 #ifndef HAL_SUPPORT_RCOUT_SERIAL
 #define HAL_SUPPORT_RCOUT_SERIAL 0
-#endif
-
-#ifndef AP_AIRSPEED_AUTOCAL_ENABLE
-#define AP_AIRSPEED_AUTOCAL_ENABLE 0
 #endif
 
 #ifndef AP_STATS_ENABLED
@@ -112,10 +104,6 @@
 
 #ifndef AP_BATTERY_ESC_ENABLED
 #define AP_BATTERY_ESC_ENABLED 0
-#endif
-
-#ifndef AP_BATTERY_WATT_MAX_ENABLED
-#define AP_BATTERY_WATT_MAX_ENABLED 0
 #endif
 
 // disable compass calibrations on periphs; cal is done on the autopilot
@@ -199,13 +187,6 @@
 
 #ifndef HAL_SIM_GPS_ENABLED
 #define HAL_SIM_GPS_ENABLED (AP_SIM_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
-#endif
-
-/*
- * Airspeed Backends - we selectively turn backends *off*
- */
-#ifndef AP_AIRSPEED_ANALOG_ENABLED
-#define AP_AIRSPEED_ANALOG_ENABLED 0
 #endif
 
 // disable various rangefinder backends
@@ -336,7 +317,6 @@
 #define AP_BATTERY_ENABLED defined(HAL_PERIPH_ENABLE_BATTERY)
 #define AP_AHRS_ENABLED defined(HAL_PERIPH_ENABLE_AHRS)
 #define AP_COMPASS_ENABLED defined(HAL_PERIPH_ENABLE_MAG)
-#define AP_BARO_ENABLED defined(HAL_PERIPH_ENABLE_BARO)
 #define AP_GPS_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
 #define AP_RANGEFINDER_ENABLED defined(HAL_PERIPH_ENABLE_RANGEFINDER)
 #define AP_RPM_ENABLED defined(HAL_PERIPH_ENABLE_RPM)

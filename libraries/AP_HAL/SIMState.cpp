@@ -8,63 +8,26 @@
  *  there into here.
  */
 
-#include <SITL/SIM_Multicopter.h>
-#include <SITL/SIM_Helicopter.h>
-#include <SITL/SIM_SingleCopter.h>
-#include <SITL/SIM_Plane.h>
-#include <SITL/SIM_Glider.h>
-#include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
-#include <SITL/SIM_BalanceBot.h>
-#include <SITL/SIM_Sailboat.h>
-#include <SITL/SIM_MotorBoat.h>
-#include <SITL/SIM_Tracker.h>
-#include <SITL/SIM_Submarine.h>
-#include <SITL/SIM_Blimp.h>
 #include <SITL/SIM_NoVehicle.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-#include <AP_Baro/AP_Baro.h>
 
 extern const AP_HAL::HAL& hal;
 
 using namespace AP_HAL;
 
 #ifndef AP_SIM_FRAME_CLASS
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-#define AP_SIM_FRAME_CLASS MultiCopter
-#elif APM_BUILD_TYPE(APM_BUILD_Heli)
-#define AP_SIM_FRAME_CLASS Helicopter
-#elif APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
-#define AP_SIM_FRAME_CLASS Tracker
-#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define AP_SIM_FRAME_CLASS Plane
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AP_SIM_FRAME_CLASS SimRover
-#elif APM_BUILD_TYPE(APM_BUILD_Blimp)
-#define AP_SIM_FRAME_CLASS Blimp
-#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
-#define AP_SIM_FRAME_CLASS Submarine
 #else
 #define AP_SIM_FRAME_CLASS NoVehicle
 #endif
 #endif
 
 #ifndef AP_SIM_FRAME_STRING
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-#define AP_SIM_FRAME_STRING "+"
-#elif APM_BUILD_TYPE(APM_BUILD_Heli)
-#define AP_SIM_FRAME_STRING "heli"
-#elif APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
-#define AP_SIM_FRAME_STRING "tracker"
-#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define AP_SIM_FRAME_STRING "plane"
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AP_SIM_FRAME_STRING "rover"
-#elif APM_BUILD_TYPE(APM_BUILD_Blimp)
-#define AP_SIM_FRAME_STRING "blimp"
-#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
-#define AP_SIM_FRAME_STRING "sub"
 #else
 #define AP_SIM_FRAME_STRING ""
 #endif
@@ -263,15 +226,12 @@ void SIMState::_simulator_servos(struct sitl_input &input)
     // output at chosen framerate
     uint32_t now = AP_HAL::micros();
 
-    // find the barometer object if it exists
-    const auto *_barometer = AP_Baro::get_singleton();
-
-    float altitude = _barometer?_barometer->get_altitude():0;
+    float altitude = 0;
     float wind_speed = 0;
     float wind_direction = 0;
     float wind_dir_z = 0;
 
-    // give 5 seconds to calibrate airspeed sensor at 0 wind speed
+    // give 5 seconds before applying simulated wind
     if (wind_start_delay_micros == 0) {
         wind_start_delay_micros = now;
     } else if (_sitl && (now - wind_start_delay_micros) > 5000000 ) {

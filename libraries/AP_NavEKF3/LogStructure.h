@@ -150,7 +150,7 @@ struct PACKED log_XKF2 {
 // @Field: IMY: Innovation in magnetic field strength (Y-axis component)
 // @Field: IMZ: Innovation in magnetic field strength (Z-axis component)
 // @Field: IYAW: Innovation in vehicle yaw
-// @Field: IVT: Innovation in true-airspeed
+// @Field: IVT: Reserved
 // @Field: RErr: Accumulated relative error of this core with respect to active primary core
 // @Field: ErSc: A consolidated error score where higher numbers are less healthy
 struct PACKED log_XKF3 {
@@ -181,12 +181,12 @@ struct PACKED log_XKF3 {
 // @Field: SP: Square root of the position variance
 // @Field: SH: Square root of the height variance
 // @Field: SM: Magnetic field variance
-// @Field: SVT: Square root of the total airspeed variance
+// @Field: SVT: Reserved
 // @Field: errRP: Filtered error in roll/pitch estimate
 // @Field: OFN: Most recent position reset (North component)
 // @Field: OFE: Most recent position reset (East component)
 // @Field: FS: Filter fault status
-// @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement, 5:drag measurement)
+// @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:drag measurement)
 // @Field: SS: Filter solution status
 // @FieldBitmaskEnum: SS: NavFilterStatusBit
 // @Field: GPS: Filter GPS status
@@ -342,9 +342,8 @@ struct PACKED log_XKQ {
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF3 core this data is for
 // @Field: MI: compass selection index
-// @Field: BI: barometer selection index
+// @Field: RSV: reserved
 // @Field: GI: GPS selection index
-// @Field: AI: airspeed selection index
 // @Field: SS: Source Set (primary=0/secondary=1/tertiary=2)
 // @Field: GPS_GTA: GPS good to align
 // @Field: GPS_CHK_WAIT: Waiting for GPS checks to pass
@@ -354,9 +353,8 @@ struct PACKED log_XKFS {
     uint64_t time_us;
     uint8_t core;
     uint8_t mag_index;
-    uint8_t baro_index;
+    uint8_t reserved_index;
     uint8_t gps_index;
-    uint8_t airspeed_index;
     uint8_t source_set;
     uint8_t gps_good_to_align;
     uint8_t wait_for_gps_checks;
@@ -447,7 +445,7 @@ struct PACKED log_XKV {
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
       "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s#-----", "F------", true }, \
     { LOG_XKFS_MSG, sizeof(log_XKFS), \
-      "XKFS","QBBBBBBBBB","TimeUS,C,MI,BI,GI,AI,SS,GPS_GTA,GPS_CHK_WAIT,MAG_FUSION", "s#--------", "F---------" , true }, \
+      "XKFS","QBBBBBBBB","TimeUS,C,MI,RSV,GI,SS,GPS_GTA,GPS_CHK_WAIT,MAG_FUSION", "s#-------", "F--------" , true }, \
     { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" , true }, \
     { LOG_XKT_MSG, sizeof(log_XKT),   \
       "XKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000", true }, \

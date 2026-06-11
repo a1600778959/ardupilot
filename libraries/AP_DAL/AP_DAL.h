@@ -1,7 +1,6 @@
 #pragma once
 
 #include "AP_DAL_InertialSensor.h"
-#include "AP_DAL_Baro.h"
 #include "AP_DAL_GPS.h"
 #include "AP_DAL_RangeFinder.h"
 #include "AP_DAL_Compass.h"
@@ -15,18 +14,14 @@
 
 #define DAL_CORE(c) AP::dal().logging_core(c)
 
-class NavEKF2;
 class NavEKF3;
 
 class AP_DAL {
 public:
 
     enum class FrameType : uint8_t {
-        InitialiseFilterEKF2 = 1U<<0,
-        UpdateFilterEKF2 = 1U<<1,
         InitialiseFilterEKF3 = 1<<2,
         UpdateFilterEKF3 = 1<<3,
-        LogWriteEKF2 = 1<<4,
         LogWriteEKF3 = 1<<5,
     };
 
@@ -73,15 +68,10 @@ public:
     uint32_t micros() const { return _micros; }
     uint32_t millis() const { return _millis; }
 
-    void log_event2(Event event);
-    void log_SetOriginLLH2(const Location &loc);
-    void log_writeDefaultAirSpeed2(const float aspeed, const float uncertainty);
-
     void log_event3(Event event);
     void log_SetOriginLLH3(const Location &loc);
     void log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
 
-    void log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty);
     void log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type);
 
     enum class StateMask {
@@ -90,7 +80,6 @@ public:
 
     // EKF ID for timing checks
     enum class EKFType : uint8_t {
-        EKF2 = 0,
         EKF3 = 1,
     };
 
@@ -126,7 +115,6 @@ public:
     void free_type(void *ptr, size_t size, MemoryType memtype) const;
 
     AP_DAL_InertialSensor &ins() { return _ins; }
-    AP_DAL_Baro &baro() { return _baro; }
     AP_DAL_GPS &gps() { return _gps; }
 
 #if AP_RANGEFINDER_ENABLED
@@ -136,13 +124,6 @@ public:
 #endif
 
     AP_DAL_Compass &compass() { return _compass; }
-
-    // this replaces AP::ahrs()->EAS2TAS(), which should probably go
-    // away in favour of just using the Baro method.
-    // get apparent to true airspeed ratio
-    float get_EAS2TAS(void) const {
-        return _RFRN.EAS2TAS;
-    }
 
     VehicleClass get_vehicle_class(void) const {
         return (VehicleClass)_RFRN.vehicle_class;
@@ -210,7 +191,7 @@ public:
         _home.lng = msg.lng;
         _home.alt = msg.alt;
     }
-    void handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
+    void handle_message(const log_RFRF &msg, NavEKF3 &ekf3);
 
     void handle_message(const log_RISH &msg) {
         _ins.handle_message(msg);
@@ -218,13 +199,6 @@ public:
     void handle_message(const log_RISI &msg) {
         _ins.handle_message(msg);
     }
-    void handle_message(const log_RBRH &msg) {
-        _baro.handle_message(msg);
-    }
-    void handle_message(const log_RBRI &msg) {
-        _baro.handle_message(msg);
-    }
-
     void handle_message(const log_RRNH &msg) {
 #if AP_RANGEFINDER_ENABLED
         if (_rangefinder == nullptr) {
@@ -265,12 +239,12 @@ public:
     }
     void handle_message(const log_RVOH &msg) {
     }
-    void handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
-    void handle_message(const log_REPH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
-    void handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
-    void handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
-    void handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
-    void handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
+    void handle_message(const log_ROFH &msg, NavEKF3 &ekf3);
+    void handle_message(const log_REPH &msg, NavEKF3 &ekf3);
+    void handle_message(const log_REVH &msg, NavEKF3 &ekf3);
+    void handle_message(const log_RWOH &msg, NavEKF3 &ekf3);
+    void handle_message(const log_RBOH &msg, NavEKF3 &ekf3);
+    void handle_message(const log_RSLL &msg, NavEKF3 &ekf3);
 
     // map core number for replay
     uint8_t logging_core(uint8_t c) const;
@@ -307,7 +281,6 @@ private:
     uint32_t _last_imu_time_us;
 
     AP_DAL_InertialSensor _ins;
-    AP_DAL_Baro _baro;
     AP_DAL_GPS _gps;
 #if AP_RANGEFINDER_ENABLED
     AP_DAL_RangeFinder *_rangefinder;
@@ -317,7 +290,6 @@ private:
     static bool logging_started;
     static bool force_write;
 
-    bool ekf2_init_done;
     bool ekf3_init_done;
 
     void init_sensors(void);
@@ -340,4 +312,3 @@ namespace AP {
 
 // replay printf for debugging
 void rprintf(const char *format, ...);
-

@@ -9,8 +9,8 @@
 *                   RESET FUNCTIONS                     *
 ********************************************************/
 
-// Reset XY velocity states to last GPS measurement if available or to zero if in constant position mode or if PV aiding is not absolute
-// Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
+// Reset XY velocity states to last GPS measurement if available or to zero if in constant position mode or if PV aiding is not absolute.
+// Vertical velocity is handled separately using the configured Z constraints.
 void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
 {
     // if reset source is not specified then use user defined velocity source
@@ -357,11 +357,9 @@ bool NavEKF3_core::resetHeightDatum(void)
     }
     // record the old height estimate
     ftype oldHgt = -stateStruct.position.z;
-    // reset the barometer so that it reads zero at the current height
-    dal.baro().update_calibration();
     // reset the height state
     stateStruct.position.z = 0.0f;
-    // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
+    // adjust the height of the EKF origin so that the origin plus local height before and after the reset is the same
     if (validOrigin) {
         if (!gpsGoodToAlign) {
             // if we don't have GPS lock then we shouldn't be doing a
@@ -557,7 +555,7 @@ void NavEKF3_core::SelectVelPosFusion()
         realignYawGPS(false);
     }
 
-    // Select height data to be fused from the available baro, range finder and GPS sources
+    // Select height data to be fused from the configured source
     selectHeightForFusion();
 
     // if we are using GPS, check for a change in receiver and reset position and height
@@ -723,9 +721,9 @@ void NavEKF3_core::FuseVelPosNED()
         R_OBS[5] = posDownObsNoise;
         for (uint8_t i=3; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
 
-        // if vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and altimeter
+        // if vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and height
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
-        // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
+        // the accelerometers and we should disable the GPS and height innovation consistency checks.
         if (gpsDataDelayed.have_vz && fuseVelData && (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::GPS)) {
             // calculate innovations for height and vertical GPS vel measurements
             const ftype hgtErr  = stateStruct.position.z - velPosObs[5];
@@ -911,11 +909,11 @@ void NavEKF3_core::FuseVelPosNED()
             // from the measurement un-opposed if test threshold is exceeded.
             if (hgtCheckPassed || hgtTimeout || badIMUdata) {
                 // Calculate a filtered value to be used by pre-flight health checks
-                // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
+                // We need to filter the height innovation to detect bias errors in the inertial solution
                 if (onGround) {
-                    ftype dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms) * 1.0e-3;
+                    ftype dtHgt = (imuSampleTime_ms - lastHgtPassTime_ms) * 1.0e-3;
                     const ftype hgtInnovFiltTC = 2.0;
-                    ftype alpha = constrain_ftype(dtBaro/(dtBaro+hgtInnovFiltTC), 0.0, 1.0);
+                    ftype alpha = constrain_ftype(dtHgt/(dtHgt+hgtInnovFiltTC), 0.0, 1.0);
                     hgtInnovFiltState += (innovVelPos[5] - hgtInnovFiltState)*alpha;
                 } else {
                     hgtInnovFiltState = 0.0f;
@@ -963,21 +961,6 @@ void NavEKF3_core::FuseVelPosNED()
                     R_OBS[obsIndex] *= sq(gpsNoiseScaler);
                 } else if (obsIndex == 5) {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - velPosObs[obsIndex];
-                    const ftype gndMaxBaroErr = MAX(frontend->_baroGndEffectDeadZone, 0.0);
-                    const ftype gndBaroInnovFloor = -0.5;
-
-                    if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
-                        // when baro positive pressure error due to ground effect is expected,
-                        // floor the barometer innovation at gndBaroInnovFloor
-                        // constrain the correction between 0 and gndBaroInnovFloor+gndMaxBaroErr
-                        // this function looks like this:
-                        //         |/
-                        //---------|---------
-                        //    ____/|
-                        //   /     |
-                        //  /      |
-                        innovVelPos[5] += constrain_ftype(-innovVelPos[5]+gndBaroInnovFloor, 0.0f, gndBaroInnovFloor+gndMaxBaroErr);
-                    }
                 }
 
                 // calculate the Kalman gain and calculate innovation variances
@@ -1121,7 +1104,7 @@ void NavEKF3_core::FuseVelPosNED()
 *                   MISC FUNCTIONS                      *
 ********************************************************/
 
-// select the height measurement to be fused from the available baro, range finder and GPS sources
+// select the height measurement to be fused from the configured source
 void NavEKF3_core::selectHeightForFusion()
 {
 #if AP_RANGEFINDER_ENABLED
@@ -1146,10 +1129,6 @@ void NavEKF3_core::selectHeightForFusion()
     }
 #endif  // AP_RANGEFINDER_ENABLED
 
-    // read baro height data from the sensor and check for new data in the buffer
-    readBaroData();
-    baroDataToFuse = storedBaro.recall(baroDataDelayed, imuDataDelayed.time_ms);
-
     bool rangeFinderDataIsFresh = (imuSampleTime_ms - rngValidMeaTime_ms < 500);
 #if EK3_FEATURE_EXTERNAL_NAV
     const bool extNavDataIsFresh = (imuSampleTime_ms - extNavMeasTime_ms < 500);
@@ -1162,7 +1141,7 @@ void NavEKF3_core::selectHeightForFusion()
     } else if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh) {
         // user has specified the range finder as a primary height source
         activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
-    } else if ((frontend->_useRngSwHgt > 0) && ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) || (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS)) && _rng && rangeFinderDataIsFresh) {
+    } else if ((frontend->_useRngSwHgt > 0) && (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && _rng && rangeFinderDataIsFresh) {
         // determine if we are above or below the height switch region
         ftype rangeMaxUse = 1e-4 * (ftype)_rng->max_distance_cm_orient(ROTATION_PITCH_270) * (ftype)frontend->_useRngSwHgt;
         bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
@@ -1191,9 +1170,7 @@ void NavEKF3_core::selectHeightForFusion()
         */
         if ((aboveUpperSwHgt || dontTrustTerrain) && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
             // cannot trust terrain or range finder so stop using range finder height
-            if (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) {
-                activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
-            } else if (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) {
+            if (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) {
                 activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
             }
         } else if (belowLowerSwHgt && trustTerrain && (prevTnb.c.z >= 0.7f)) {
@@ -1201,8 +1178,6 @@ void NavEKF3_core::selectHeightForFusion()
             activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
         }
 #endif
-    } else if (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) {
-        activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
     } else if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {
         activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
 #if EK3_FEATURE_EXTERNAL_NAV
@@ -1211,40 +1186,23 @@ void NavEKF3_core::selectHeightForFusion()
 #endif
     }
 
-    // Use Baro alt as a fallback if we lose range finder, GPS, external nav or Beacon
+    // Use the synthetic height constraint as a fallback if we lose range finder, GPS or external nav height
     bool lostRngHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) && !rangeFinderDataIsFresh);
     bool lostGpsHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000 || !gpsAccuracyGoodForAltitude));
-    bool fallback_to_baro = lostRngHgt || lostGpsHgt;
+    bool fallback_to_none = lostRngHgt || lostGpsHgt;
 #if EK3_FEATURE_EXTERNAL_NAV
     bool lostExtNavHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV) && !extNavDataIsFresh);
-    fallback_to_baro |= lostExtNavHgt;
+    fallback_to_none |= lostExtNavHgt;
 #endif
-    if (fallback_to_baro) {
-        activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
+    if (fallback_to_none) {
+        activeHgtSource = AP_NavEKF_Source::SourceZ::NONE;
     }
 
-    // if there is new baro data to fuse, calculate filtered baro data required by other processes
-    if (baroDataToFuse) {
-        // calculate offset to baro data that enables us to switch to Baro height use during operation
-        if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO) {
-            calcFiltBaroOffset();
-        }
-        // filtered baro data used to provide a reference for takeoff
-        // it is is reset to last height measurement on disarming in performArmingChecks()
-        if (!dal.get_takeoff_expected()) {
-            const ftype gndHgtFiltTC = 0.5;
-            const ftype dtBaro = frontend->hgtAvg_ms*1.0e-3;
-            ftype alpha = constrain_ftype(dtBaro / (dtBaro+gndHgtFiltTC),0.0,1.0);
-            meaHgtAtTakeOff += (baroDataDelayed.hgt-meaHgtAtTakeOff)*alpha;
-        }
-    }
-
-    // If we are not using GPS as the primary height sensor, correct EKF origin height so that
+    // If we are using rangefinder as the primary height sensor, correct EKF origin height so that
     // combined local NED position height and origin height remains consistent with the GPS altitude
     // This also enables the GPS height to be used as a backup height source
     if (gpsDataToFuse &&
-            (((frontend->_originHgtMode & (1 << 0)) && (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO)) ||
-            ((frontend->_originHgtMode & (1 << 1)) && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)))
+            ((frontend->_originHgtMode & (1 << 1)) && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER))
             ) {
             correctEkfOriginHeight();
     }
@@ -1294,33 +1252,17 @@ void NavEKF3_core::selectHeightForFusion()
         } else {
             posDownObsNoise = sq(constrain_ftype(1.5f * frontend->_gpsHorizPosNoise, 0.1f, 10.0f));
         }
-    } else if (baroDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO)) {
-        // using Baro data
-        hgtMea = baroDataDelayed.hgt - baroHgtOffset;
-        // correct sensor so that local position height adjusts to match GPS
-        if (frontend->_originHgtMode & (1 << 0) && frontend->_originHgtMode & (1 << 2)) {
-            hgtMea += (float)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
-        }
-        // enable fusion
-        fuseHgtData = true;
-        // set the observation noise
-        posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 0.1f, 100.0f));
-        // reduce weighting (increase observation noise) on baro if we are likely to be experiencing rotor wash ground interaction
-        if (dal.get_takeoff_expected() || dal.get_touchdown_expected()) {
-            posDownObsNoise *= frontend->gndEffectBaroScaler;
-        }
-        velPosObs[5] = -hgtMea;
     } else if ((activeHgtSource == AP_NavEKF_Source::SourceZ::NONE && imuSampleTime_ms - lastHgtPassTime_ms > 70)) {
         // fuse a constant height of 0 at 14 Hz
         hgtMea = 0.0f;
         fuseHgtData = true;
         velPosObs[5] = -hgtMea;
         if (onGround) {
-            // use a typical vertical positoin observation noise when not flying for faster IMU delta velocity bias estimation
+            // use a typical vertical position observation noise when not flying for faster IMU delta velocity bias estimation
             posDownObsNoise = sq(2.0f);
         } else {
-            // alow a larger value when flying to accomodate vertical maneouvres
-            posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 2.0f, 100.0f));
+            // allow a larger value when flying to accommodate vertical manoeuvres
+            posDownObsNoise = sq(constrain_ftype(frontend->_hgtObsNoise, 2.0f, 100.0f));
         }
     } else {
         fuseHgtData = false;

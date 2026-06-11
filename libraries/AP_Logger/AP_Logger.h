@@ -93,7 +93,7 @@ enum class LogEvent : uint8_t {
     EK3_SOURCES_SET_TO_SECONDARY = 86,
     EK3_SOURCES_SET_TO_TERTIARY = 87,
 
-    AIRSPEED_PRIMARY_CHANGED = 90,
+    // 90 reserved for a removed primary-change event
 
     SURFACED = 163,
     NOT_SURFACED = 164,
@@ -124,7 +124,7 @@ enum class LogErrorSubsystem : uint8_t {
     PARACHUTES = 15,
     EKFCHECK = 16,
     FAILSAFE_EKFINAV = 17,
-    BARO = 18,
+    RESERVED_18 = 18,
     CPU = 19,
     TERRAIN = 21,
     NAVIGATION = 22,
@@ -175,8 +175,8 @@ enum class LogErrorCode : uint8_t {
 // EKF check definitions
     EKFCHECK_BAD_VARIANCE = 2,
     EKFCHECK_VARIANCE_CLEARED = 0,
-// Baro specific error codes
-    BARO_GLITCH = 2,
+// reserved error codes
+    RESERVED_2 = 2,
     BAD_DEPTH = 3, // sub-only
 // GPS specific error codes
     GPS_GLITCH = 2,

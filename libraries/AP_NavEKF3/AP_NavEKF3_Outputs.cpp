@@ -5,26 +5,41 @@
 #include <AP_DAL/AP_DAL.h>
 #include <GCS_MAVLink/GCS.h>
 
-// Check basic filter health metrics and return a consolidated health status
 bool NavEKF3_core::healthy(void) const
+{
+    return healthy(true);
+}
+
+bool NavEKF3_core::healthy_for_horizontal_nav(void) const
+{
+    return healthy(false);
+}
+
+// Check basic filter health metrics and return a consolidated health status.
+// When require_height is false, vertical innovation consistency is reported
+// through vertical status flags but does not invalidate horizontal navigation.
+bool NavEKF3_core::healthy(bool require_height) const
 {
     uint16_t faultInt;
     getFilterFaults(faultInt);
     if (faultInt > 0) {
         return false;
     }
-    if (velTestRatio > 1 && posTestRatio > 1 && hgtTestRatio > 1) {
-        // all three metrics being above 1 means the filter is
-        // extremely unhealthy.
+    const bool bad_horizontal_consistency = (velTestRatio > 1) && (posTestRatio > 1);
+    if (bad_horizontal_consistency && (!require_height || (hgtTestRatio > 1))) {
+        // In full 3D mode all three metrics must be bad before the filter is
+        // considered extremely unhealthy.  For horizontal navigation, height
+        // consistency is deliberately excluded from the blocking decision.
         return false;
     }
     // Give the filter a second to settle before use
     if ((imuSampleTime_ms - ekfStartTime_ms) < 1000 ) {
         return false;
     }
-    // position and height innovations must be within limits when on-ground and in a static mode of operation
+    // position innovations must be within limits when on-ground and in a static mode of operation
     float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
-    if (onGround && (PV_AidingMode == AID_NONE) && ((horizErrSq > 1.0f) || (fabsF(hgtInnovFiltState) > 1.0f))) {
+    if (onGround && (PV_AidingMode == AID_NONE) &&
+        ((horizErrSq > 1.0f) || (require_height && (fabsF(hgtInnovFiltState) > 1.0f)))) {
         return false;
     }
 
@@ -67,10 +82,6 @@ float NavEKF3_core::errorScore() const
         score = MAX(score, 0.5f * (velTestRatio + posTestRatio));
         // Check altimeter fusion performance
         score = MAX(score, hgtTestRatio);
-        // Check airspeed fusion performance - only when we are using at least 2 airspeed sensors so we can switch lanes with 
-        // a better one. This only comes into effect for a forward flight vehicle. A sensitivity factor of 0.3 is added to keep the
-        // EKF less sensitive to innovations arising due events like strong gusts of wind, thus, prevent reporting high error scores
-
         // Check magnetometer fusion performance - need this when magnetometer affinity is enabled to override the inherent compass
         // switching mechanism, and instead be able to move to a better lane
         if (frontend->_affinity & EKF_AFFINITY_MAG) {
@@ -197,38 +208,6 @@ void NavEKF3_core::getVelNED(Vector3f &vel) const
 {
     // correct for the IMU position offset (EKF calculations are at the IMU)
     vel = (outputDataNew.velocity + velOffsetNED).tofloat();
-}
-
-// return estimate of true airspeed vector in body frame in m/s
-// returns false if estimate is unavailable
-bool NavEKF3_core::getAirSpdVec(Vector3f &vel) const
-{
-    if (PV_AidingMode == AID_NONE) {
-        return false;
-    }
-    vel = (outputDataNew.velocity + velOffsetNED).tofloat();
-    if (!inhibitWindStates) {
-        vel.x -= stateStruct.wind_vel.x;
-        vel.y -= stateStruct.wind_vel.y;
-    }
-    Matrix3f Tnb; // rotation from nav to body frame
-    outputDataNew.quat.inverse().rotation_matrix(Tnb);
-    vel = Tnb * vel;
-    return true;
-}
-
-// return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
-// returns false if the data is unavailable
-bool NavEKF3_core::getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const
-{
-    if (tasDataDelayed.time_ms == 0) {
-        // no data has been processed since startup
-        return false;
-    }
-    innovation = (float)innovVtas;
-    innovationVariance = (float)varInnovVtas;
-    age_ms = imuSampleTime_ms - tasDataDelayed.time_ms;
-    return true;
 }
 
 // Return the rate of change of vertical position in the down direction (dPosD/dt) of the body frame origin in m/s
@@ -428,15 +407,8 @@ bool NavEKF3_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
     }
 }
 
-// return the index for the active magnetometer
-// return the index for the active airspeed
-uint8_t NavEKF3_core::getActiveAirspeed() const
-{
-    return (uint8_t)0;
-}
-
-// return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
-bool NavEKF3_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+// return the innovations for the NED Pos, NED Vel, XYZ Mag and yaw measurements
+bool NavEKF3_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &reservedInnov, float &yawInnov) const
 {
     velInnov.x = innovVelPos[0];
     velInnov.y = innovVelPos[1];
@@ -447,13 +419,13 @@ bool NavEKF3_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector
     magInnov.x = 1e3f*innovMag[0]; // Convert back to sensor units
     magInnov.y = 1e3f*innovMag[1]; // Convert back to sensor units
     magInnov.z = 1e3f*innovMag[2]; // Convert back to sensor units
-    tasInnov   = innovVtas;
+    reservedInnov = 0.0f;
     yawInnov   = innovYaw;
     return true;
 }
 
-// return the synthetic air data drag and sideslip innovations
-void NavEKF3_core::getSynthAirDataInnovations(Vector2f &dragInnov, float &betaInnov) const
+// return the drag and sideslip innovations
+void NavEKF3_core::getDragSideslipInnovations(Vector2f &dragInnov, float &betaInnov) const
 {
 #if EK3_FEATURE_DRAG_FUSION
     dragInnov.x = innovDrag[0];
@@ -462,10 +434,10 @@ void NavEKF3_core::getSynthAirDataInnovations(Vector2f &dragInnov, float &betaIn
 #endif
 }
 
-// return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
+// return the innovation consistency test ratios for the velocity, position and magnetometer measurements
 // this indicates the amount of margin available when tuning the various error traps
 // also return the delta in position due to the last position reset
-bool NavEKF3_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+bool NavEKF3_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar, Vector2f &offset) const
 {
     velVar   = sqrtF(velTestRatio);
     posVar   = sqrtF(posTestRatio);
@@ -474,7 +446,7 @@ bool NavEKF3_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vec
     magVar.x = sqrtF(MAX(magTestRatio.x,yawTestRatio));
     magVar.y = sqrtF(MAX(magTestRatio.y,yawTestRatio));
     magVar.z = sqrtF(MAX(magTestRatio.z,yawTestRatio));
-    tasVar   = sqrtF(tasTestRatio);
+    reservedVar = 0.0f;
     offset   = posResetNE.tofloat();
 
     return true;
@@ -563,9 +535,8 @@ return the filter fault status as a bitmasked integer
  2 = badly conditioned X magnetometer fusion
  3 = badly conditioned Y magnetometer fusion
  4 = badly conditioned Z magnetometer fusion
- 5 = badly conditioned airspeed fusion
- 6 = badly conditioned synthetic sideslip fusion
- 7 = filter is not initialised
+ 5 = badly conditioned synthetic sideslip fusion
+ 6 = filter is not initialised
 */
 void  NavEKF3_core::getFilterFaults(uint16_t &faults) const
 {
@@ -574,9 +545,8 @@ void  NavEKF3_core::getFilterFaults(uint16_t &faults) const
               faultStatus.bad_xmag<<2 |
               faultStatus.bad_ymag<<3 |
               faultStatus.bad_zmag<<4 |
-              faultStatus.bad_airspeed<<5 |
-              faultStatus.bad_sideslip<<6 |
-              !statesInitialised<<7);
+              faultStatus.bad_sideslip<<5 |
+              !statesInitialised<<6);
 }
 
 // Return the navigation filter status message
@@ -629,10 +599,10 @@ void NavEKF3_core::send_status_report(GCS_MAVLINK &link) const
     }
 
     // get variances
-    float velVar = 0, posVar = 0, hgtVar = 0, tasVar = 0;
+    float velVar = 0, posVar = 0, hgtVar = 0, reservedVar = 0;
     Vector3f magVar;
     Vector2f offset;
-    getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    getVariances(velVar, posVar, hgtVar, magVar, reservedVar, offset);
 
 
     // Only report range finder normalised innovation levels if the EKF needs the data for primary
@@ -650,7 +620,7 @@ void NavEKF3_core::send_status_report(GCS_MAVLINK &link) const
         fmaxf(fmaxf(magVar.x,magVar.y),magVar.z),
         temp,
         flags,
-        tasVar
+        0.0f
     };
 
     // send message

@@ -37,7 +37,7 @@ public:
     bool initialised(void) const override;
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
     void get_filter_status(nav_filter_status &status) const override;
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar) const override;
 
     // check for new data
     void update() override {
@@ -54,7 +54,7 @@ public:
         GPS_WEEK = 0x3C,
         ACCEL_DATA_HR = 0x23,
         GYRO_DATA_HR = 0x21,
-        BARO_DATA = 0x25,
+        RESERVED_0X25 = 0x25,
         MAG_DATA = 0x24,
         ORIENTATION_ANGLES = 0x07,
         VELOCITIES = 0x12,
@@ -70,10 +70,8 @@ public:
         GNSS_INFO_SHORT = 0x36,
         GNSS_NEW_DATA = 0x41,
         GNSS_JAM_STATUS = 0xC0,
-        DIFFERENTIAL_PRESSURE = 0x28,
-        TRUE_AIRSPEED = 0x86,
         WIND_SPEED = 0x8A,
-        AIR_DATA_STATUS = 0x8D,
+        RESERVED_0X8D = 0x8D,
         SUPPLY_VOLTAGE = 0x50,
         TEMPERATURE = 0x52,
         UNIT_STATUS2 = 0x5A,
@@ -138,10 +136,7 @@ public:
         uint16_t gnss_week;
         vec3_32_t accel_data_hr; // g * 1e6
         vec3_32_t gyro_data_hr; // deg/s * 1e5
-        struct PACKED {
-            uint16_t pressure_pa2; // Pascals/2
-            int32_t baro_alt; // meters*100
-        } baro_data;
+        uint8_t reserved_0x25[6];
         vec3_16_t mag_data; // nT/10
         struct PACKED {
             uint16_t yaw; // deg*100
@@ -173,10 +168,8 @@ public:
         gnss_info_short_t gnss_info_short;
         uint8_t gnss_new_data;
         uint8_t gnss_jam_status;
-        int32_t differential_pressure; // mbar*1e4
-        int16_t true_airspeed; // m/s*100
         vec3_16_t wind_speed; // m/s*100
-        uint16_t air_data_status;
+        uint16_t reserved_0x8d;
         uint16_t supply_voltage; // V*100
         int16_t temperature; // degC*10
         uint16_t unit_status2;
@@ -198,10 +191,7 @@ public:
 
     AP_ExternalAHRS::gps_data_message_t gps_data;
     AP_ExternalAHRS::mag_data_message_t mag_data;
-    AP_ExternalAHRS::baro_data_message_t baro_data;
     AP_ExternalAHRS::ins_data_message_t ins_data;
-    AP_ExternalAHRS::airspeed_data_message_t airspeed_data;
-
     uint16_t buffer_ofs;
     uint8_t buffer[256]; // max for normal message set is 167+8
 
@@ -230,15 +220,11 @@ private:
     } message_lengths[];
 
     struct {
-        float baro_alt;
         Vector3f kf_vel_covariance;
         Vector3f kf_pos_covariance;
         uint16_t unit_status;
         uint16_t unit_status2;
-        float differential_pressure;
-        float true_airspeed;
         Vector3f wind_speed;
-        uint16_t air_data_status;
         float supply_voltage;
         uint8_t ins_sol_status;
     } state2;
@@ -266,7 +252,6 @@ private:
 
     uint16_t last_unit_status;
     uint16_t last_unit_status2;
-    uint16_t last_air_data_status;
     uint8_t last_spoof_status;
     uint8_t last_jam_status;
 
@@ -279,4 +264,3 @@ private:
 };
 
 #endif  // AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
-
