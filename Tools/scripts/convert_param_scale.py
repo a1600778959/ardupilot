@@ -5,7 +5,7 @@ tool to convert parameter names and scales, useful for conversion for cm -> m an
 this looks for files called *.param or *.parm
 
 example:
-  Tools/scripts/convert_param_scale.py --scale 0.1 TRIM_ARSPD_CM AIRSPEED_CRUISE
+  Tools/scripts/convert_param_scale.py --scale 0.01 WP_RADIUS CRUISE_SPEED
 '''
 
 import os

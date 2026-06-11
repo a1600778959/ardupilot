@@ -38,7 +38,6 @@ class JSONEmit(Emit):
 
             # Get display name
             if hasattr(param, 'DisplayName'):
-                 # i.e. ArduPlane (ArduPlane:FOOPARM)
                 param_json['displayName'] = param.DisplayName
 
             # Get description

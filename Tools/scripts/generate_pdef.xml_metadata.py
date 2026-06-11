@@ -15,7 +15,7 @@ import datetime
 import shutil
 import subprocess
 
-VEHICLE_TYPES = ["Copter", "Plane", "Rover", "ArduSub", "Tracker"]  # Add future vehicle types here
+VEHICLE_TYPES = ["Rover"]
 RSYNC_USERNAME = 'amilcar'
 
 # Store the current working directory
@@ -97,13 +97,11 @@ def main():
     for vehicle_type, versions in vehicle_versions.items():
 
         vehicle_dir = vehicle_type
-        if vehicle_type == 'ArduSub':
-            vehicle_dir = 'Sub'
 
         for version in versions:
-            if version[0] == '3' and vehicle_type != 'AP_Periph':
+            if version[0] == '3':
                 continue # Skip ArduPilot 3.x versions, as param_parse.py does not support them out of the box
-            if version[0] == '4' and version[2] == '0' and vehicle_type != 'ArduSub':
+            if version[0] == '4' and version[2] == '0':
                 continue # Skip ArduPilot 4.0.x versions, as param_parse.py does not support them out of the box
             create_one_pdef_xml_file(vehicle_type, f'{vehicle_dir}/stable-{version}', f'{vehicle_type}-{version}')
 

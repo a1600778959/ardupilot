@@ -16,8 +16,8 @@ import time
 class CheckAutoTestSpeedup(object):
     def __init__(
             self,
-            build_target="build.Plane",
-            test_target="test.QuadPlane",
+            build_target="build.Rover",
+            test_target="test.Rover",
             min_speedup=1,
             max_speedup=50,
             gdb=False,
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     parser = optparse.OptionParser(
         "check_autotest_speedup.py",
         epilog=""
-        "e.g. ./Tools/autotest/check_autotest_speedup.py --max-speedup=40 --build-target=build.Sub --test-target=test.Sub"
+        "e.g. ./Tools/autotest/check_autotest_speedup.py --max-speedup=40 --build-target=build.Rover --test-target=test.Rover"
     )
     parser.add_option("--debug",
                       default=False,
@@ -122,12 +122,12 @@ if __name__ == '__main__':
                       help='min speedup to test')
     parser.add_option("--build-target",
                       type='string',
-                      default='build.Plane',
-                      help='build target (e.g. build.Plane)')
+                      default='build.Rover',
+                      help='build target (e.g. build.Rover)')
     parser.add_option("--test-target",
                       type='string',
-                      default='test.QuadPlane',
-                      help='test target (e.g. test.QuadPlane)')
+                      default='test.Rover',
+                      help='test target (e.g. test.Rover)')
 
     opts, args = parser.parse_args()
 

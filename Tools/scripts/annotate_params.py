@@ -11,7 +11,7 @@ This script fetches online ArduPilot parameter documentation (if not cached) and
 3. DELETES all comments that start at the beginning of a line
 4. Adds the parameter documentation to the target file or to all *.param,*.parm files in the target directory.
 
-Supports AP_Periph, AntennaTracker, ArduCopter, ArduPlane, ArduSub, Blimp, Heli, Rover and SITL vehicle types
+Supports Rover and SITL vehicle types
 Supports both Mission Planner and MAVProxy file formats
 Supports sorting the parameters
 Has unit tests with 88% coverage
@@ -52,10 +52,9 @@ def arg_parser():
                         help='Sort the parameters in the file. Defaults to not sorting.',
                         )
     parser.add_argument('-t', '--vehicle-type',
-                        choices=['AP_Periph', 'AntennaTracker', 'ArduCopter', 'ArduPlane',
-                                 'ArduSub', 'Blimp', 'Heli', 'Rover', 'SITL'],
-                        default='ArduCopter',
-                        help='The type of the vehicle. Defaults to ArduCopter',
+                        choices=['Rover', 'SITL'],
+                        default='Rover',
+                        help='The type of the vehicle. Defaults to Rover',
                         )
     parser.add_argument('--verbose', action='store_true',
                         help='Increase output verbosity, print ReadOnly parameter list. Defaults to false',

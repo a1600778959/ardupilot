@@ -83,7 +83,7 @@ module load graph
 @alias add gtargetalt g GLOBAL_POSITION_INT.relative_alt*0.001+NAV_CONTROLLER_OUTPUT.alt_error
 @alias add gthrpitch g VFR_HUD.throttle NAV_CONTROLLER_OUTPUT.nav_pitch
 @alias add gsteer g NAV_CONTROLLER_OUTPUT.nav_roll NAV_CONTROLLER_OUTPUT.nav_pitch
-@alias add gspeed g VFR_HUD.airspeed VFR_HUD.groundspeed
+@alias add gspeed g VFR_HUD.groundspeed
 @alias add ggpst g min(abs(diff(GPS_RAW_INT.time_usec*1.0e-6,"d")),3)
 @alias add gload g SYS_STATUS.load
 @alias add grate g 1000.0/diff(ATTITUDE.time_boot_ms,"a")
@@ -122,7 +122,7 @@ module load graph
 # joe pos at CMAC
 @alias add joe1 map icon -35.362779 149.164248 barrell
 @alias add joe2 map icon -35.363131 149.164166 barrell
-@alias add gtakeoff graph VFR_HUD.airspeed NAV_CONTROLLER_OUTPUT.nav_pitch NAV_CONTROLLER_OUTPUT.alt_error NAV_CONTROLLER_OUTPUT.aspd_error*0.01
+@alias add gtakeoff graph VFR_HUD.groundspeed NAV_CONTROLLER_OUTPUT.nav_pitch NAV_CONTROLLER_OUTPUT.alt_error
 
 @alias add c1 map icon -35.362502 149.162008 barrell
 @alias add c2 map icon -35.363762 149.161739 barrell
@@ -231,6 +231,5 @@ alias add spiread devop spi read mpu6000 0xf5 1
 alias add bob long set_message_interval
 # graph diff(ATTITUDE.time_boot_ms,0)
 # long SET_MESSAGE_INTERVAL 30 100000
-
 
 

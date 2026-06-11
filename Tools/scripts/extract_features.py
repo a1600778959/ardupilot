@@ -42,9 +42,6 @@ class ExtractFeatures(object):
         self.features = [
             ('AP_ADVANCEDFAILSAFE_ENABLED', r'AP_AdvancedFailsafe::heartbeat\b',),
             ('AP_BOOTLOADER_FLASHING_ENABLED', 'ChibiOS::Util::flash_bootloader',),
-            ('AP_AIRSPEED_ENABLED', 'AP_Airspeed::AP_Airspeed',),
-            ('AP_AIRSPEED_{type}_ENABLED', r'AP_Airspeed_(?P<type>.*)::init',),
-
             ('AC_PRECLAND_ENABLED', 'AC_PrecLand::AC_PrecLand',),
             ('AC_PRECLAND_ENABLED', 'AC_PrecLand::AC_PrecLand',),
             ('AC_PRECLAND_{type}_ENABLED', 'AC_PrecLand_(?P<type>.*)::update',),
@@ -71,7 +68,6 @@ class ExtractFeatures(object):
             ('HAL_TORQEEDO_ENABLED', 'AP_Torqeedo::AP_Torqeedo'),
 
             ('HAL_NAVEKF3_AVAILABLE', 'NavEKF3::NavEKF3',),
-            ('HAL_NAVEKF2_AVAILABLE', 'NavEKF2::NavEKF2',),
             ('HAL_EXTERNAL_AHRS_ENABLED', r'AP_ExternalAHRS::init\b',),
             ('AP_EXTERNAL_AHRS_{type}_ENABLED', r'AP_ExternalAHRS_(?P<type>.*)::healthy\b',),
             ('HAL_INS_TEMPERATURE_CAL_ENABLE', 'AP_InertialSensor_TCal::Learn::save_calibration',),
@@ -95,8 +91,6 @@ class ExtractFeatures(object):
             ('AP_OPTICALFLOW_ENABLED', 'AP_OpticalFlow::AP_OpticalFlow',),
             ('AP_OPTICALFLOW_{type}_ENABLED', r'AP_OpticalFlow_(?P<type>.*)::update\b',),
 
-            ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::update\b',),
-
             ('AP_MOTORS_FRAME_{type}_ENABLED', r'AP_MotorsMatrix::setup_(?P<type>.*)_matrix\b',),
 
             ('HAL_MSP_ENABLED', r'AP_MSP::init\b',),
@@ -108,8 +102,6 @@ class ExtractFeatures(object):
 
             ('AP_BATTERY_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
             ('AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED', r'AP_BattMonitor_Backend::update_esc_telem_outbound\b',),
-            ('AP_BATTERY_WATT_MAX_ENABLED', 'Plane::throttle_watt_limiter',),
-
             ('HAL_MOUNT_ENABLED', 'AP_Mount::AP_Mount',),
             ('HAL_MOUNT_{type}_ENABLED', r'AP_Mount_(?P<type>.*)::update\b',),
             ('HAL_SOLO_GIMBAL_ENABLED', 'AP_Mount_SoloGimbal::init',),
@@ -215,7 +207,6 @@ class ExtractFeatures(object):
             ('HAL_GYROFFT_ENABLED', r'AP_GyroFFT::AP_GyroFFT\b',),
             ('HAL_DISPLAY_ENABLED', r'Display::init\b',),
             ('HAL_NMEA_OUTPUT_ENABLED', r'AP_NMEA_Output::update\b',),
-            ('HAL_BARO_WIND_COMP_ENABLED', r'AP_Baro::wind_pressure_correction\b',),
             ('AP_TEMPCALIBRATION_ENABLED', r'AP_TempCalibration::apply_calibration',),
 
             ('HAL_PICCOLO_CAN_ENABLE', r'AP_PiccoloCAN::update',),
@@ -257,7 +248,6 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED', r'GCS_MAVLINK::handle_mission_request\b'),
             ('AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED', r'GCS_MAVLINK::send_rc_channels_raw\b'),
             ('AP_MAVLINK_FTP_ENABLED', 'GCS_MAVLINK::ftp_worker'),
-            ('AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED', 'Plane::handle_external_hagl'),
             ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'AP_Camera::send_video_stream_information'),
 
             ('AP_DRONECAN_HIMARK_SERVO_SUPPORT', 'AP_DroneCAN::SRV_send_himark'),
@@ -277,17 +267,13 @@ class ExtractFeatures(object):
             ('AP_OSD_LINK_STATS_EXTENSIONS_ENABLED', r'AP_OSD_Screen::draw_rc_tx_power'),
             ('HAL_ENABLE_DRONECAN_DRIVERS', r'AP_DroneCAN::init'),
             ('AP_MAVLINK_MSG_HIL_GPS_ENABLED', r'mavlink_msg_hil_gps_decode'),
-            ('AP_BARO_PROBE_EXTERNAL_I2C_BUSES', r'AP_Baro::_probe_i2c_barometers'),
             ('AP_RSSI_ENABLED', r'AP_RSSI::init'),
 
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
-            ('AP_COPTER_ADVANCED_FAILSAFE_ENABLED', r'Copter::afs_fs_check'),
 
-            ('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', r'GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands'),
             ('AP_SERIALMANAGER_REGISTER_ENABLED', r'AP_SerialManager::register_port'),
             ('AP_QUICKTUNE_ENABLED', r'AP_Quicktune::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
-            ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
         ]
 
     def progress(self, msg):
@@ -467,9 +453,8 @@ class ExtractFeatures(object):
                     for key in d.keys():
                         d[key] = d[key].upper()
                     # filter to just the defines present in
-                    # build_options.py - otherwise we end up with (e.g.)
-                    # AP_AIRSPEED_BACKEND_ENABLED, even 'though that
-                    # doesn't exist in the ArduPilot codebase.
+                    # build_options.py - otherwise we end up with
+                    # generated defines that do not exist in the codebase.
                     some_define = feature_define.format(**d)
                     if some_define not in build_options_defines:
                         continue

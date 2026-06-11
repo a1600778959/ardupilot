@@ -79,12 +79,12 @@ class XmlEmit(Emit):
         return sorted(keys, key=sort_key)
 
     def emit(self, g):
-        xml_parameters = etree.SubElement(self.current_element, 'parameters', name=g.reference)  # i.e. ArduPlane
+        xml_parameters = etree.SubElement(self.current_element, 'parameters', name=g.reference)
 
         for param in g.params:
             # Begin our parameter node
             if hasattr(param, 'DisplayName'):
-                xml_param = etree.SubElement(xml_parameters, 'param', humanName=param.DisplayName, name=param.name)  # i.e. ArduPlane (ArduPlane:FOOPARM)
+                xml_param = etree.SubElement(xml_parameters, 'param', humanName=param.DisplayName, name=param.name)
             else:
                 xml_param = etree.SubElement(xml_parameters, 'param', name=param.name)
 

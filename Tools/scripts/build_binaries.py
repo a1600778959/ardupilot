@@ -27,7 +27,6 @@ import gen_stable
 import build_binaries_history
 
 import board_list
-from board_list import AP_PERIPH_BOARDS
 
 if sys.version_info[0] < 3:
     running_python3 = False
@@ -305,8 +304,6 @@ is bob we will attempt to checkout bob-AVR'''
 
     def version_h_path(self, src):
         '''return path to version.h'''
-        if src == 'AP_Periph':
-            return os.path.join('Tools', src, "version.h")
         return os.path.join(src, "version.h")
 
     def addfwversion_gitversion(self, destdir, src):
@@ -493,7 +490,7 @@ is bob we will attempt to checkout bob-AVR'''
                                          "".join([binaryname, framesuffix]))
                 files_to_copy = []
                 extensions = [".apj", ".abin", "_with_bl.hex", ".hex"]
-                if vehicle == 'AP_Periph' or board == "Here4FC":
+                if board == "Here4FC":
                     # need bin file for uavcan-gui-tool and MissionPlanner
                     extensions.append('.bin')
                 for extension in extensions:
@@ -588,40 +585,6 @@ is bob we will attempt to checkout bob-AVR'''
         self.progress("Exception caught: %s" %
                       self.get_exception_stacktrace(e))
 
-    def AP_Periph_boards(self):
-        return AP_PERIPH_BOARDS
-
-    def build_arducopter(self, tag):
-        '''build Copter binaries'''
-
-        boards = []
-        boards.extend(["aerofc-v1", "bebop"])
-        boards.extend(self.board_list.find_autobuild_boards('Copter'))
-        self.build_vehicle(tag,
-                           "ArduCopter",
-                           boards,
-                           "Copter",
-                           "arducopter",
-                           frames=[None, "heli"])
-
-    def build_arduplane(self, tag):
-        '''build Plane binaries'''
-        boards = self.board_list.find_autobuild_boards('Plane')[:]
-        boards.append("disco")
-        self.build_vehicle(tag,
-                           "ArduPlane",
-                           boards,
-                           "Plane",
-                           "arduplane")
-
-    def build_antennatracker(self, tag):
-        '''build Tracker binaries'''
-        self.build_vehicle(tag,
-                           "AntennaTracker",
-                           self.board_list.find_autobuild_boards('Tracker')[:],
-                           "AntennaTracker",
-                           "antennatracker")
-
     def build_rover(self, tag):
         '''build Rover binaries'''
         self.build_vehicle(tag,
@@ -629,31 +592,6 @@ is bob we will attempt to checkout bob-AVR'''
                            self.board_list.find_autobuild_boards('Rover')[:],
                            "Rover",
                            "ardurover")
-
-    def build_ardusub(self, tag):
-        '''build Sub binaries'''
-        self.build_vehicle(tag,
-                           "ArduSub",
-                           self.board_list.find_autobuild_boards('Sub')[:],
-                           "Sub",
-                           "ardusub")
-
-    def build_AP_Periph(self, tag):
-        '''build AP_Periph binaries'''
-        boards = self.AP_Periph_boards()
-        self.build_vehicle(tag,
-                           "AP_Periph",
-                           boards,
-                           "AP_Periph",
-                           "AP_Periph")
-
-    def build_blimp(self, tag):
-        '''build Blimp binaries'''
-        self.build_vehicle(tag,
-                           "Blimp",
-                           self.board_list.find_autobuild_boards('Blimp')[:],
-                           "Blimp",
-                           "blimp")
 
     def generate_manifest(self):
         '''generate manigest files for GCS to download'''
@@ -738,13 +676,7 @@ is bob we will attempt to checkout bob-AVR'''
 
         for tag in self.tags:
             t0 = time.time()
-            self.build_arducopter(tag)
-            self.build_arduplane(tag)
             self.build_rover(tag)
-            self.build_antennatracker(tag)
-            self.build_ardusub(tag)
-            self.build_AP_Periph(tag)
-            self.build_blimp(tag)
             self.history.record_run(githash, tag, t0, time.time()-t0)
 
         if os.path.exists(self.tmpdir):

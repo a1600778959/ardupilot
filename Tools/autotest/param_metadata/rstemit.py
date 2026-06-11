@@ -242,7 +242,7 @@ This list is automatically generated from the latest ardupilot source code, and 
 
             tag = tag.strip()
             reference = param.name
-            # remove e.g. "ArduPlane:" from start of parameter name:
+            # remove the vehicle prefix from start of parameter name:
             reference = reference.split(":")[-1]
             if param_path:
                 reference += '__' + param_path

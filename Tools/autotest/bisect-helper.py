@@ -18,13 +18,13 @@ git bisect run /tmp/bisect-helper.py --build \
      --build-failure-string= \
      "reference to 'OpticalFlow' is ambiguous"
 
-Work out who killed bebop:
+Work out who broke dimah743:
 cp -a Tools/autotest/bisect-helper.py /tmp
 git bisect reset
 git bisect good a7647e77d9 &&
   git bisect bad 153ad9539866f8d93a99e9998118bb090d2f747f &&
   git bisect run /tmp/bisect-helper.py --build \
-    --waf-configure-arg="--board bebop"
+    --waf-configure-arg="--board dimah743"
 
 # Use a failing test to work out which commit broke things:
 cp Tools/autotest/bisect-helper.py /tmp
@@ -32,9 +32,9 @@ git bisect reset
 git bisect start
 git bisect bad
 git bisect good HEAD~1024
-time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Plane --autotest-test=NeedEKFToArm --autotest-branch=wip/bisection-using-named-test  # noqa
+time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Rover --autotest-test=DriveMission --autotest-branch=wip/bisection-using-named-test  # noqa
 
-Work out who overflowed Omnbusf4pro:
+Work out who overflowed dimah743:
 cp -a Tools Tools2
 GOOD=c4ce6fa3851f93df34393c376fee5b37e0a270d2
 BAD=f00bf77af75f828334f735580d6b19698b639a74
@@ -44,14 +44,14 @@ git bisect start
 git bisect good $GOOD &&
   git bisect bad $BAD &&
   git bisect run Tools2/autotest/bisect-helper.py --build \
-    --waf-configure-arg="--board OmniBusF4Pro" \
+    --waf-configure-arg="--board dimah743" \
      --build-failure-string="$BFS"
 
 # Use a flapping test to work out which commit broke things.  The
 # "autotest-branch" is the branch containing the flapping test (which
 # may be master)
 rm /tmp/bisect-debug/*; git commit -m "stuff" -a ; cp Tools/autotest/bisect-helper.py /tmp; git bisect reset; git bisect start; git bisect bad d24e569b20; git bisect good 3f6fd49507f286ad8f6ccc9e29b110d5e9fc9207^
-time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Copter --autotest-test=Replay --autotest-branch=wip/bisection-using-flapping-test --autotest-test-passes=40 --autotest-failure-require-string="Mismatch in field XKF1.Pitch" --autotest-failure-ignore-string="HALSITL::SITL_State::_check_rc_input"
+time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Rover --autotest-test=DriveMission --autotest-branch=wip/bisection-using-flapping-test --autotest-test-passes=40 --autotest-failure-require-string="Mismatch in field XKF1.Pitch" --autotest-failure-ignore-string="HALSITL::SITL_State::_check_rc_input"
 
 AP_FLAKE8_CLEAN
 
@@ -146,7 +146,7 @@ class Bisect(object):
                 status, cmd_list)
 
     def build(self):
-        '''run ArduCopter build.  May exit with skip or fail'''
+        '''run Rover build.  May exit with skip or fail'''
         self.run_program("WAF-clean", ["./waf", "clean"])
         cmd_configure = ["./waf", "configure"]
         pieces = [shlex.split(x)
@@ -314,7 +314,7 @@ if __name__ == '__main__':
     group_autotest.add_option("", "--autotest-vehicle",
                               dest="autotest_vehicle",
                               type="string",
-                              default="ArduCopter",
+                              default="Rover",
                               help="Which vehicle to run tests for")
     group_autotest.add_option("", "--autotest-test",
                               dest="autotest_test",

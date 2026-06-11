@@ -1169,7 +1169,6 @@ class FRSky(Telem):
         self.dataid_FUEL                = 0x04
         self.dataid_TEMP2               = 0x05
         self.dataid_GPS_ALT_AP          = 0x09
-        self.dataid_BARO_ALT_BP         = 0x10
         self.dataid_GPS_SPEED_BP        = 0x11
         self.dataid_GPS_LONG_BP         = 0x12
         self.dataid_GPS_LAT_BP          = 0x13
@@ -1177,7 +1176,6 @@ class FRSky(Telem):
         self.dataid_GPS_SPEED_AP        = 0x19
         self.dataid_GPS_LONG_AP         = 0x1A
         self.dataid_GPS_LAT_AP          = 0x1B
-        self.dataid_BARO_ALT_AP         = 0x21
         self.dataid_GPS_LONG_EW         = 0x22
         self.dataid_GPS_LAT_NS          = 0x23
         self.dataid_CURRENT             = 0x28
@@ -1471,7 +1469,7 @@ class FRSkySPort(FRSky):
         self.get_time = get_time
 
         self.state_SEND_POLL = "sendpoll"
-        self.state_WANT_FRAME_TYPE = "want_frame_type"
+        self.state_WANT_PARAM_TYPE = "want_param_type"
         self.state_WANT_ID1 = "want_id1"
         self.state_WANT_ID2 = "want id2"
         self.state_WANT_DATA = "want data"
@@ -1495,7 +1493,7 @@ class FRSkySPort(FRSky):
         self.SENSOR_ID_DOWNLINK2_ID      = 0x67
         self.SENSOR_ID_UPLINK_ID         = 0x0D
 
-        self.state = self.state_WANT_FRAME_TYPE
+        self.state = self.state_WANT_PARAM_TYPE
 
         self.data_by_id = {}
         self.dataid_counts = {}
@@ -1524,7 +1522,6 @@ class FRSkySPort(FRSky):
             0x040F: "TMP1", # Tmp1
             0x060F: "Fuel", # fuel % 0-100
             0x041F: "TMP2", # Tmp2
-            0x010F: "ALT",  # baro alt cm
             0x083F: "GSPD", # gps speed integer mm/s
             0x084F: "HDG",  # yaw in cd
             0x020F: "CURR", # current dA
@@ -1628,8 +1625,8 @@ class FRSkySPort(FRSky):
                 msg = ("Re-polling (last_poll_sensor=0x%02x state=%s)" %
                        (self.last_poll_sensor, self.state))
                 self.progress(msg)
-            if self.state != self.state_WANT_FRAME_TYPE:
-                raise ValueError("Expected to be wanting a frame type when repolling (state=%s)" % str(self.state))
+            if self.state != self.state_WANT_PARAM_TYPE:
+                raise ValueError("Expected to be wanting a parameter type when repolling (state=%s)" % str(self.state))
             self.state = self.state_SEND_POLL
 
         if self.state == self.state_SEND_POLL:
@@ -1641,7 +1638,7 @@ class FRSkySPort(FRSky):
             self.sensor_id_poll_counts[sensor_id] += 1
             packet = SPortPollPacket(sensor_id)
             self.send_sport_packet(packet)
-            self.state = self.state_WANT_FRAME_TYPE
+            self.state = self.state_WANT_PARAM_TYPE
             self.poll_sent = now
 
     def send_sport_packets(self, packets):
@@ -1734,7 +1731,7 @@ class FRSkySPort(FRSky):
             else:
                 b = ord(self.buffer[0])
 #            self.progress("Have (%s) bytes state=%s b=0x%02x" % (str(len(self.buffer)), str(self.state), b));
-            if self.state == self.state_WANT_FRAME_TYPE:
+            if self.state == self.state_WANT_PARAM_TYPE:
                 if b in [self.SPORT_DATA_FRAME, self.SPORT_DOWNLINK_FRAME]:
                     self.frame = b
                     self.crc = 0
@@ -2412,7 +2409,7 @@ class TestSuite(ABC):
         self.progress("Rebooting SITL")
         self.reboot_sitl_mav(required_bootcount=required_bootcount, force=force)
         self.do_heartbeats(force=True)
-        if check_position and self.frame != 'sailboat':  # sailboats drift with wind!
+        if check_position:
             self.assert_simstate_location_is_at_startup_location(dist_max=startup_location_dist_max)
         if mark_context:
             self.context_get().reboot_sitl_was_done = True
@@ -2565,10 +2562,6 @@ class TestSuite(ABC):
             "SIM_ACC_TRIM_X",
             "SIM_ACC_TRIM_Y",
             "SIM_ACC_TRIM_Z",
-            "SIM_ARSPD2_OFS",
-            "SIM_ARSPD2_RND",
-            "SIM_ARSPD_OFS",
-            "SIM_ARSPD_RND",
             "SIM_FTOWESC_ENA",
             "SIM_FTOWESC_POW",
             "SIM_IE24_ENABLE",
@@ -2736,14 +2729,6 @@ class TestSuite(ABC):
         ])
 
         vinfo_key = self.vehicleinfo_key()
-        if vinfo_key == "Rover":
-            ret.update([
-            ])
-        if vinfo_key == "ArduSub":
-            ret.update([
-                "SIM_BUOYANCY",
-            ])
-
         return ret
 
     def test_parameter_documentation_get_all_parameters(self):
@@ -2759,10 +2744,6 @@ class TestSuite(ABC):
         except OSError:
             pass
         vehicle = self.log_name()
-        if vehicle == "HeliCopter":
-            vehicle = "ArduCopter"
-        if vehicle == "QuadPlane":
-            vehicle = "ArduPlane"
         cmd = [param_parse_filepath, '--vehicle', vehicle]
         # cmd.append("--verbose")
         if util.run_cmd(cmd, directory=self.buildlogs_dirpath()) != 0:
@@ -2828,10 +2809,6 @@ class TestSuite(ABC):
     def vehicle_code_dirpath(self):
         '''returns path to vehicle-specific code directory e.g. ~/ardupilot/Rover'''
         dirname = self.log_name()
-        if dirname == "QuadPlane":
-            dirname = "ArduPlane"
-        elif dirname == "HeliCopter":
-            dirname = "ArduCopter"
         return os.path.join(self.rootdir(), dirname)
 
     def find_LogStructureFiles(self):
@@ -3114,17 +3091,8 @@ class TestSuite(ABC):
         except OSError:
             pass
         vehicle = self.log_name()
-        if vehicle == 'BalanceBot':
-            # same binary and parameters as Rover
-            return
         vehicle_map = {
-            "ArduCopter": "Copter",
-            "HeliCopter": "Copter",
-            "ArduPlane": "Plane",
-            "QuadPlane": "Plane",
             "Rover": "Rover",
-            "AntennaTracker": "Tracker",
-            "ArduSub": "Sub",
         }
         vehicle = vehicle_map[vehicle]
 
@@ -3147,8 +3115,8 @@ class TestSuite(ABC):
 
         # we allow for no docs for replay messages, as these are not for end-users. They are
         # effectively binary blobs for replay
-        REPLAY_MSGS = ['RFRH', 'RFRF', 'REV2', 'RSO2', 'RWA2', 'REV3', 'RSO3', 'RWA3', 'RMGI',
-                       'REY3', 'RFRN', 'RISH', 'RISI', 'RISJ', 'RBRH', 'RBRI', 'RRNH', 'RRNI',
+        REPLAY_MSGS = ['RFRH', 'RFRF', 'REV3', 'RSO3', 'RWA3', 'RMGI',
+                       'REY3', 'RFRN', 'RISH', 'RISI', 'RISJ', 'RRNH', 'RRNI',
                        'RGPH', 'RGPI', 'RGPJ', 'RASH', 'RASI', 'RBCH', 'RBCI', 'RVOH', 'RMGH',
                        'ROFH', 'REPH', 'REVH', 'RWOH', 'RBOH', 'RSLL']
 
@@ -3262,8 +3230,6 @@ class TestSuite(ABC):
             'LOG_FILE_RATEMAX': 10,
         }
         if self.force_ahrs_type is not None:
-            if self.force_ahrs_type == 2:
-                ret["EK2_ENABLE"] = 1
             if self.force_ahrs_type == 3:
                 ret["EK3_ENABLE"] = 1
             ret["AHRS_EKF_TYPE"] = self.force_ahrs_type
@@ -3650,14 +3616,6 @@ class TestSuite(ABC):
     def HIGH_LATENCY2(self):
         '''test sending of HIGH_LATENCY2'''
 
-        # set airspeed sensor type to DLVR for air temperature message testing
-        if not self.is_plane():
-            # Plane does not have enable parameter
-            self.set_parameter("ARSPD_ENABLE", 1)
-        self.set_parameter("ARSPD_BUS", 2)
-        self.set_parameter("ARSPD_TYPE", 7)
-        self.reboot_sitl()
-
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, True, True, True, verbose=True, timeout=30)
 
         # should not be getting HIGH_LATENCY2 by default
@@ -3687,12 +3645,6 @@ class TestSuite(ABC):
         if dist > 1:
             raise NotAchievedException("Bad location from HIGH_LATENCY2")
 
-        self.start_subtest("HIGH_LATENCY2 Air Temperature")
-        m = self.poll_message("HIGH_LATENCY2")
-        mavutil.dump_message_verbose(sys.stdout, m)
-
-        if m.temperature_air == -128: # High_Latency2 defaults to INT8_MIN for no temperature available
-            raise NotAchievedException("Air Temperature not received from HIGH_LATENCY2")
         self.HIGH_LATENCY2_links()
 
     def context_set_send_debug_trap_on_exceptions(self, value=True):
@@ -6047,50 +5999,8 @@ class TestSuite(ABC):
         tstart = self.get_sim_time()
         self.send_cmd_enter_cpu_lockup()
         self.wait_disarmed(timeout=5, tstart=tstart)
-        # we're not getting SYSTEM_TIME messages at this point.... and
-        # we're in a weird state where the vehicle is armed but the
-        # motors are not, and we can't disarm further because Copter
-        # looks at whether its *motors* are armed as part of its
-        # disarm process.
         self.reset_SITL_commandline()
 
-    def cpufailsafe_wait_servo_channel_value(self, channel, value, timeout=30):
-        '''we get restricted messages while doing cpufailsafe, this working then'''
-        start = time.time()
-        while True:
-            if time.time() - start > timeout:
-                raise NotAchievedException("Did not achieve value")
-            m = self.assert_receive_message('SERVO_OUTPUT_RAW', timeout=1)
-            channel_field = "servo%u_raw" % channel
-            m_value = getattr(m, channel_field, None)
-            self.progress("Servo%u=%u want=%u" % (channel, m_value, value))
-            if m_value == value:
-                break
-
-    def plane_CPUFailsafe(self):
-        '''In lockup Plane should copy RC inputs to RC outputs'''
-        # customising the SITL commandline ensures the process will
-        # get stopped/started at the end of the test
-        self.customise_SITL_commandline([])
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.progress("Sending enter-cpu-lockup")
-        # when we're in CPU lockup we don't get SYSTEM_TIME messages,
-        # so get_sim_time breaks:
-        self.send_cmd_enter_cpu_lockup()
-        start_time = time.time() # not sim time!
-        self.context_push()
-        self.context_collect("STATUSTEXT")
-        while True:
-            want = "Initialising ArduPilot"
-            if time.time() - start_time > 30:
-                raise NotAchievedException("Did not get %s" % want)
-            # we still need to parse the incoming messages:
-            try:
-                self.wait_statustext(want, timeout=0.1, check_context=True, wallclock_timeout=1)
-                break
-            except AutoTestTimeoutException:
-                pass
         self.context_pop()
         # Different scaling for RC input and servo output means the
         # servo output value isn't the rc input value:
@@ -6218,9 +6128,7 @@ class TestSuite(ABC):
         return False  # FIXME: if we allow MAVProxy then allow this
         if fnmatch.fnmatch(param_name, "*_ENABLE") or fnmatch.fnmatch(param_name, "*_ENABLED"):
             return True
-        if param_name in ["ARSPD_TYPE",
-                          "ARSPD2_TYPE",
-                          "BATT2_MONITOR",
+        if param_name in ["BATT2_MONITOR",
                           "CAN_DRIVER",
                           "COMPASS_PMOT_EN",
                           "OSD_TYPE",
@@ -7421,9 +7329,6 @@ class TestSuite(ABC):
 
     def wait_groundspeed(self, speed_min, speed_max, timeout=30, **kwargs):
         self.wait_vfr_hud_speed("groundspeed", speed_min, speed_max, timeout=timeout, **kwargs)
-
-    def wait_airspeed(self, speed_min, speed_max, timeout=30, **kwargs):
-        self.wait_vfr_hud_speed("airspeed", speed_min, speed_max, timeout=timeout, **kwargs)
 
     def wait_vfr_hud_speed(self, field, speed_min, speed_max, timeout=30, **kwargs):
         """Wait for a given ground speed range."""
@@ -9074,9 +8979,8 @@ Also, ignores heartbeats not from our target system'''
         if reset_needed:
             self.reset_SITL_commandline()
 
-        if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
-            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
-            self.set_current_waypoint(0, check_afterwards=False)
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+        self.set_current_waypoint(0, check_afterwards=False)
 
         tee.close()
 
@@ -9793,9 +9697,6 @@ Also, ignores heartbeats not from our target system'''
             mavproxy.expect("Calibrated")
             # disable it to not interfert with calibration acceptation
             self.mavproxy_unload_module(mavproxy, "calibration")
-            if self.is_copter():
-                # set frame class to pass arming check on copter
-                self.set_parameter("FRAME_CLASS", 1)
             self.progress("Setting SITL Magnetometer model value")
             self.set_parameter("COMPASS_AUTO_ROT", 0)
             # MAG_ORIENT = 4
@@ -10547,23 +10448,12 @@ Also, ignores heartbeats not from our target system'''
 
     def ArmFeatures(self):
         '''Arm features'''
-        # TEST ARMING/DISARM
         self.delay_sim_time(12)  # wait for gyros/accels to be happy
-        if self.get_parameter("ARMING_CHECK") != 1.0 and not self.is_sub():
+        if self.get_parameter("ARMING_CHECK") != 1.0:
             raise ValueError("Arming check should be 1")
-        if not self.is_sub() and not self.is_tracker():
-            self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
-        if self.is_copter():
-            interlock_channel = 8  # Plane got flighmode_ch on channel 8
-            if not self.is_heli():  # heli don't need interlock option
-                interlock_channel = 9
-                self.set_parameter("RC%u_OPTION" % interlock_channel, 32)
-            self.set_rc(interlock_channel, 1000)
+        self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
         self.zero_throttle()
-        # Disable auto disarm for next tests
-        # Rover and Sub don't have auto disarm
-        if self.is_copter() or self.is_plane():
-            self.set_autodisarm_delay(0)
+
         self.start_subtest("Test normal arm and disarm features")
         self.wait_ready_to_arm()
         self.progress("default arm_vehicle() call")
@@ -10590,131 +10480,52 @@ Also, ignores heartbeats not from our target system'''
         self.mavproxy_disarm_vehicle(mavproxy)
         self.stop_mavproxy(mavproxy)
 
-        if not self.is_sub():
-            self.start_subtest("Test arm with rc input")
+        self.start_subtest("Test arm with rc input")
+        self.arm_motors_with_rc_input()
+        self.progress("disarm with rc input")
+        self.disarm_motors_with_rc_input()
+
+        self.start_subtest("Test arm and disarm with switch")
+        arming_switch = 7
+        self.set_parameter("RC%d_OPTION" % arming_switch, 153)
+        self.set_rc(arming_switch, 1000)
+        self.delay_sim_time(0.5)
+        self.arm_motors_with_switch(arming_switch)
+        self.disarm_motors_with_switch(arming_switch)
+        self.set_rc(arming_switch, 1000)
+
+        self.start_subtest("Test arming failure with ARMING_RUDDER=0")
+        self.set_parameter("ARMING_RUDDER", 0)
+        try:
             self.arm_motors_with_rc_input()
-            self.progress("disarm with rc input")
-            if self.is_balancebot():
-                self.progress("balancebot can't disarm with RC input")
-                self.disarm_vehicle()
-            else:
-                self.disarm_motors_with_rc_input()
+        except NotAchievedException:
+            pass
+        if self.armed():
+            raise NotAchievedException("Armed with rudder when ARMING_RUDDER=0")
 
-            self.start_subtest("Test arm and disarm with switch")
-            arming_switch = 7
-            self.set_parameter("RC%d_OPTION" % arming_switch, 153)
-            self.set_rc(arming_switch, 1000)
-            # delay so a transition is seen by the RC switch code:
-            self.delay_sim_time(0.5)
-            self.arm_motors_with_switch(arming_switch)
-            self.disarm_motors_with_switch(arming_switch)
-            self.set_rc(arming_switch, 1000)
+        self.start_subtest("Test disarming failure with ARMING_RUDDER=0")
+        self.arm_vehicle()
+        try:
+            self.disarm_motors_with_rc_input(watch_for_disabled=True)
+        except NotAchievedException:
+            pass
+        if not self.armed():
+            raise NotAchievedException("Disarmed with rudder when ARMING_RUDDER=0")
+        self.disarm_vehicle()
+        self.wait_heartbeat()
 
-            if self.is_copter():
-                self.start_subtest("Test arming failure with throttle too high")
-                self.set_rc(3, 1800)
-                try:
-                    if self.arm_vehicle():
-                        raise NotAchievedException("Armed when throttle too high")
-                except ValueError:
-                    pass
-                try:
-                    self.arm_motors_with_rc_input()
-                except NotAchievedException:
-                    pass
-                if self.armed():
-                    raise NotAchievedException(
-                        "Armed via RC when throttle too high")
-                try:
-                    self.arm_motors_with_switch(arming_switch)
-                except NotAchievedException:
-                    pass
-                if self.armed():
-                    raise NotAchievedException("Armed via RC when switch too high")
-                self.zero_throttle()
-                self.set_rc(arming_switch, 1000)
-
-            # Sub doesn't have 'stick commands'
-            self.start_subtest("Test arming failure with ARMING_RUDDER=0")
-            self.set_parameter("ARMING_RUDDER", 0)
-            try:
-                self.arm_motors_with_rc_input()
-            except NotAchievedException:
-                pass
-            if self.armed():
-                raise NotAchievedException(
-                    "Armed with rudder when ARMING_RUDDER=0")
-            self.start_subtest("Test disarming failure with ARMING_RUDDER=0")
-            self.arm_vehicle()
-            try:
-                self.disarm_motors_with_rc_input(watch_for_disabled=True)
-            except NotAchievedException:
-                pass
-            if not self.armed():
-                raise NotAchievedException(
-                    "Disarmed with rudder when ARMING_RUDDER=0")
-            self.disarm_vehicle()
-            self.wait_heartbeat()
-            self.start_subtest("Test disarming failure with ARMING_RUDDER=1")
-            self.set_parameter("ARMING_RUDDER", 1)
-            self.arm_vehicle()
-            try:
-                self.disarm_motors_with_rc_input()
-            except NotAchievedException:
-                pass
-            if not self.armed():
-                raise NotAchievedException(
-                    "Disarmed with rudder with ARMING_RUDDER=1")
-            self.disarm_vehicle()
-            self.wait_heartbeat()
-            self.set_parameter("ARMING_RUDDER", 2)
-
-            if self.is_copter():
-                self.start_subtest("Test arming failure with interlock enabled")
-                self.set_rc(interlock_channel, 2000)
-                try:
-                    self.arm_motors_with_rc_input()
-                except NotAchievedException:
-                    pass
-                if self.armed():
-                    raise NotAchievedException(
-                        "Armed with RC input when interlock enabled")
-                try:
-                    self.arm_motors_with_switch(arming_switch)
-                except NotAchievedException:
-                    pass
-                if self.armed():
-                    raise NotAchievedException("Armed with switch when interlock enabled")
-                self.disarm_vehicle()
-                self.wait_heartbeat()
-                self.set_rc(arming_switch, 1000)
-                self.set_rc(interlock_channel, 1000)
-                if self.is_heli():
-                    self.start_subtest("Test motor interlock enable can't be set while disarmed")
-                    self.set_rc(interlock_channel, 2000)
-                    channel_field = "servo%u_raw" % interlock_channel
-                    interlock_value = self.get_parameter("SERVO%u_MIN" % interlock_channel)
-                    tstart = self.get_sim_time()
-                    while True:
-                        if self.get_sim_time_cached() - tstart > 20:
-                            self.set_rc(interlock_channel, 1000)
-                            break # success!
-                        m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
-                                                blocking=True,
-                                                timeout=2)
-                        if m is None:
-                            continue
-                        m_value = getattr(m, channel_field, None)
-                        if m_value is None:
-                            self.set_rc(interlock_channel, 1000)
-                            raise ValueError("Message has no %s field" %
-                                             channel_field)
-                        self.progress("SERVO_OUTPUT_RAW.%s=%u want=%u" %
-                                      (channel_field, m_value, interlock_value))
-                        if m_value != interlock_value:
-                            self.set_rc(interlock_channel, 1000)
-                            raise NotAchievedException("Motor interlock was changed while disarmed")
-                self.set_rc(interlock_channel, 1000)
+        self.start_subtest("Test disarming failure with ARMING_RUDDER=1")
+        self.set_parameter("ARMING_RUDDER", 1)
+        self.arm_vehicle()
+        try:
+            self.disarm_motors_with_rc_input()
+        except NotAchievedException:
+            pass
+        if not self.armed():
+            raise NotAchievedException("Disarmed with rudder with ARMING_RUDDER=1")
+        self.disarm_vehicle()
+        self.wait_heartbeat()
+        self.set_parameter("ARMING_RUDDER", 2)
 
         self.start_subtest("Test all mode arming")
         self.wait_ready_to_arm()
@@ -11217,17 +11028,16 @@ Also, ignores heartbeats not from our target system'''
     def clear_fence(self):
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
 
-    # Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247  # noqa
     def ConfigErrorLoop(self):
         '''test the sensor config error loop works and that parameter sets are persistent'''
         parameter_name = "SERVO8_MIN"
         old_parameter_value = self.get_parameter(parameter_name)
-        old_sim_baro_count = self.get_parameter("SIM_BARO_COUNT")
+        old_sim_imu_count = self.get_parameter("SIM_IMU_COUNT")
         new_parameter_value = old_parameter_value + 5
         ex = None
         try:
             self.set_parameter("STAT_BOOTCNT", 0)
-            self.set_parameter("SIM_BARO_COUNT", -1)
+            self.set_parameter("SIM_IMU_COUNT", -1)
 
             if self.is_tracker():
                 # starts armed...
@@ -11243,8 +11053,8 @@ Also, ignores heartbeats not from our target system'''
         except Exception as e:
             ex = e
 
-        self.progress("Resetting SIM_BARO_COUNT")
-        self.set_parameter("SIM_BARO_COUNT", old_sim_baro_count)
+        self.progress("Resetting SIM_IMU_COUNT")
+        self.set_parameter("SIM_IMU_COUNT", old_sim_imu_count)
 
         if self.is_tracker():
             # starts armed...
@@ -12142,9 +11952,6 @@ Also, ignores heartbeats not from our target system'''
     def is_rover(self):
         return False
 
-    def is_balancebot(self):
-        return False
-
     def is_heli(self):
         return False
 
@@ -12234,8 +12041,7 @@ one specified in the vehicle constructor)'''
         self.wait_mode(want)
 
     def wait_for_mode_switch_poll(self):
-        '''look for a transition from boot-up-mode (e.g. the flightmode
-specificied in Copter's constructor) to the one specified by the mode
+        '''look for a transition from boot-up-mode to the one specified by the mode
 switch value'''
         want = self.initial_mode_switch_mode()
         if want is None:
@@ -12329,8 +12135,7 @@ switch value'''
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.wait_for_mode_switch_poll()
-            if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
-                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
 
             for test in tests:
                 self.drain_mav_unparsed()
@@ -12517,9 +12322,6 @@ switch value'''
 
     def Parameters(self):
         '''general small tests for parameter system'''
-        if self.is_balancebot():
-            # same binary and parameters as Rover
-            return
         self.test_parameter_documentation()
         self.test_parameters_mis_total()
         self.test_parameters_download()
@@ -12603,7 +12405,6 @@ switch value'''
                 self.start_subtest("Altitude Limit breach")
                 self.set_parameters({
                     "AFS_AMSL_LIMIT": 100,
-                    "AFS_QNH_PRESSURE": 1015.2,
                 })
                 self.do_fence_enable()
                 self.wait_statustext("Terminating due to fence breach", check_context=True)
@@ -13296,18 +13097,15 @@ switch value'''
         # random messages.
         self.wait_ready_to_arm()
 
-        # test we get statustext strings.  This relies on ArduPilot
-        # emitting statustext strings when we fetch parameters. (or,
-        # now, an updating-barometer statustext)
+        # test we get statustext strings.
         tstart = self.get_sim_time()
         old_data = None
         text = ""
 
         self.context_collect('STATUSTEXT')
-        command = mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION
+        command = mavutil.mavlink.MAV_CMD_DO_SEND_BANNER
         self.send_cmd(
             command,
-            p3=1, # p3, baro
         )
         # this is a test for asynchronous handling of mavlink messages:
         self.run_cmd_get_ack(command, mavutil.mavlink.MAV_RESULT_IN_PROGRESS, 2)
@@ -13563,21 +13361,6 @@ switch value'''
         self.progress("Set value OK")
         self.end_subtest("Set parameter via MAVlite")
 
-        self.start_subtest("Calibrate Baro via MAVLite")
-        self.context_push()
-        self.context_collect("STATUSTEXT")
-        self.run_cmd_via_mavlite(
-            frsky,
-            sport_to_mavlite,
-            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
-            p1=0,
-            p2=0,
-            p3=1.0,
-        )
-        self.wait_statustext("Updating barometer calibration", check_context=True)
-        self.context_pop()
-        self.end_subtest("Calibrate Baro via MAVLite")
-
         self.start_subtest("Change mode via MAVLite")
         #  FIXME: currently plane-specific
         self.run_cmd_via_mavlite(
@@ -13620,22 +13403,6 @@ switch value'''
         gpi_alt_m = round(gpi.alt * 0.001) # mm-> m
         self.progress("GLOBAL_POSITION_INT alt==%f frsky==%f" % (gpi_alt_m, alt_m))
         if self.compare_number_percent(gpi_alt_m, alt_m, 10):
-            return True
-        return False
-
-    def tfs_validate_baro_alt(self, value):
-        self.progress("validating baro altitude (0x%02x)" % value)
-        alt_m = value * 0.01 # cm -> m
-        gpi = self.mav.recv_match(
-            type='GLOBAL_POSITION_INT',
-            blocking=True,
-            timeout=1
-        )
-        if gpi is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT message")
-        gpi_alt_m = round(gpi.relative_alt * 0.001) # mm -> m
-        self.progress("GLOBAL_POSITION_INT relative_alt==%f frsky==%f" % (gpi_alt_m, alt_m))
-        if abs(gpi_alt_m - alt_m) < 1:
             return True
         return False
 
@@ -13831,7 +13598,6 @@ switch value'''
             0x040F: self.tfs_validate_tmp1, # Tmp1
             0x060F: self.tfs_validate_fuel, # fuel % 0-100
             0x041F: self.tfs_validate_tmp2, # Tmp2
-            0x010F: self.tfs_validate_baro_alt, # baro alt cm
             0x083F: self.tfs_validate_gps_speed, # gps speed integer mm/s
             0x084F: self.tfs_validate_yaw, # yaw in cd
             0x020F: self.tfs_validate_current1, # current dA
@@ -14530,9 +14296,6 @@ SERIAL5_BAUD 128
 
     def EmbeddedParamParser(self):
         '''check parsing of embedded defaults file'''
-        # warning: don't try this test on Copter as it won't boot
-        # without the passed-in file (which we don't parse if there
-        # are embedded defaults)
         for (content, param_values) in self.sample_param_file_content():
             binary_with_defaults = self.add_embedded_params_to_binary(self.binary, content)
             self.customise_SITL_commandline([], binary=binary_with_defaults)
@@ -14543,8 +14306,7 @@ SERIAL5_BAUD 128
                    timeout=60,
                    mot1_servo_chan=1,
                    mot4_servo_chan=4,
-                   wait_finish_text=True,
-                   quadplane=False):
+                   wait_finish_text=True):
         '''Run Motor Tests (with specific mavlink message)'''
         self.start_subtest("Testing PWM output")
         pwm_in = 1300
@@ -14578,10 +14340,6 @@ SERIAL5_BAUD 128
         # since MOT_SPIN_MIN and MOT_SPIN_MAX are not set, the RC3
         # min/max are used.
         expected_pwm = 1000 + (self.get_parameter("RC3_MAX") - self.get_parameter("RC3_MIN")) * percentage/100.0
-        # quadplane doesn't use the expect value - it wants 1900
-        # rather than the calculated 1901...
-        if quadplane:
-            expected_pwm = 1900
         self.progress("expected pwm=%f" % expected_pwm)
         command(
             mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
@@ -14605,7 +14363,7 @@ SERIAL5_BAUD 128
         self.end_subtest("Testing percentage output")
 
     def MotorTest(self, timeout=60, **kwargs):
-        '''Run Motor Tests'''  # common to Copter and QuadPlane
+        '''Run Motor Tests'''
         self._MotorTest(self.run_cmd, **kwargs)
         self._MotorTest(self.run_cmd_int, **kwargs)
 

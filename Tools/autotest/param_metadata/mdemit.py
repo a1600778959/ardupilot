@@ -2,13 +2,9 @@
 Emit parameter documentation in markdown format
 """
 
-from param import known_param_fields
 from emit import Emit
+from param import known_param_fields
 import re
-import os
-
-# Parameter groups disabled at compile time (Vehicle-specific)
-sub_blacklist = ['AVOID_', 'CIRCLE_', 'FLOW', 'MIS_', 'PRX', 'RALLY_', 'RCMAP_', 'RPM', 'TERRAIN_', 'WPNAV_']
 
 # Parameter groups with redundant information (ie RCn_, SERVOn_)
 # We can keep the documentation concise by only documenting these once
@@ -22,21 +18,10 @@ class MDEmit(Emit):
         self.nparams = []
         self.f = open(fname, mode='w')
 
-        self.blacklist = None
-        
-        # Flag to generate navigation header for BlueRobotics' ArduSub docs
-        if os.getenv('BRDOC') is not None:
-            self.header = """---\nlayout: default\ntitle: "Parameters"\npermalink: /parameters/\nnav:"""
-        
         self.preamble = """\nThis is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your autopilot to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code. Some parameters may only be available for developers, and are enabled at compile-time."""
         self.t = ''
 
     def close(self):
-        # Write navigation header for BlueRobotics' ArduSub docs
-        if os.getenv('BRDOC') is not None:
-            self.f.write(self.header)
-            self.f.write('\n---\n')
-            
         self.f.write(self.preamble)
         self.f.write(self.t)
         self.f.close()
@@ -46,12 +31,6 @@ class MDEmit(Emit):
 
     def emit(self, g):
         nparam = False # Flag indicating this is a parameter group with redundant information (ie RCn_, SERVOn_)
-        
-        if g.reference == 'ArduSub':
-            self.blacklist = sub_blacklist
-        
-        if self.blacklist is not None and g.reference in self.blacklist:
-            return
         
         pname = g.reference
         
@@ -69,10 +48,6 @@ class MDEmit(Emit):
         tag = '%s Parameters' % pname
         tag = tag.replace('_', '')
         link = tag.replace(' ', '-')
-        
-        # Add group to navigation header for BlueRobotics' ArduSub docs
-        if os.getenv('BRDOC') is not None:
-            self.header += "\n- %s: %s" % (link.split('-')[0],link.lower())
         
         t = '\n\n# %s' % tag
         

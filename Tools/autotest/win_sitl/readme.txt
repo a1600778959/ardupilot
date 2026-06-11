@@ -6,8 +6,6 @@ An EEPROM (containing the state of the APM's flash memory - paramters, waypoints
 
 To continue with the current EEPROM, run:
 
-    RunCopter.bat for a quadcopter running APM:Copter
-    RunPlane.bat for running APM:Plane
     RunRover.bat for running APM:Rover
 
 4) Updating the APM source code

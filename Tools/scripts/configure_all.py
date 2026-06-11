@@ -14,11 +14,10 @@ import argparse
 
 # modify our search path:
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
-import chibios_hwdef
 
 parser = argparse.ArgumentParser(description='configure all ChibiOS boards')
 parser.add_argument('--build', action='store_true', default=False, help='build as well as configure')
-parser.add_argument('--build-target', default='copter', help='build target')
+parser.add_argument('--build-target', default='rover', help='build target')
 parser.add_argument('--stop', action='store_true', default=False, help='stop on configure or build failure')
 parser.add_argument('--no-bl', action='store_true', default=False, help="don't check bootloader builds")
 parser.add_argument('--only-bl', action='store_true', default=False, help="only check bootloader builds")
@@ -68,12 +67,6 @@ if args.start is not None:
         sys.exit(1)
     board_list = board_list[args.start-1:]
 
-def is_ap_periph(board):
-    hwdef = os.path.join('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % board)
-    ch = chibios_hwdef.ChibiOSHWDef()
-    ch.process_file(hwdef)
-    return ch.is_periph_fw()
-
 if args.copy_hwdef_incs_to_directory is not None:
     os.makedirs(args.copy_hwdef_incs_to_directory)
 
@@ -83,8 +76,6 @@ def handle_hwdef_copy(directory, board, bootloader=False):
         filename = "hwdef-%s-bl.h" % board
     elif board == "iomcu":
         filename = "hwdef-%s-iomcu.h" % board
-    elif is_ap_periph(board):
-        filename = "hwdef-%s-periph.h" % board
     else:
         filename = "hwdef-%s.h" % board
     target = os.path.join(directory, filename)
@@ -103,8 +94,6 @@ for board in board_list:
     if args.build:
         if board == "iomcu":
             target = "iofirmware"
-        elif is_ap_periph(board):
-            target = "AP_Periph"
         else:
             target = args.build_target
         if target.find('/') != -1:

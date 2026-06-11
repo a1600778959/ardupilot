@@ -16,13 +16,7 @@ class Board(object):
         self.name = name
         self.is_ap_periph = False
         self.autobuild_targets = [
-            'Tracker',
-            'Blimp',
-            'Copter',
-            'Heli',
-            'Plane',
             'Rover',
-            'Sub',
         ]
 
 
@@ -58,23 +52,7 @@ class BoardList(object):
     def __init__(self):
         self.set_hwdef_dir()
 
-        # no hwdefs for Linux boards - yet?
-        self.boards = [
-            Board("erlebrain2"),
-            Board("navigator"),
-            Board("navigator64"),
-            Board("navio"),
-            Board("navio2"),
-            Board("edge"),
-            Board("obal"),
-            Board("pxf"),
-            Board("bbbmini"),
-            Board("blue"),
-            Board("pxfmini"),
-            Board("canzero"),
-            Board("SITL_x86_64_linux_gnu"),
-            Board("SITL_arm_linux_gnueabihf"),
-        ]
+        self.boards = []
 
         for adir in os.listdir(self.hwdef_dir):
             if adir is None:
@@ -175,24 +153,11 @@ class BoardList(object):
         return sorted(list(ret))
 
     def find_ap_periph_boards(self):
-        blacklist = [
-            "CubeOrange-periph-heavy",
-            "f103-HWESC",
-            "f103-Trigger",
-            "G4-ESC",
-        ]
-        ret = []
-        for x in self.boards:
-            if not x.is_ap_periph:
-                continue
-            if x.name in blacklist:
-                continue
-            ret.append(x.name)
-        return sorted(list(ret))
+        return []
 
 
 AUTOBUILD_BOARDS = BoardList().find_autobuild_boards()
-AP_PERIPH_BOARDS = BoardList().find_ap_periph_boards()
+AP_PERIPH_BOARDS = []
 
 if __name__ == '__main__':
     import argparse
@@ -203,10 +168,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     board_list = BoardList()
     target = args.target
-    if target == "AP_Periph":
-        blist = board_list.find_ap_periph_boards()
-    else:
-        blist = board_list.find_autobuild_boards(target)
+    blist = board_list.find_autobuild_boards(target)
     blist = sorted(blist)
     if args.per_line:
         for b in blist:

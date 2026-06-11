@@ -47,7 +47,7 @@ prog_param = re.compile(r"@Param(?:{([^}]+)})?: (\w+).*((?:\n[ \t]*// @(\w+)(?:{
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
 prog_param_fields = re.compile(r"[ \t]*// @(\w+): ?([^\r\n]*)")
-# match e.g @Value{Copter}: 0=Volcano, 1=Peppermint
+# match e.g @Value{Rover}: 0=Volcano, 1=Peppermint
 prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: ([^\r\n]*)")
 
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
@@ -58,20 +58,13 @@ apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../'
 def find_vehicle_parameter_filepath(vehicle_name):
     apm_tools_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../Tools/')
 
-    vehicle_name_to_dir_name_map = {
-        "Copter": "ArduCopter",
-        "Plane": "ArduPlane",
-        "Tracker": "AntennaTracker",
-        "Sub": "ArduSub",
-    }
+    vehicle_name_to_dir_name_map = {}
 
-    # first try ArduCopter/Parameters.cpp
     for top_dir in apm_path, apm_tools_path:
         path = os.path.join(top_dir, vehicle_name, "Parameters.cpp")
         if os.path.exists(path):
             return path
 
-        # then see if we can map e.g. Copter -> ArduCopter
         if vehicle_name in vehicle_name_to_dir_name_map:
             path = os.path.join(top_dir, vehicle_name_to_dir_name_map[vehicle_name], "Parameters.cpp")
             if os.path.exists(path):
@@ -108,12 +101,11 @@ def lua_applets():
 
 libraries = []
 
-if args.vehicle != "AP_Periph":
-    # AP_Vehicle also has parameters rooted at "", but isn't referenced
-    # from the vehicle in any way:
-    ap_vehicle_lib = Library("", reference="VEHICLE") # the "" is tacked onto the front of param name
-    setattr(ap_vehicle_lib, "Path", os.path.join('..', 'libraries', 'AP_Vehicle', 'AP_Vehicle.cpp'))
-    libraries.append(ap_vehicle_lib)
+# AP_Vehicle also has parameters rooted at "", but isn't referenced
+# from the vehicle in any way:
+ap_vehicle_lib = Library("", reference="VEHICLE") # the "" is tacked onto the front of param name
+setattr(ap_vehicle_lib, "Path", os.path.join('..', 'libraries', 'AP_Vehicle', 'AP_Vehicle.cpp'))
+libraries.append(ap_vehicle_lib)
 
 libraries.append(lua_applets())
 
@@ -135,14 +127,7 @@ def error(str_to_print):
 
 truename_map = {
     "Rover": "Rover",
-    "ArduSub": "Sub",
-    "ArduCopter": "Copter",
-    "ArduPlane": "Plane",
-    "AntennaTracker": "Tracker",
-    "AP_Periph": "AP_Periph",
-    "Blimp": "Blimp",
 }
-valid_truenames = frozenset(truename_map.values())
 truename = truename_map.get(args.vehicle, args.vehicle)
 
 documentation_tags_which_are_comma_separated_nv_pairs = frozenset([
@@ -154,7 +139,7 @@ vehicle_path = find_vehicle_parameter_filepath(args.vehicle)
 
 basename = os.path.basename(os.path.dirname(vehicle_path))
 path = os.path.normpath(os.path.dirname(vehicle_path))
-reference = basename  # so links don't break we use ArduCopter
+reference = basename  # so links don't break
 vehicle = Vehicle(truename, path, reference=reference)
 debug('Found vehicle type %s' % vehicle.name)
 
@@ -189,9 +174,6 @@ def process_vehicle(vehicle):
                                                    param_match[2])
         if len(only_vehicles):
             only_vehicles_list = [x.strip() for x in only_vehicles.split(",")]
-            for only_vehicle in only_vehicles_list:
-                if only_vehicle not in valid_truenames:
-                    raise ValueError("Invalid only_vehicle %s" % only_vehicle)
             if vehicle.truename not in only_vehicles_list:
                 continue
         p = Parameter(vehicle.reference+":"+param_name, current_file)
@@ -311,9 +293,6 @@ def process_library(vehicle, library, pathprefix=None):
             for field in fields:
                 only_for_vehicles = field[1].split(",")
                 only_for_vehicles = [some_vehicle.rstrip().lstrip() for some_vehicle in only_for_vehicles]
-                delta = set(only_for_vehicles) - set(truename_map.values())
-                if len(delta):
-                    error("Unknown vehicles (%s)" % delta)
                 debug("field[0]=%s vehicle=%s field[1]=%s only_for_vehicles=%s\n" %
                       (field[0], vehicle.name, field[1], str(only_for_vehicles)))
                 if field[0] not in known_param_fields:
@@ -349,7 +328,7 @@ def process_library(vehicle, library, pathprefix=None):
                     getattr(p, 'Bitmask', None) is None):
                 # values and Bitmask available for this vehicle
                 if seen_values_or_bitmask_for_other_vehicle:
-                    # we've (e.g.) seen @Values{Copter} when we're
+                    # we've (e.g.) seen @Values{OtherVehicle} when we're
                     # processing for Rover, and haven't seen either
                     # @Values: or @Vales{Rover} - so we omit this
                     # parameter on the assumption that it is not

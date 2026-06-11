@@ -11,7 +11,7 @@ AP_FLAKE8_CLEAN
 
 How to use?
 Starting in the ardupilot directory.
-~/ardupilot $ python Tools/scripts/size_compare_branches.py --branch=[PR_BRANCH_NAME] --vehicle=copter
+~/ardupilot $ python Tools/scripts/size_compare_branches.py --branch=[PR_BRANCH_NAME] --vehicle=rover --board=dimah743
 
 Output is placed into ../ELF_DIFF_[VEHICLE_NAME]
 '''
@@ -57,8 +57,8 @@ class SizeCompareBranches(object):
     def __init__(self,
                  branch=None,
                  master_branch="master",
-                 board=["MatekF405-Wing"],
-                 vehicle=["plane"],
+                 board=["dimah743"],
+                 vehicle=["rover"],
                  bin_dir=None,
                  run_elf_diff=True,
                  all_vehicles=False,
@@ -105,13 +105,6 @@ class SizeCompareBranches(object):
         # map from vehicle names to binary names
         self.vehicle_map = {
             "rover"     : "ardurover",
-            "copter"    : "arducopter",
-            "plane"     : "arduplane",
-            "sub"       : "ardusub",
-            "heli"      : "arducopter-heli",
-            "blimp"     : "blimp",
-            "antennatracker" : "antennatracker",
-            "AP_Periph" : "AP_Periph",
             "bootloader": "AP_Bootloader",
             "iofirmware": "iofirmware_highpolh",  # FIXME: lowpolh?
         }
@@ -362,8 +355,7 @@ class SizeCompareBranches(object):
             waf_configure_args.extend(["-j", str(jobs)])
 
         self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
-        # we can't run `./waf copter blimp plane` without error, so do
-        # them one-at-a-time:
+        # Build targets one-at-a-time:
         for v in vehicle:
             if v == 'bootloader':
                 # need special configuration directive
@@ -393,16 +385,10 @@ class SizeCompareBranches(object):
     def vehicles_to_build_for_board_info(self, board_info):
         vehicles_to_build = []
         for vehicle in self.vehicle:
-            if vehicle == 'AP_Periph':
-                if not board_info.is_ap_periph:
-                    continue
-            else:
-                if board_info.is_ap_periph:
-                    continue
-                # the bootloader target isn't an autobuild target, so
-                # it gets special treatment here:
-                if vehicle != 'bootloader' and vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
-                    continue
+            # the bootloader target isn't an autobuild target, so
+            # it gets special treatment here:
+            if vehicle != 'bootloader' and vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
+                continue
             vehicles_to_build.append(vehicle)
 
         return vehicles_to_build
@@ -851,13 +837,13 @@ if __name__ == '__main__':
     for v in cmd_opts.vehicle:
         vehicle.extend(v.split(','))
     if len(vehicle) == 0:
-        vehicle.append("plane")
+        vehicle.append("rover")
 
     board = []
     for b in cmd_opts.board:
         board.extend(b.split(','))
     if len(board) == 0:
-        board.append("MatekF405-Wing")
+        board.append("dimah743")
 
     x = SizeCompareBranches(
         branch=cmd_opts.branch,

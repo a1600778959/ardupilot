@@ -28,10 +28,8 @@ class RunMission(vehicle_test_suite.TestSuite):
     def vehicleinfo_key(self):
         '''magically guess vehicleinfo_key from filepath'''
         path = self.binary.lower()
-        if "plane" in path:
-            return "ArduPlane"
-        if "copter" in path:
-            return "ArduCopter"
+        if "rover" in path:
+            return "Rover"
         raise ValueError("Can't determine vehicleinfo_key from binary path")
 
     def run(self):
@@ -44,11 +42,6 @@ class RunMission(vehicle_test_suite.TestSuite):
             defaults_filepath=self.model_defaults_filepath(self.model),
         )
         self.get_mavlink_connection_going()
-
-        # hack; Plane defaults are annoying... we should do better
-        # here somehow.
-        if self.vehicleinfo_key() == "ArduPlane":
-            self.set_parameter("RTL_AUTOLAND", 1)
 
         self.load_mission_from_filepath(self.mission_filepath, strict=False)
         self.change_mode('AUTO')

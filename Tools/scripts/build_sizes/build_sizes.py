@@ -16,14 +16,14 @@ parser.add_argument('basedir', default=None, help='base directory (binaries dire
 parser.add_argument('--outfile', default="builds.html", help='output file')
 
 build_dirs = ['latest', 'beta', 'beta-4.3', 'stable']
-builds = ['Plane', 'Copter', 'Rover', 'Sub', 'Blimp', 'AntennaTracker', 'AP_Periph']
+builds = ['Rover']
 
 args = parser.parse_args()
 
 warning_flash_free = 5000
 warning_build_days = 3
 
-LINUX_BINARIES = ["arduplane", "arducopter", "arducopter-heli", "ardurover", "ardusub", "antennatracker"]
+LINUX_BINARIES = ["ardurover"]
 
 
 class APJInfo:

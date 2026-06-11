@@ -170,12 +170,12 @@ class MAVLinkDetector:
         ' to do something meaningful with it.{unsupported}{stream_groups}'
     )
 
-    VEHICLES = ('AntennaTracker', 'ArduCopter', 'ArduPlane', 'ArduSub', 'Rover')
+    VEHICLES = ('Rover',)
 
-    def __init__(self, common_files, vehicle='ALL',
+    def __init__(self, common_files, vehicle='Rover',
                  exclude_libraries=['SITL', 'AP_Scripting']):
         self.vehicle = vehicle
-        vehicles = [vehicle] if vehicle != 'ALL' else self.VEHICLES
+        vehicles = [vehicle]
         files = chain(*((self.BASE_DIR / vehicle).glob('**/*.cpp') 
                         for vehicle in vehicles),
                       common_files)
@@ -353,19 +353,6 @@ class MAVLinkDetector:
 
     def export_markdown(self, file, iterable, branch='master', header=None, 
                         use_intro=True, **extra_kwargs):
-        if header == 'ArduSub':
-            import time
-            now = time.strftime('%Y-%m-%dT%H:%M:%S%z')
-            date = f'{now[:-2]}:{now[-2:]}' # add colon to the timezone
-            header = '\n'.join((
-                '+++',
-                'title = "MAVLink Support"',
-                'description = "MAVLink message support details."',
-                f'{date = }', 'template = "docs/page.html"',
-                'sort_by = "weight"', 'weight = 20', 'draft = false',
-                '[extra]', 'toc = true', 'top = false',
-                '+++'
-            ))
         if header:
             print(header, file=file)
 
@@ -388,13 +375,11 @@ class MAVLinkDetector:
                     ' and request individual messages be streamed at a'
                     ' specified rate.'
                 )
-            vehicle = self.vehicle.replace('ALL', 'ArduPilot')
-             
             print(self.MARKDOWN_INTRO.format(
-                vehicle=vehicle, commands=commands, 
+                vehicle=self.vehicle, commands=commands,
                 stream_groups=stream_groups, unsupported=unsupported
             ), file=file)
-            
+
         for data in iterable:
             match data:
                 case str() as type_:
@@ -429,13 +414,13 @@ if __name__ == '__main__':
 
     detector_init_params = signature(MAVLinkDetector.__init__).parameters
     default_vehicle = detector_init_params['vehicle'].default
-    vehicle_options = [default_vehicle, *MAVLinkDetector.VEHICLES]
+    vehicle_options = list(MAVLinkDetector.VEHICLES)
     default_exclusions = detector_init_params['exclude_libraries'].default
 
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parse_opts = parser.add_argument_group('parsing options')
     parse_opts.add_argument('-v', '--vehicle', default=default_vehicle,
-                            choices=vehicle_options, help='Vehicle folder, or ALL.')
+                            choices=vehicle_options, help='Vehicle folder.')
     parse_opts.add_argument('-e', '--exclude-library', action='append',
                             default=default_exclusions,
                             help='Libraries to exclude from the search.')
@@ -489,7 +474,7 @@ if __name__ == '__main__':
                 raise Exception(
                     'No --branch specified, and "git status" failed to find one.'
                     'Please manually specify an ardupilot firmware branch for '
-                    'code source hyperlinks (e.g. Sub-4.1) or ensure this '
+                    'code source hyperlinks or ensure this '
                     'repository copy is managed by git.'
                 )
 

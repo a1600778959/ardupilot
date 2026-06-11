@@ -271,8 +271,8 @@ def kill_tasks():
     if cmd_opts.coverage:
         import psutil
         for proc in psutil.process_iter(['pid', 'name', 'environ']):
-            if proc.name() not in ["arducopter", "ardurover", "arduplane", "ardusub", "antennatracker"]:
-                # only kill vehicle that way
+            if proc.name() not in ["ardurover"]:
+                # only kill Rover that way
                 continue
             if os.environ['SIM_VEHICLE_SESSION'] not in proc.environ().get('SIM_VEHICLE_SESSION'):
                 # only kill vehicle launched with sim_vehicle.py that way
@@ -288,21 +288,10 @@ def kill_tasks():
 
     try:
         victim_names = {
-            'JSBSim',
-            'lt-JSBSim',
-            'ArduPlane.elf',
-            'ArduCopter.elf',
-            'ArduSub.elf',
             'Rover.elf',
-            'AntennaTracker.elf',
-            'JSBSIm.exe',
             'MAVProxy.exe',
             'runsim.py',
-            'AntennaTracker.elf',
-            'scrimmage',
             'ardurover',
-            'arduplane',
-            'arducopter'
         }
         for vehicle in vinfo.options:
             for frame in vinfo.options[vehicle]["frames"]:
@@ -358,9 +347,6 @@ def do_build(opts, frame_options):
     if opts.coverage:
         cmd_configure.append("--coverage")
 
-    if opts.enable_onvif and 'antennatracker' in frame_options["waf_target"]:
-        cmd_configure.append("--enable-onvif")
-
     if opts.OSD:
         cmd_configure.append("--enable-sfml")
         cmd_configure.append("--sitl-osd")
@@ -377,9 +363,6 @@ def do_build(opts, frame_options):
 
     if opts.math_check_indexes:
         cmd_configure.append("--enable-math-check-indexes")
-
-    if opts.enable_ekf2:
-        cmd_configure.append("--enable-EKF2")
 
     if opts.disable_ekf3:
         cmd_configure.append("--disable-EKF3")
@@ -638,82 +621,6 @@ def run_in_terminal_window(name, cmd, **kw):
         subprocess.Popen(runme, **kw)
 
 
-tracker_serial0 = None  # blemish
-
-
-def start_antenna_tracker(opts):
-    """Compile and run the AntennaTracker, add tracker to mavproxy"""
-
-    global tracker_serial0
-    progress("Preparing antenna tracker")
-    tracker_home = find_location_by_name(opts.tracker_location)
-    vehicledir = os.path.join(autotest_dir, "../../" + "AntennaTracker")
-    options = vinfo.options["AntennaTracker"]
-    tracker_default_frame = options["default_frame"]
-    tracker_frame_options = options["frames"][tracker_default_frame]
-    do_build(opts, tracker_frame_options)
-    tracker_instance = 1
-    oldpwd = os.getcwd()
-    os.chdir(vehicledir)
-    tracker_serial0 = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
-    binary_basedir = "build/sitl"
-    exe = os.path.join(root_dir,
-                       binary_basedir,
-                       "bin/antennatracker")
-    run_in_terminal_window("AntennaTracker",
-                           ["nice",
-                            exe,
-                            "-I" + str(tracker_instance),
-                            "--model=tracker",
-                            "--home=" + ",".join([str(x) for x in tracker_home])])
-    os.chdir(oldpwd)
-
-
-def start_CAN_Periph(opts, frame_info):
-    """Compile and run the sitl_periph"""
-
-    progress("Preparing sitl_periph_universal")
-    options = vinfo.options["sitl_periph_universal"]['frames']['universal']
-    defaults_path = frame_info.get('periph_params_filename', None)
-    if defaults_path is None:
-        defaults_path = options.get('default_params_filename', None)
-
-    if not isinstance(defaults_path, list):
-        defaults_path = [defaults_path]
-
-    # add in path and make a comma separated list
-    defaults_path = ','.join([util.relcurdir(os.path.join(autotest_dir, p)) for p in defaults_path])
-
-    if not cmd_opts.no_rebuild:
-        do_build(opts, options)
-    exe = os.path.join(root_dir, 'build/sitl_periph_universal', 'bin/AP_Periph')
-    cmd = ["nice"]
-    cmd_name = "sitl_periph_universal"
-    if opts.valgrind:
-        cmd_name += " (valgrind)"
-        cmd.append("valgrind")
-        # adding this option allows valgrind to cope with the overload
-        # of operator new
-        cmd.append("--soname-synonyms=somalloc=nouserintercepts")
-        cmd.append("--track-origins=yes")
-    if opts.gdb or opts.gdb_stopped:
-        cmd_name += " (gdb)"
-        cmd.append("gdb")
-        gdb_commands_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        atexit.register(os.unlink, gdb_commands_file.name)
-        gdb_commands_file.write("set pagination off\n")
-        if not opts.gdb_stopped:
-            gdb_commands_file.write("r\n")
-        gdb_commands_file.close()
-        cmd.extend(["-x", gdb_commands_file.name])
-        cmd.append("--args")
-    cmd.append(exe)
-    if defaults_path is not None:
-        cmd.append("--defaults")
-        cmd.append(defaults_path)
-    run_in_terminal_window(cmd_name, cmd)
-
-
 def start_vehicle(binary, opts, stuff, spawns=None):
     """Run the ArduPilot binary"""
 
@@ -818,7 +725,6 @@ def start_vehicle(binary, opts, stuff, spawns=None):
             progress("Adding parameters from (%s)" % (str(file),))
     if opts.OSDMSP:
         path += "," + os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm")
-        path += "," + os.path.join(autotest_dir, "default_params/msposd.parm")
         subprocess.Popen([os.path.join(root_dir, "libraries/AP_MSP/Tools/msposd.py")])
 
     if path is not None and len(path) > 0:
@@ -902,15 +808,6 @@ def start_mavproxy(opts, stuff):
                 cmd.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
         if stuff["sitl-port"] and not opts.no_rcin:
             cmd.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
-
-    if opts.tracker:
-        cmd.extend(["--load-module", "tracker"])
-        global tracker_serial0
-        # tracker_serial0 is set when we start the tracker...
-        extra_cmd += ("module load map;"
-                      "tracker set port %s; "
-                      "tracker start; "
-                      "tracker arm;" % (tracker_serial0,))
 
     if opts.mavlink_gimbal:
         cmd.extend(["--load-module", "gimbal"])
@@ -1014,10 +911,6 @@ def generate_frame_help():
 # was the old name / directory name for Rover.
 vehicle_map = {
     "APMrover2": "Rover",
-    "Copter": "ArduCopter",
-    "Plane": "ArduPlane",
-    "Sub": "ArduSub",
-    "Blimp" : "Blimp",
     "Rover": "Rover",
 }
 # add lower-case equivalents too
@@ -1030,9 +923,7 @@ parser = CompatOptionParser(
     epilog=""
     "eeprom.bin in the starting directory contains the parameters for your "
     "simulated vehicle. Always start from the same directory. It is "
-    "recommended that you start in the main vehicle directory for the vehicle "
-    "you are simulating, for example, start in the ArduPlane directory to "
-    "simulate ArduPlane")
+    "recommended that you start in the Rover directory when simulating Rover.")
 
 vehicle_choices = list(vinfo.options.keys())
 
@@ -1159,17 +1050,6 @@ group_sim.add_option("", "--callgrind",
                      action='store_true',
                      default=False,
                      help="enable valgrind for performance analysis (slow!!)")
-group_sim.add_option("-T", "--tracker",
-                     action='store_true',
-                     default=False,
-                     help="start an antenna tracker instance")
-group_sim.add_option("", "--enable-onvif",
-                     action="store_true",
-                     help="enable onvif camera control sim using AntennaTracker")
-group_sim.add_option("", "--can-peripherals",
-                     action='store_true',
-                     default=False,
-                     help="start a DroneCAN peripheral instance")
 group_sim.add_option("-A", "--sitl-instance-args",
                      type='string',
                      default=None,
@@ -1219,10 +1099,6 @@ group_sim.add_option("-S", "--speedup",
                      default=1,
                      type='int',
                      help="set simulation speedup (1 for wall clock time)")
-group_sim.add_option("-t", "--tracker-location",
-                     default='CMAC_PILOTSBOX',
-                     type='string',
-                     help="set antenna tracker start location")
 group_sim.add_option("-w", "--wipe-eeprom",
                      action='store_true',
                      default=False, help="wipe EEPROM and reload parameters")
@@ -1230,12 +1106,6 @@ group_sim.add_option("-m", "--mavproxy-args",
                      default=None,
                      type='string',
                      help="additional arguments to pass to mavproxy.py")
-group_sim.add_option("", "--scrimmage-args",
-                     default=None,
-                     type='string',
-                     help="arguments used to populate SCRIMMAGE mission (comma-separated). "
-                     "Currently visual_model, motion_model, and terrain are supported. "
-                     "Usage: [instance=]argument=value...")
 group_sim.add_option("", "--strace",
                      action='store_true',
                      default=False,
@@ -1310,9 +1180,6 @@ group_sim.add_option("--flash-storage",
 group_sim.add_option("--fram-storage",
                      action='store_true',
                      help="use fram storage emulation")
-group_sim.add_option("--enable-ekf2",
-                     action='store_true',
-                     help="disable EKF2 in build")
 group_sim.add_option("--disable-ekf3",
                      action='store_true',
                      help="disable EKF3 in build")
@@ -1480,7 +1347,7 @@ if cmd_opts.vehicle not in vinfo.options:
     progress('''
 ** Is (%s) really your vehicle type?
 Perhaps you could try -v %s
-You could also try changing directory to e.g. the ArduCopter subdirectory
+You could also try changing directory to the Rover subdirectory
 ''' % (cmd_opts.vehicle, vehicle_options_string))
     sys.exit(1)
 
@@ -1511,12 +1378,6 @@ else:
 
 if cmd_opts.instance == 0:
     kill_tasks()
-
-if cmd_opts.tracker:
-    start_antenna_tracker(cmd_opts)
-
-if cmd_opts.can_peripherals or frame_infos.get('periph_params_filename', None) is not None:
-    start_CAN_Periph(cmd_opts, frame_infos)
 
 if cmd_opts.custom_location:
     location = [(float)(x) for x in cmd_opts.custom_location.split(",")]
@@ -1599,61 +1460,6 @@ if True:
 if cmd_opts.delay_start:
     progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))
     time.sleep(float(cmd_opts.delay_start))
-
-tmp = None
-if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
-    # import only here so as to avoid jinja dependency in whole script
-    from jinja2 import Environment, FileSystemLoader
-    from tempfile import mkstemp
-    entities = []
-    config = {}
-    config['plane'] = cmd_opts.vehicle == 'ArduPlane'
-    if location is not None:
-        config['lat'] = location[0]
-        config['lon'] = location[1]
-        config['alt'] = location[2]
-    entities = {}
-    for i in instances:
-        (x, y, z, heading) = offsets[i]
-        entities[i] = {
-            'x': x, 'y': y, 'z': z, 'heading': heading,
-            'to_ardupilot_port': 9003 + i * 10,
-            'from_ardupilot_port': 9002 + i * 10,
-            'to_ardupilot_ip': '127.0.0.1'
-        }
-    if cmd_opts.scrimmage_args is not None:
-        scrimmage_args = cmd_opts.scrimmage_args.split(',')
-        global_opts = ['terrain']
-        instance_opts = ['motion_model', 'visual_model']
-        for arg in scrimmage_args:
-            arg = arg.split('=', 2)
-            if len(arg) == 2:
-                k, v = arg
-                if k in global_opts:
-                    config[k] = v
-                elif k in instance_opts:
-                    for i in entities:
-                        # explicit instance args take precedence; don't overwrite
-                        if k not in entities[i]:
-                            entities[i][k] = v
-            elif len(arg) == 3:
-                i, k, v = arg
-                try:
-                    i = int(i)
-                except ValueError:
-                    continue
-                if i in entities and k in instance_opts:
-                    entities[i][k] = v
-    config['entities'] = list(entities.values())
-    env = Environment(loader=FileSystemLoader(os.path.join(autotest_dir, 'template')))
-    mission = env.get_template('scrimmage.xml.j2').render(**config)
-    tmp = mkstemp()
-    atexit.register(os.remove, tmp[1])
-
-    with os.fdopen(tmp[0], 'w') as fd:
-        fd.write(mission)
-    run_in_terminal_window('SCRIMMAGE', ['scrimmage', tmp[1]])
-
 
 if cmd_opts.delay_start:
     progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))

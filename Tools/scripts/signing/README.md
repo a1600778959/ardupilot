@@ -50,12 +50,12 @@ make_secure_bl.py script.
 
 ## Building Signed Firmware
 
-To build a signed firmware run this command (example is for a copter build):
+To build a signed Rover firmware run this command:
 
 ```
  ./waf configure --board BOARDNAME --signed-fw
- ./waf copter
- ./Tools/scripts/signing/make_secure_fw.py build/BOARDNAME/bin/arducopter.apj NAME_private_key.dat
+ ./waf rover
+ ./Tools/scripts/signing/make_secure_fw.py build/BOARDNAME/bin/ardurover.apj NAME_private_key.dat
 ```
 
 The final step signs the apj firmware with your private key. You can
@@ -68,7 +68,7 @@ allows for build and upload in one step for faster development:
 
 ```
  ./waf configure --board BOARDNAME --signed-fw --private-key NAME_private_key.dat
- ./waf copter --upload
+ ./waf rover --upload
 ```
 
 ## Flashing the secure bootloader
@@ -143,7 +143,7 @@ Now exit MAVProxy and build a firmware using the normal bootloader but still usi
 
 ```
    ./waf configure --board BOARDNAME --signed-fw
-   ./waf copter --upload   (or whatever vehicle you desire)
+   ./waf rover --upload
 ```
 
 After loading the new firmware, connect to MAVProxy and run the command to flash, the new, non signing checking bootloader:

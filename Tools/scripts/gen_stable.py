@@ -6,7 +6,7 @@ create stable-x.y.z directories so we keep all past stable releases for users to
 import os
 import shutil
 
-VEHICLES = ['AntennaTracker', 'Copter', 'Plane', 'Rover', 'Sub']
+VEHICLES = ['Rover']
 
 # beta directories that may contain stable builds
 BETA_DIRS = ['beta-4.3']

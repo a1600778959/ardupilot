@@ -23,7 +23,7 @@ else:
     running_python3 = True
     running_python310 = True
 
-FIRMWARE_TYPES = ["AntennaTracker", "Copter", "Plane", "Rover", "Sub", "AP_Periph", "Blimp"]
+FIRMWARE_TYPES = ["Rover"]
 RELEASE_TYPES = ["beta", "beta-4.3", "latest", "stable", "stable-*", "dirty"]
 
 # mapping for board names to brand name and manufacturer
@@ -151,19 +151,7 @@ class ManifestGenerator():
         '''translate from ArduPilot frame type terminology into mavlink
         terminology'''
         frame_to_mavlink_dict = {
-            "quad": "QUADROTOR",
-            "hexa": "HEXAROTOR",
-            "y6": "ARDUPILOT_Y6",
-            "tri": "TRICOPTER",
-            "octa": "OCTOROTOR",
-            "octa-quad": "ARDUPILOT_OCTAQUAD",
-            "deca": "DECAROTOR",
-            "heli": "HELICOPTER",
-            "Plane": "FIXED_WING",
-            "AntennaTracker": "ANTENNA_TRACKER",
             "Rover": "GROUND_ROVER",
-            "Sub": "SUBMARINE",
-            "AP_Periph": "CAN_PERIPHERAL",
         }
         if frame in frame_to_mavlink_dict:
             return frame_to_mavlink_dict[frame]
@@ -410,7 +398,7 @@ class ManifestGenerator():
                 frame = "heli"
             else:
                 # Non-heli build
-                frame = vehicletype  # e.g. Plane
+                frame = vehicletype
                 platform = platformdir  # e.g. apm2
 
             # also gather information from any features.txt files present:
@@ -430,7 +418,7 @@ class ManifestGenerator():
                     # the platform variant is
                     # encoded in the firmware filename
                     # (e.g. the "v1" in
-                    # ArduCopter-v1.px4)
+                    # example: Rover-v1.px4
                     variant = m.group("variant")
                     file_platform = "-".join([platform, variant])
                 else:
@@ -511,7 +499,7 @@ class ManifestGenerator():
                     continue
                 # skip any non-directories (e.g. "files.html"):
                 if year_month_regex.match(firstlevel):
-                    # this is a dated directory e.g. binaries/Copter/2016-02
+                    # this is a dated directory e.g. binaries/Rover/2016-02
                     # we do not include dated directories in the manifest ATM:
                     continue
 

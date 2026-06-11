@@ -19,8 +19,6 @@ def num(s):
 parser = optparse.OptionParser("decode_devid.py")
 parser.add_option("-C", "--compass", action='store_true', help='decode compass IDs')
 parser.add_option("-I", "--imu", action='store_true', help='decode IMU IDs')
-parser.add_option("-B", "--baro", action='store_true', help='decode barometer IDs')
-parser.add_option("-A", "--airspeed", action='store_true', help='decode airspeed IDs')
 
 opts, args = parser.parse_args()
 
@@ -108,44 +106,6 @@ imu_types = {
     0x3D : "DEVTYPE_INS_IIM42653",
 }
 
-baro_types = {
-    0x01 : "DEVTYPE_BARO_SITL",
-    0x02 : "DEVTYPE_BARO_BMP085",
-    0x03 : "DEVTYPE_BARO_BMP280",
-    0x04 : "DEVTYPE_BARO_BMP388",
-    0x05 : "DEVTYPE_BARO_DPS280",
-    0x06 : "DEVTYPE_BARO_DPS310",
-    0x07 : "DEVTYPE_BARO_FBM320",
-    0x08 : "DEVTYPE_BARO_ICM20789",
-    0x09 : "DEVTYPE_BARO_KELLERLD",
-    0x0A : "DEVTYPE_BARO_LPS2XH",
-    0x0B : "DEVTYPE_BARO_MS5611",
-    0x0C : "DEVTYPE_BARO_SPL06",
-    0x0D : "DEVTYPE_BARO_DRONECAN",
-    0x0E : "DEVTYPE_BARO_MSP",
-    0x0F : "DEVTYPE_BARO_ICP101XX",
-    0x10 : "DEVTYPE_BARO_ICP201XX",
-    0x11 : "DEVTYPE_BARO_MS5607",
-    0x12 : "DEVTYPE_BARO_MS5837",
-    0x13 : "DEVTYPE_BARO_MS5637",
-    0x14 : "DEVTYPE_BARO_BMP390",
-    0x15 : "DEVTYPE_BARO_BMP581",
-    0x16 : "DEVTYPE_BARO_SPA06",
-}
-
-airspeed_types = {
-    0x01 : "DEVTYPE_AIRSPEED_SITL",
-    0x02 : "DEVTYPE_AIRSPEED_MS4525",
-    0x03 : "DEVTYPE_AIRSPEED_MS5525",
-    0x04 : "DEVTYPE_AIRSPEED_DLVR",
-    0x05 : "DEVTYPE_AIRSPEED_MSP",
-    0x06 : "DEVTYPE_AIRSPEED_SDP3X",
-    0x07 : "DEVTYPE_AIRSPEED_DRONECAN",
-    0x08 : "DEVTYPE_AIRSPEED_ANALOG",
-    0x09 : "DEVTYPE_AIRSPEED_NMEA",
-    0x0A : "DEVTYPE_AIRSPEED_ASP5033",
-}
-    
 decoded_devname = ""
 
 if opts.compass:
@@ -154,12 +114,6 @@ if opts.compass:
 if opts.imu:
     decoded_devname = imu_types.get(devtype, "UNKNOWN")
 
-if opts.baro:
-    decoded_devname = baro_types.get(devtype, "UNKNOWN")
-
-if opts.airspeed:
-    decoded_devname = airspeed_types.get(devtype, "UNKNOWN")
-    
 if bus_type == 3:
     #dronecan devtype represents sensor_id
     print("bus_type:%s(%u)  bus:%u address:%u(0x%x) sensor_id:%u(0x%x) %s" % (

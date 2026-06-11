@@ -79,11 +79,6 @@ class LoggerDocco(object):
 
     vehicle_map = {
         "Rover": "Rover",
-        "Sub": "ArduSub",
-        "Copter": "ArduCopter",
-        "Plane": "ArduPlane",
-        "Tracker": "AntennaTracker",
-        "Blimp": "Blimp",
     }
 
     def __init__(self, vehicle):

@@ -23,7 +23,7 @@ class MDEmitter(emitter.Emitter):
                 '<!-- Dynamically generated using Tools/autotest/logger_metadata/parse.py',
                 'DO NOT EDIT -->',
                 'This is a list of log messages which may be present in DataFlash (`.bin`) '
-                'logs produced and stored onboard ArduSub vehicles (see [Log Parameters]'
+                'logs produced and stored onboard Rover vehicles (see [Log Parameters]'
                 '(../parameters/#log-parameters) for creation details). '
                 'It is possible to [add a new message]'
                 '(https://ardupilot.org/dev/docs/code-overview-adding-a-new-log-message.html) '

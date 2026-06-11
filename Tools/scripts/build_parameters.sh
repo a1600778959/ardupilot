@@ -9,7 +9,7 @@ fi
 PARAMS_DIR="$BUILDLOGS/Parameters"
 
 # work from either APM directory or above
-[ -d ArduPlane ] || cd APM
+[ -d Rover ] || cd APM
 
 /bin/mkdir -p "$PARAMS_DIR"
 
@@ -40,16 +40,4 @@ generate_parameters() {
     fi
 }
 
-generate_parameters ArduPlane
-
-generate_parameters ArduCopter
-
 generate_parameters Rover
-
-generate_parameters ArduSub
-
-generate_parameters AntennaTracker
-
-generate_parameters AP_Periph
-
-generate_parameters Blimp
