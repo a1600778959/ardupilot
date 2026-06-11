@@ -37,15 +37,10 @@ static ReplayVehicle replayvehicle;
 
 // list of user parameters
 user_parameter *user_parameters;
-bool replay_force_ekf2;
 bool replay_force_ekf3;
 
 const AP_Param::Info ReplayVehicle::var_info[] = {
     GSCALAR(dummy,         "_DUMMY", 0),
-
-    // @Group: BARO
-    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "BARO", AP_Baro),
 
     // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
@@ -55,16 +50,6 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 
-#if AP_AIRSPEED_ENABLED
-    // @Group: ARSPD_
-    // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
-    GOBJECT(airspeed,                               "ARSP_",   AP_Airspeed),
-#endif
-
-    // @Group: EK2_
-    // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
-    GOBJECTN(ekf2, NavEKF2, "EK2_", NavEKF2),
-    
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass, "COMPASS_", Compass),
@@ -128,13 +113,11 @@ void Replay::usage(void)
     ::printf("Options:\n");
     ::printf("\t--parm NAME=VALUE  set parameter NAME to VALUE\n");
     ::printf("\t--param-file FILENAME  load parameters from a file\n");
-    ::printf("\t--force-ekf2 force enable EKF2\n");
     ::printf("\t--force-ekf3 force enable EKF3\n");
 }
 
 enum param_key : uint8_t {
-    FORCE_EKF2 = 1,
-    FORCE_EKF3,
+    FORCE_EKF3 = 1,
 };
 
 void Replay::_parse_command_line(uint8_t argc, char * const argv[])
@@ -144,7 +127,6 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"parm",            true,   0, 'p'},
         {"param",           true,   0, 'p'},
         {"param-file",      true,   0, 'F'},
-        {"force-ekf2",      false,  0, param_key::FORCE_EKF2},
         {"force-ekf3",      false,  0, param_key::FORCE_EKF3},
         {"help",            false,  0, 'h'},
         {0, false, 0, 0}
@@ -171,10 +153,6 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 
         case 'F':
             load_param_file(gopt.optarg);
-            break;
-
-        case param_key::FORCE_EKF2:
-            replay_force_ekf2 = true;
             break;
 
         case param_key::FORCE_EKF3:
@@ -213,16 +191,8 @@ void Replay::setup()
 
     set_user_parameters();
 
-    if (replay_force_ekf2) {
-        reader.set_parameter("EK2_ENABLE", 1, true);
-    }
     if (replay_force_ekf3) {
         reader.set_parameter("EK3_ENABLE", 1, true);
-    }
-
-    if (replay_force_ekf2 && replay_force_ekf3) {
-        ::printf("Cannot force both EKF types\n");
-        exit(1);
     }
 
     if (filename == nullptr) {

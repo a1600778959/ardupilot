@@ -6,7 +6,7 @@ check that replay produced identical results
 
 from __future__ import print_function
 
-def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose=False, accuracy=0.0, ignores=set()):
+def check_log(logfile, progress=print, verbose=False, accuracy=0.0, ignores=set()):
     '''check replay log for matching output'''
     from pymavlink import mavutil
     progress("Processing log %s" % logfile)
@@ -19,15 +19,8 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
 
     mlog = mavutil.mavlink_connection(logfile)
 
-    ek2_list = ['NKF1','NKF2','NKF3','NKF4','NKF5','NKF0','NKQ', 'NKY0', 'NKY1']
     ek3_list = ['XKF1','XKF2','XKF3','XKF4','XKF0','XKFS','XKQ','XKFD','XKV1','XKV2','XKY0','XKY1']
-    
-    if ekf2_only:
-        mlist = ek2_list
-    elif ekf3_only:
-        mlist = ek3_list
-    else:
-        mlist = ek2_list + ek3_list
+    mlist = ek3_list
 
     base = {}
     for m in mlist:
@@ -89,8 +82,6 @@ if __name__ == '__main__':
     import sys
     from argparse import ArgumentParser
     parser = ArgumentParser(description=__doc__)
-    parser.add_argument("--ekf2-only", action='store_true', help="only check EKF2")
-    parser.add_argument("--ekf3-only", action='store_true', help="only check EKF3")
     parser.add_argument("--verbose", action='store_true', help="verbose output")
     parser.add_argument("--accuracy", type=float, default=0.0, help="accuracy percentage for match")
     parser.add_argument("--ignore-field", action='append', default=[], help="ignore message field when comparing")
@@ -100,7 +91,7 @@ if __name__ == '__main__':
 
     failed = False
     for filename in args.logs:
-        if not check_log(filename, print, args.ekf2_only, args.ekf3_only, args.verbose, accuracy=args.accuracy, ignores=args.ignore_field):
+        if not check_log(filename, print, args.verbose, accuracy=args.accuracy, ignores=args.ignore_field):
             failed = True
 
     if failed:

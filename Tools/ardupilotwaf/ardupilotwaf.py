@@ -26,12 +26,9 @@ COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES = [
 ]
 
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
-    #'AP_Airspeed',
     'AP_AccelCal',
     #'AP_ADC',
     'AP_AHRS',
-    #'AP_Airspeed',
-    'AP_Baro',
     'AP_BattMonitor',
     'AP_BoardConfig',
     'AP_Camera',
@@ -47,7 +44,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Mission',
     'AP_DAL',
     'AP_NavEKF',
-    #'AP_NavEKF2',
     'AP_NavEKF3',
     'AP_Notify',
     #'AP_OpticalFlow',
@@ -85,7 +81,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_RAMTRON',
     'AP_RCProtocol',
     #'AP_Radio',
-    'AP_TempCalibration',
     #'AP_VisualOdom',
     'AP_BLHeli',
     'AP_ROMFS',
@@ -132,8 +127,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
 ]
 
 def get_legacy_defines(sketch_name, bld):
-    # If we are building heli, we adjust the build directory define so that 
-    # we do not need to actually split heli and copter directories
+    # If we are building heli, adjust the build directory define for legacy layouts.
     if bld.cmd == 'heli' or 'heli' in bld.targets:
         return [
         'APM_BUILD_DIRECTORY=APM_BUILD_Heli',
@@ -670,8 +664,8 @@ special group "all" selects all programs.
     g.add_option('--upload',
         action='store_true',
         help='''Upload applicable targets to a connected device. Not all
-platforms may support this. Example: `waf copter --upload` means "build
-arducopter and upload it to my board".
+platforms may support this. Example: `waf rover --upload` means "build
+ardurover and upload it to my board".
 ''')
 
     g.add_option('--upload-port',

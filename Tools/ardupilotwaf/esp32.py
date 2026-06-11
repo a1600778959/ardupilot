@@ -121,7 +121,7 @@ class set_default_parameters(Task.Task):
     def run(self):
 
         # TODO: disabled this task outright as apjtool appears to destroy checksums and/or the esp32 partition table
-        # TIP:  if u do try this, afterwards, be sure to 'rm -rf build/esp32buzz/idf-plane/*.bin' and re-run waf
+        # TIP:  if you try this, afterwards, be sure to clean the relevant ESP32 build output and re-run waf
         return
 
         # (752) esp_image: Checksum failed. Calculated 0xd3 read 0xa3
@@ -176,7 +176,6 @@ class set_default_parameters(Task.Task):
             print("Embedded params in .bin unchanged (probably already up-to-date)")
         else:
             print("Embedded params in .bin UPDATED")
-
 
 
 

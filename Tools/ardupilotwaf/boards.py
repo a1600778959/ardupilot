@@ -603,26 +603,6 @@ def get_boards_names():
 def is_board_based(board, cls):
     return issubclass(_board_classes[board], cls)
 
-def get_ap_periph_boards():
-    '''Add AP_Periph boards based on existance of periph keywork in hwdef.dat or board name'''
-    list_ap = [s for s in list(_board_classes.keys()) if "periph" in s]
-    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
-    for d in dirlist:
-        if d in list_ap:
-            continue
-        hwdef = os.path.join(dirname, d, 'hwdef.dat')
-        if os.path.exists(hwdef):
-            ch = chibios_hwdef.ChibiOSHWDef(hwdef=[hwdef], quiet=True)
-            try:
-                if ch.is_periph_fw_unprocessed():
-                    list_ap.append(d)
-            except chibios_hwdef.ChibiOSHWDefIncludeNotFoundException as e:
-                print(f"{e.includer} includes {e.hwdef} which does not exist")
-                sys.exit(1)
-
-    list_ap = list(set(list_ap))
-    return list_ap
-
 def get_removed_boards():
     '''list of boards which have been removed'''
     return sorted(['px4-v1', 'px4-v2', 'px4-v3', 'px4-v4', 'px4-v4pro'])
@@ -666,7 +646,6 @@ class sitl(Board):
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
             AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
-            AP_BARO_PROBE_EXTERNAL_I2C_BUSES = 1,
         )
 
         env.BOARD_CLASS = "SITL"
@@ -874,7 +853,6 @@ class sitl_periph(sitl):
 
             HAL_MAVLINK_BINDINGS_ENABLED = 1,
 
-            AP_AIRSPEED_AUTOCAL_ENABLE = 0,
             AP_CAN_SLCAN_ENABLED = 0,
             AP_ICENGINE_ENABLED = 0,
             AP_MISSION_ENABLED = 0,
@@ -900,12 +878,6 @@ class sitl_periph(sitl):
             AP_CUSTOMROTATIONS_ENABLED = 0,
         )
 
-        try:
-            env.CXXFLAGS.remove('-DHAL_NAVEKF2_AVAILABLE=1')
-        except ValueError:
-            pass
-        env.CXXFLAGS += ['-DHAL_NAVEKF2_AVAILABLE=0']
-
 class sitl_periph_universal(sitl_periph):
     def configure_env(self, cfg, env):
         super(sitl_periph_universal, self).configure_env(cfg, env)
@@ -914,9 +886,7 @@ class sitl_periph_universal(sitl_periph):
             APJ_BOARD_ID = 100,
 
             HAL_PERIPH_ENABLE_GPS = 1,
-            HAL_PERIPH_ENABLE_AIRSPEED = 1,
             HAL_PERIPH_ENABLE_MAG = 1,
-            HAL_PERIPH_ENABLE_BARO = 1,
             HAL_PERIPH_ENABLE_RANGEFINDER = 1,
             HAL_PERIPH_ENABLE_BATTERY = 1,
             HAL_PERIPH_ENABLE_EFI = 1,
@@ -925,7 +895,6 @@ class sitl_periph_universal(sitl_periph):
             HAL_PERIPH_ENABLE_RC_OUT = 1,
             HAL_PERIPH_ENABLE_ADSB = 1,
             HAL_PERIPH_ENABLE_SERIAL_OPTIONS = 1,
-            AP_AIRSPEED_ENABLED = 1,
             AP_BATTERY_ESC_ENABLED = 1,
             HAL_PWM_COUNT = 32,
             HAL_WITH_ESC_TELEM = 1,

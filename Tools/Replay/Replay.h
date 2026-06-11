@@ -14,7 +14,6 @@
  */
 
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Vehicle/AP_FixedWing.h>
 #include <SRV_Channel/SRV_Channel.h>
 
 #include "LogReader.h"
@@ -28,7 +27,6 @@ struct user_parameter {
 };
 
 extern user_parameter *user_parameters;
-extern bool replay_force_ekf2;
 extern bool replay_force_ekf3;
 
 class ReplayVehicle : public AP_Vehicle {
@@ -49,13 +47,10 @@ public:
     virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
     virtual uint8_t get_mode() const override { return 0; }
 
-    AP_FixedWing aparm;
-
     AP_Int32 unused_log_bitmask; // logging is magic for Replay; this is unused
     struct LogStructure log_structure[256] = {
     };
 
-    NavEKF2 ekf2;
     NavEKF3 ekf3;
 
     SRV_Channels servo_channels;
@@ -99,7 +94,7 @@ private:
     const char *filename;
     ReplayVehicle &_vehicle;
 
-    LogReader reader{_vehicle.log_structure, _vehicle.ekf2, _vehicle.ekf3};
+    LogReader reader{_vehicle.log_structure, _vehicle.ekf3};
 
     void _parse_command_line(uint8_t argc, char * const argv[]);
 

@@ -663,30 +663,16 @@ def collect_dirs_to_recurse(bld, globs, **kw):
 def list_boards(ctx):
     print(*boards.get_boards_names())
 
-def list_ap_periph_boards(ctx):
-    print(*boards.get_ap_periph_boards())
-
-@conf
-def ap_periph_boards(ctx):
-    return boards.get_ap_periph_boards()
-
-vehicles = ['antennatracker', 'blimp', 'copter', 'heli', 'plane', 'rover', 'sub']
+vehicles = ['rover']
 
 def generate_tasklist(ctx, do_print=True):
     boardlist = boards.get_boards_names()
-    ap_periph_targets = boards.get_ap_periph_boards()
     tasks = []
     with open(os.path.join(Context.top_dir, "tasklist.json"), "w") as tlist:
         for board in boardlist:
             task = {}
             task['configure'] = board
-            if board in ap_periph_targets:
-                if 'sitl' not in board:
-                    # we only support AP_Periph and bootloader builds
-                    task['targets'] = ['AP_Periph', 'bootloader']
-                else:
-                    task['targets'] = ['AP_Periph']
-            elif 'iofirmware' in board:
+            if 'iofirmware' in board:
                 task['targets'] = ['iofirmware', 'bootloader']
             else:
                 if boards.is_board_based(board, boards.sitl):
@@ -830,10 +816,6 @@ def _build_recursion(bld):
         if bld.env.IOMCU_FW:
             dirs_to_recurse.append('libraries/AP_IOMCU/iofirmware')
 
-    if bld.env.PERIPH_FW is not None:
-        if bld.env.PERIPH_FW:
-            dirs_to_recurse.append('Tools/AP_Periph')
-
     dirs_to_recurse.append('libraries/AP_Scripting')
 
     if bld.env.ENABLE_ONVIF:
@@ -916,7 +898,7 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-for name in (vehicles + ['bootloader','iofirmware','AP_Periph','replay']):
+for name in (vehicles + ['bootloader','iofirmware','replay']):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,
