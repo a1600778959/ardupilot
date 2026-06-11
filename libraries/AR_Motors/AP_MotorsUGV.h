@@ -22,7 +22,7 @@ public:
     };
 
     // initialise motors
-    void init(uint8_t ftype);
+    void init();
 
     // return true if motors are active
     bool active() const;

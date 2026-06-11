@@ -143,9 +143,8 @@ AP_MotorsUGV::AP_MotorsUGV(AP_WheelRateControl& rate_controller) :
     _singleton = this;
 }
 
-void AP_MotorsUGV::init(uint8_t frtype)
+void AP_MotorsUGV::init()
 {
-    (void)frtype;
     dist = AP_MultiDistanceSensor::get_singleton();
     // setup servo output
     setup_servo_output();

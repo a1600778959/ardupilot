@@ -147,7 +147,6 @@ class GCS_MAVLINK_InProgress
 public:
     enum class Type {
         NONE,
-        AIRSPEED_CAL,
         SD_FORMAT,
     };
 
@@ -632,7 +631,6 @@ protected:
     virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
     virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
-    virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg);
 
 #if AP_MISSION_ENABLED
     virtual MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_int_t &packet);
@@ -677,7 +675,6 @@ protected:
     virtual int32_t global_position_int_relative_alt() const;
 
     virtual float vfr_hud_climbrate() const;
-    virtual float vfr_hud_airspeed() const;
     virtual int16_t vfr_hud_throttle() const { return 0; }
 #if AP_AHRS_ENABLED
     virtual float vfr_hud_alt() const;
@@ -687,7 +684,6 @@ protected:
     virtual int16_t high_latency_target_altitude() const { return 0; }
     virtual uint8_t high_latency_tgt_heading() const { return 0; }
     virtual uint16_t high_latency_tgt_dist() const { return 0; }
-    virtual uint8_t high_latency_tgt_airspeed() const { return 0; }
     int8_t high_latency_air_temperature() const;
 
     MAV_RESULT handle_control_high_latency(const mavlink_command_int_t &packet);

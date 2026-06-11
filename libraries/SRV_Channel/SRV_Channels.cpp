@@ -150,14 +150,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(obj_channels[15], "16_",  16, SRV_Channels, SRV_Channel),
 #endif
 
-#ifndef  HAL_BUILD_AP_PERIPH
-    // @Param{Plane}: _AUTO_TRIM
-    // @DisplayName: Automatic servo trim
-    // @Description: This enables automatic servo trim in flight. Servos will be trimed in stabilized flight modes when the aircraft is close to level. Changes to servo trim will be saved every 10 seconds and will persist between flights. The automatic trim won't go more than 20% away from a centered trim.
-    // @Values: 0:Disable,1:Enable
-    // @User: Advanced
-    AP_GROUPINFO_FRAME("_AUTO_TRIM",  17, SRV_Channels, auto_trim, 0, AP_PARAM_FRAME_PLANE),
-#endif
+    // 17 reserved for a removed parameter
 
     // @Param: _RATE
     // @DisplayName: Servo default output rate

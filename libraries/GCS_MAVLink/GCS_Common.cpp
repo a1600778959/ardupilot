@@ -40,7 +40,6 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Common/AP_FWVersion.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -1350,9 +1349,6 @@ void GCS_MAVLINK_InProgress::check_tasks()
         switch (task.task) {
         case Type::NONE:
             break;
-        case Type::AIRSPEED_CAL: {
-            }
-            break;
         case Type::SD_FORMAT:
 #if AP_FILESYSTEM_FORMAT_ENABLED
             switch (AP::FS().get_format_status()) {
@@ -2057,7 +2053,6 @@ void GCS_MAVLINK::send_highres_imu()
     static const uint16_t HIGHRES_IMU_UPDATED_YMAG = 0x80;
     static const uint16_t HIGHRES_IMU_UPDATED_ZMAG = 0x100;
     static const uint16_t HIGHRES_IMU_UPDATED_ABS_PRESSURE = 0x200;
-    static const uint16_t HIGHRES_IMU_UPDATED_DIFF_PRESSURE = 0x400;
     static const uint16_t HIGHRES_IMU_UPDATED_PRESSURE_ALT = 0x800;
     static const uint16_t HIGHRES_IMU_UPDATED_TEMPERATURE = 0x1000;
     static const uint16_t HIGHRES_IMU_UPDATED_ALL = 0xFFFF;
@@ -2098,19 +2093,10 @@ void GCS_MAVLINK::send_highres_imu()
     }
 #endif
 
-#if AP_BARO_ENABLED
-    const AP_Baro &barometer = AP::baro();
-    reply.abs_pressure = barometer.get_pressure() * 0.01f;
-    reply.temperature = barometer.get_temperature();
-    reply.pressure_alt = barometer.get_altitude_AMSL();
-    reply.diff_pressure = reply.abs_pressure - barometer.get_ground_pressure() * 0.01f;
-    reply.fields_updated |= (HIGHRES_IMU_UPDATED_ABS_PRESSURE | HIGHRES_IMU_UPDATED_DIFF_PRESSURE |
-        HIGHRES_IMU_UPDATED_PRESSURE_ALT | HIGHRES_IMU_UPDATED_TEMPERATURE);
-#endif
     static const uint16_t all_flags = (HIGHRES_IMU_UPDATED_XACC | HIGHRES_IMU_UPDATED_YACC | HIGHRES_IMU_UPDATED_ZACC |
         HIGHRES_IMU_UPDATED_XGYRO | HIGHRES_IMU_UPDATED_YGYRO | HIGHRES_IMU_UPDATED_ZGYRO | 
         HIGHRES_IMU_UPDATED_XMAG | HIGHRES_IMU_UPDATED_YMAG | HIGHRES_IMU_UPDATED_ZMAG |
-        HIGHRES_IMU_UPDATED_ABS_PRESSURE | HIGHRES_IMU_UPDATED_DIFF_PRESSURE |
+        HIGHRES_IMU_UPDATED_ABS_PRESSURE |
         HIGHRES_IMU_UPDATED_PRESSURE_ALT | HIGHRES_IMU_UPDATED_TEMPERATURE);
     if (reply.fields_updated == all_flags) {
         reply.fields_updated |= HIGHRES_IMU_UPDATED_ALL;
@@ -2166,37 +2152,11 @@ void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_chan
 }
 
 
-// send data for barometer and airspeed sensors instances.  In the
-// case that we run out of instances of one before the other we send
-// the relevant fields as 0.
 void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature, int16_t temperature_press_diff))
 {
-    const AP_Baro &barometer = AP::baro();
-
-    bool have_data = false;
-
-    float press_abs = 0.0f;
-    int16_t temperature = 0; // Absolute pressure temperature
-    int16_t temperature_press_diff = 0; // Differential pressure temperature
-    if (instance < barometer.num_instances()) {
-        press_abs = barometer.get_pressure(instance) * 0.01f;
-        temperature = barometer.get_temperature(instance)*100;
-        have_data = true;
-    }
-
-    float press_diff = 0; // pascal
-
-    if (!have_data) {
-        return;
-    }
-
-    send_fn(
-        chan,
-        AP_HAL::millis(),
-        press_abs, // hectopascal
-        press_diff, // hectopascal
-        temperature, // 0.01 degrees C
-        temperature_press_diff); // 0.01 degrees C
+    (void)instance;
+    (void)send_fn;
+    return;
 }
 
 void GCS_MAVLINK::send_scaled_pressure()
@@ -3065,19 +3025,6 @@ void GCS_MAVLINK::send_accelcal_vehicle_position(uint32_t position)
 }
 
 
-float GCS_MAVLINK::vfr_hud_airspeed() const
-{
-
-#if AP_GPS_ENABLED
-    // because most vehicles don't have airspeed sensors, we return a
-    // different sort of speed estimate in the relevant field for
-    // comparison's sake.
-    return AP::gps().ground_speed();
-#endif
-
-    return 0.0;
-}
-
 float GCS_MAVLINK::vfr_hud_climbrate() const
 {
 #if AP_AHRS_ENABLED
@@ -3105,7 +3052,7 @@ void GCS_MAVLINK::send_vfr_hud()
 
     mavlink_msg_vfr_hud_send(
         chan,
-        vfr_hud_airspeed(),
+        0,
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
         abs(vfr_hud_throttle()),
@@ -4076,18 +4023,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_in
 }
 #endif  // AP_BOOTLOADER_FLASHING_ENABLED
 
-MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink_message_t &msg)
-{
-    // fast barometer calibration
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Updating barometer calibration");
-    AP::baro().update_calibration();
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer calibration complete");
-
-    return MAV_RESULT_ACCEPTED;
-}
-
 MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
+    (void)msg;
     MAV_RESULT ret = MAV_RESULT_UNSUPPORTED;
 
     EXPECT_DELAY_MS(30000);
@@ -4103,7 +4041,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
     }
 
     if (is_equal(packet.param3,1.0f)) {
-        return _handle_command_preflight_calibration_baro(msg);
+        return MAV_RESULT_UNSUPPORTED;
     }
 
 #if AP_RC_CHANNEL_ENABLED
@@ -6132,7 +6070,6 @@ void GCS_MAVLINK::send_high_latency2() const
         HL_FAILURE_FLAG failure_flag;
     } status_map[] {
         { MAV_SYS_STATUS_SENSOR_GPS, HL_FAILURE_FLAG_GPS },
-        { MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE, HL_FAILURE_FLAG_DIFFERENTIAL_PRESSURE },
         { MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE, HL_FAILURE_FLAG_ABSOLUTE_PRESSURE },
         { MAV_SYS_STATUS_SENSOR_3D_ACCEL, HL_FAILURE_FLAG_3D_ACCEL },
         { MAV_SYS_STATUS_SENSOR_3D_GYRO, HL_FAILURE_FLAG_3D_GYRO },
@@ -6166,14 +6103,14 @@ void GCS_MAVLINK::send_high_latency2() const
         high_latency_tgt_heading(), // [deg/2] Heading setpoint
         high_latency_tgt_dist(), // [dam] Distance to target waypoint or position
         abs(vfr_hud_throttle()), // [%] Throttle
-        MIN(vfr_hud_airspeed() * 5, UINT8_MAX), // [m/s*5] Airspeed
-        high_latency_tgt_airspeed(), // [m/s*5] Airspeed setpoint
+        0,
+        0,
         MIN(ahrs.groundspeed() * 5, UINT8_MAX), // [m/s*5] Groundspeed
         0, // [m/s*5] Windspeed
         0, // [deg/2] Wind heading
         0, // [dm] Maximum error horizontal position since last message
         0, // [dm] Maximum error vertical position since last message
-        high_latency_air_temperature(), // [degC] Air temperature from airspeed sensor
+        high_latency_air_temperature(), // [degC] Air temperature
         0, // [dm/s] Maximum climb rate magnitude since last message
 #if AP_BATTERY_ENABLED
         battery_remaining, // [%] Battery level (-1 if field not provided).

@@ -27,7 +27,6 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_AccelCal/AP_AccelCal.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Compass/AP_Compass.h>
@@ -300,7 +299,6 @@ protected:
 #if AP_GPS_ENABLED
     AP_GPS gps;
 #endif
-    AP_Baro barometer;
 #if AP_COMPASS_ENABLED
     Compass compass;
 #endif

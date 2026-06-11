@@ -9,7 +9,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Scheduler/AP_Scheduler.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
@@ -189,17 +188,6 @@ void GCS::update_sensor_status_flags()
     }
     if (compass.available() && compass.healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-    }
-#endif
-
-#if AP_BARO_ENABLED
-    const AP_Baro &barometer = AP::baro();
-    if (barometer.num_instances() > 0) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-        if (barometer.all_healthy()) {
-            control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-        }
     }
 #endif
 

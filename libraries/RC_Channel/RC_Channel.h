@@ -179,7 +179,7 @@ public:
         EKF_SOURCE_SET =      90, // change EKF data source set between primary, secondary and tertiary
         FBWA =                92, // Fly-By-Wire-A
         RELOCATE_MISSION =    93, // used in separate branch MISSION_RELATIVE
-        FBWA_TAILDRAGGER =    95, // enables FBWA taildragger takeoff mode. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA.
+        FBWA_TAILDRAGGER =    95, // enables FBWA taildragger takeoff mode
         MODE_SWITCH_RESET =   96, // trigger re-reading of mode switch
         TRAINING            = 98, // mode training
         AUTO_RTL =            99, // AUTO RTL via DO_LAND_START
@@ -192,7 +192,7 @@ public:
         EKF_LANE_SWITCH =    103, // trigger lane switch attempt
         EKF_YAW_RESET =      104, // trigger yaw reset attempt
         GPS_DISABLE_YAW =    105, // disable GPS yaw for testing
-        DISABLE_AIRSPEED_USE = 106, // equivalent to AIRSPEED_USE 0
+        RESERVED_106 =        106,
         FW_AUTOTUNE =          107, // fixed wing auto tune
         QRTL =               108, // QRTL mode
         CUSTOM_CONTROLLER =  109,  // use Custom Controller
@@ -238,11 +238,9 @@ public:
         PITCH =              202, // pitch input
         THROTTLE =           203, // throttle pilot input
         YAW =                204, // yaw pilot input
-        MAINSAIL =           207, // mainsail input
         FLAP =               208, // flap input
         FWD_THR =            209, // VTOL manual forward throttle
         AIRBRAKE =           210, // manual airbrake control
-        WALKING_HEIGHT =     211, // walking robot height input
         TRANSMITTER_TUNING = 219, // use a transmitter knob or slider for in-flight tuning
 
         // inputs 248-249 are reserved for the Skybrush fork at
