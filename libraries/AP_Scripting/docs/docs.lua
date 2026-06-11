@@ -1,7 +1,7 @@
 ---@meta
 -- ArduPilot lua scripting documentation in EmmyLua Annotations
 -- This file should be auto generated and then manual edited
--- generate with --scripting-docs, eg  ./waf copter --scripting-docs
+-- generate with --scripting-docs, eg  ./waf rover --scripting-docs
 -- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations
 -- luacheck: ignore 121 (Setting a read-only global variable)
 -- luacheck: ignore 122 (Setting a read-only field of a global variable)
@@ -1764,7 +1764,7 @@ function mount:get_attitude_euler(instance) end
 -- desc
 motors = {}
 
--- Get motors interlock state, the state of motors controlled by AP_Motors, Copter and Quadplane VTOL motors. Not plane forward flight motors.
+-- Get motors interlock state for motors controlled by AP_Motors.
 ---@return boolean
 ---| true  # motors active
 ---| false # motors inactive
@@ -1853,13 +1853,6 @@ function FWVersion:major() end
 --get APM_BUILD_? value from AP_Vehicle/AP_Vehicle_Type.h that is checked against APM_BUILD_TYPE()
 ---@return integer
 ---| '1' # Rover
----| '2' # ArduCopter
----| '3' # ArduPlane
----| '4' # AntennaTracker
----| '7' # ArduSub
----| '9' # AP_Periph
----| '12' # Blimp
----| '13' # Heli
 function FWVersion:type() end
 
 -- get field
@@ -2095,53 +2088,6 @@ function MotorsMatrix:get_lost_motor() end
 -- desc return true if we are in thrust boost due to possible lost motor
 ---@return boolean
 function MotorsMatrix:get_thrust_boost() end
-
-
--- Sub singleton
-sub = {}
-
--- Return true if joystick button is currently pressed
----@param index integer
----@return boolean
-function sub:is_button_pressed(index) end
-
--- Get count of joystick button presses, then clear count
----@param index integer
----@return integer
-function sub:get_and_clear_button_count(index) end
-
--- Return true if rangefinder is healthy, includes a check for good signal quality
----@return boolean
-function sub:rangefinder_alt_ok() end
-
--- SURFTRAK mode: return the rangefinder target in cm
----@return number
-function sub:get_rangefinder_target_cm() end
-
--- SURFTRAK mode: set the rangefinder target in cm, return true if successful
----@param new_target_cm number
----@return boolean
-function sub:set_rangefinder_target_cm(new_target_cm) end
-
-
--- desc
-quadplane = {}
-
--- desc
----@return boolean
-function quadplane:in_assisted_flight() end
-
--- desc
----@return boolean
-function quadplane:in_vtol_mode() end
-
--- true in descent phase of VTOL landing
----@return boolean
-function quadplane:in_vtol_land_descent() end
-
--- abort a VTOL landing, climbing back up
----@return boolean
-function quadplane:abort_landing() end
 
 
 -- desc
@@ -2388,37 +2334,6 @@ function esc_telem:set_rpm_scale(esc_index, scale_factor) end
 ---@param esc_index integer
 ---@return uint32_t_ud
 function esc_telem:get_last_telem_data_ms(esc_index) end
-
--- desc
-baro = {}
-
--- get external temperature in degrees C
----@return number -- temperature in degrees C
-function baro:get_external_temperature() end
-
--- get temperature in degrees C
----@return number -- temperature in degrees C
-function baro:get_temperature() end
-
--- Returns pressure in Pascal. Divide by 100 for millibars or hectopascals
----@return number -- pressure in Pascal
-function baro:get_pressure() end
-
--- get current altitude in meters relative to altitude at the time
--- of the last calibrate() call, typically at boot
----@return number
-function baro:get_altitude() end
-
--- Check if a baro sensor is healthy
----@param instance integer -- the 0-based index of the BARO instance to return.
----@return boolean
-function baro:healthy(instance) end
-
--- get altitude difference from a base pressure and current pressure
----@param base_pressure number -- first reference pressure in Pa
----@param pressure number -- 2nd pressure in Pa
----@return number -- altitude difference in meters
-function baro:get_altitude_difference(base_pressure,pressure) end
 
 -- Serial ports
 serial = {}
@@ -2767,7 +2682,7 @@ function vehicle:set_velocity_match(param1) end
 ---@return boolean
 function vehicle:nav_scripting_enable(param1) end
 
--- desc sets autopilot nav speed (Copter and Rover)
+-- desc sets autopilot nav speed
 ---@param param1 number
 ---@return boolean
 function vehicle:set_desired_speed(param1) end
@@ -3603,10 +3518,6 @@ function ahrs:set_posvelyaw_source_set(source_set_idx) end
 function ahrs:get_variances() end
 
 -- desc
----@return number
-function ahrs:get_EAS2TAS() end
-
--- desc
 ---@param vector Vector3f_ud
 ---@return Vector3f_ud
 function ahrs:body_to_earth(vector) end
@@ -3619,10 +3530,6 @@ function ahrs:earth_to_body(vector) end
 -- desc
 ---@return Vector3f_ud
 function ahrs:get_vibration() end
-
--- Return the estimated airspeed of the vehicle if available
----@return number|nil -- airspeed in meters / second if available
-function ahrs:airspeed_estimate() end
 
 -- desc
 ---@return boolean
@@ -3726,23 +3633,6 @@ AR_AttitudeControl = {}
 ---@return number -- spees slew rate
 function AR_AttitudeControl:get_srate() end
 
--- copter position controller
-poscontrol = {}
-
--- add an offset to position controller's target position, velocity and acceleration
----@param pos_offset_NED Vector3f_ud
----@param vel_offset_NED Vector3f_ud
----@param accel_offset_NED Vector3f_ud
----@return boolean
-function poscontrol:set_posvelaccel_offset(pos_offset_NED, vel_offset_NED, accel_offset_NED) end
-
--- get position controller's target position, velocity and acceleration offsets
----@return Vector3f_ud|nil
----@return Vector3f_ud|nil
----@return Vector3f_ud|nil
-function poscontrol:get_posvelaccel_offset() end
-
--- desc
 AR_PosControl = {}
 
 -- return position controller slew rates for rovers

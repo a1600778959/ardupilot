@@ -47,11 +47,9 @@ singleton AP_AHRS method get_relative_position_NED_origin boolean Vector3f'Null
 singleton AP_AHRS method get_relative_position_D_home void float'Ref
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method healthy boolean
-singleton AP_AHRS method airspeed_estimate boolean float'Null
 singleton AP_AHRS method get_vibration Vector3f
 singleton AP_AHRS method earth_to_body Vector3f Vector3f
 singleton AP_AHRS method body_to_earth Vector3f Vector3f
-singleton AP_AHRS method get_EAS2TAS float
 singleton AP_AHRS method get_variances boolean float'Null float'Null float'Null Vector3f'Null float'Null
 singleton AP_AHRS method set_posvelyaw_source_set void AP_NavEKF_Source::SourceSetSelection'enum AP_NavEKF_Source::SourceSetSelection::PRIMARY AP_NavEKF_Source::SourceSetSelection::TERTIARY
 singleton AP_AHRS method get_vel_innovations_and_variances_for_source boolean uint8_t 3 6 Vector3f'Null Vector3f'Null
@@ -395,16 +393,6 @@ singleton serial depends AP_SERIALMANAGER_ENABLED
 singleton serial manual find_serial lua_serial_find_serial 1 1
 singleton serial manual find_simulated_device lua_serial_find_simulated_device 2 1 depends AP_SCRIPTING_SERIALDEVICE_ENABLED
 
-include AP_Baro/AP_Baro.h
-singleton AP_Baro depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BARO))
-singleton AP_Baro rename baro
-singleton AP_Baro method get_pressure float
-singleton AP_Baro method get_temperature float
-singleton AP_Baro method get_external_temperature float
-singleton AP_Baro method get_altitude float
-singleton AP_Baro method healthy boolean uint8_t'skip_check
-singleton AP_Baro method get_altitude_difference float float'skip_check float'skip_check
-
 include AP_ESC_Telem/AP_ESC_Telem.h
 
 userdata AP_ESC_Telem_Backend::TelemetryData depends (HAL_WITH_ESC_TELEM == 1)
@@ -605,14 +593,6 @@ ap_object ScriptingCANBuffer method add_filter boolean uint32_t'skip_check uint3
 
 include AP_DroneCAN/AP_DroneCAN.h
 global manual DroneCAN_get_FlexDebug lua_DroneCAN_get_FlexDebug 4 2 depends (HAL_ENABLE_DRONECAN_DRIVERS==1)
-
-include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
-singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
-singleton AP_Periph_FW rename periph
-singleton AP_Periph_FW method get_yaw_earth float
-singleton AP_Periph_FW method get_vehicle_state uint32_t
-singleton AP_Periph_FW method can_printf void "%s"'literal string
-singleton AP_Periph_FW method reboot void boolean
 
 include AP_Common/AP_FWVersion.h
 singleton AP::fwversion() literal

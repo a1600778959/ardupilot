@@ -35,7 +35,7 @@ MAVLink.FRAME = { GLOBAL = 0, GLOBAL_RELATIVE_ALT = 3, GLOBAL_RELATIVE_ALT_INT =
 MAVLink.ALT_FRAME = { ABSOLUTE = 0, ABOVE_HOME = 1, ABOVE_ORIGIN = 2, ABOVE_TERRAIN = 3 }
 MAVLink.CMD_INT = { DO_SET_MODE = 176, DO_CHANGE_SPEED = 178, DO_REPOSITION = 192,
                     GUIDED_CHANGE_SPEED = 43000, GUIDED_CHANGE_ALTITUDE = 43001, GUIDED_CHANGE_HEADING = 43002 }
-MAVLink.SPEED_TYPE = { AIRSPEED = 0, GROUNDSPEED = 1, CLIMB_SPEED = 2, DESCENT_SPEED = 3 }
+MAVLink.SPEED_TYPE = { GROUNDSPEED = 1, CLIMB_SPEED = 2, DESCENT_SPEED = 3 }
 MAVLink.HEADING_TYPE = { COG = 0, HEADING = 1} -- COG = Course over Ground, i.e. where you want to go, HEADING = which way the vehicle points 
 
 MAVLink.PLANE_FLIGHT_MODE = {MANUAL=0, CIRCLE=1, STABILIZE=2, TRAINING=3,
@@ -53,33 +53,20 @@ end
 MAVLink.previous_speed = -1
 
 function MAVLink.set_vehicle_speed(speed)
-    local new_speed = speed.speed or -2.0   -- special airspeed value meaning "default"
-    local speed_type = speed.type or MAVLink.SPEED_TYPE.AIRSPEED
+    local new_speed = speed.speed or -2.0
+    local speed_type = speed.type or MAVLink.SPEED_TYPE.GROUNDSPEED
     local throttle = speed.throttle or 0.0
-    local slew = speed.slew or 0.0
-    local vehicle_mode = vehicle:get_mode()
 
     if new_speed == MAVLink.previous_speed or new_speed <= 0 then
         return
     end
     MAVLink.previous_speed = new_speed
-    if FWVersion:type() == 3 and vehicle_mode == MAVLink.PLANE_FLIGHT_MODE.GUIDED and
-       speed_type == MAVLink.SPEED_TYPE.AIRSPEED and speed.slew ~= 0 then
-        local mavlink_result = gcs:run_command_int(MAVLink.CMD_INT.GUIDED_CHANGE_SPEED, { frame = MAVLink.FRAME.GLOBAL,
-                                  p1 = speed_type,
-                                  p2 = new_speed,
-                                  p3 = slew })
-        if mavlink_result > 0 then
-            return false
-        end
-    else
-        local mavlink_result = gcs:run_command_int(MAVLink.CMD_INT.DO_CHANGE_SPEED, { frame = MAVLink.FRAME.GLOBAL,
-                                  p1 = speed_type,
-                                  p2 = new_speed,
-                                  p3 = throttle })
-        if mavlink_result > 0 then
-            return false
-        end
+    local mavlink_result = gcs:run_command_int(MAVLink.CMD_INT.DO_CHANGE_SPEED, { frame = MAVLink.FRAME.GLOBAL,
+                              p1 = speed_type,
+                              p2 = new_speed,
+                              p3 = throttle })
+    if mavlink_result > 0 then
+        return false
     end
     return true
 end

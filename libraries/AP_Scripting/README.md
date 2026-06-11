@@ -3,14 +3,14 @@
 ## Enabling Scripting Support in Builds
 
 Scripting is automatically enabled on all boards with at least 1MB of flash space.
-The following example enables scripting, builds the ArduPlane firmware for the Cube, and uploads it.
+The following example enables scripting, builds the Rover firmware for dimah743, and uploads it.
 
 ```
-$ waf configure --board=CubeBlack
+$ waf configure --board=dimah743
 
-$ waf plane
+$ waf rover
 
-$ waf plane --upload
+$ waf rover --upload
 ```
 
 To run SITL you can simply use the `sim_vehicle.py` script which will wrap the configuration, compilation,
@@ -18,7 +18,7 @@ and launching of the simulation into one command for you.
 
 
 ```
-$ Tools/autotest/sim_vehicle.py -v ArduPlane
+$ Tools/autotest/sim_vehicle.py -v Rover
 ```
 
 Once you have a vehicle flashed with scripting you need to set the `SCR_ENABLE` parameter to 1 to enable scripting and reboot.
