@@ -1850,12 +1850,36 @@ void AP_AHRS::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
 #endif
 }
 
+// Write forward speed data from an external navigation system
+void AP_AHRS::writeExtNavForwardSpeedData(float speed)
+{
+    if (!isfinite(speed)) {
+        return;
+    }
+
+    last_extnav_forward_speed = speed;
+    last_extnav_forward_speed_ms = AP_HAL::millis();
+}
+
 bool AP_AHRS::has_recent_extnav_velocity(uint32_t max_age_ms) const
 {
     if (last_extnav_velocity_ms == 0) {
         return false;
     }
     return (AP_HAL::millis() - last_extnav_velocity_ms) <= max_age_ms;
+}
+
+bool AP_AHRS::get_recent_extnav_forward_speed(float &speed, uint32_t max_age_ms) const
+{
+    if (last_extnav_forward_speed_ms == 0) {
+        return false;
+    }
+    if ((AP_HAL::millis() - last_extnav_forward_speed_ms) > max_age_ms) {
+        return false;
+    }
+
+    speed = last_extnav_forward_speed;
+    return true;
 }
 
 // get speed limit and XY navigation gain scale factor

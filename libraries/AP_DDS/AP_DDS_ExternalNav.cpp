@@ -112,6 +112,7 @@ bool AP_DDS_ExternalNav::handle_velocity(const geometry_msgs_msg_TwistStamped& v
     const Vector3f velocity_ned = ahrs.body_to_earth(velocity_frd);
     const uint32_t now_ms = AP_HAL::millis();
     ahrs.writeExtNavVelData(velocity_ned, velocity_error, now_ms, delay_ms);
+    ahrs.writeExtNavForwardSpeedData(velocity_frd.x);
     return true;
 }
 #endif // AP_DDS_EXTNAV_VEL_SUB_ENABLED

@@ -240,8 +240,14 @@ public:
     // Write velocity data from an external navigation system
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
+    // Write forward speed data from an external navigation system
+    void writeExtNavForwardSpeedData(float speed);
+
     // True if a valid external navigation velocity sample was recently written
     bool has_recent_extnav_velocity(uint32_t max_age_ms) const;
+
+    // Get recent external navigation forward speed
+    bool get_recent_extnav_forward_speed(float &speed, uint32_t max_age_ms) const;
 
     // get speed limit
     void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const;
@@ -635,6 +641,8 @@ private:
     // system time of the last valid external navigation samples
     uint32_t last_extnav_pose_ms{};
     uint32_t last_extnav_velocity_ms{};
+    uint32_t last_extnav_forward_speed_ms{};
+    float last_extnav_forward_speed{};
 
     /*
      * Parameters

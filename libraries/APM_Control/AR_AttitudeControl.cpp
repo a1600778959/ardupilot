@@ -535,9 +535,9 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     if (!get_forward_speed(speed)) {
         // we expect caller will not try to control heading using rate control without a valid speed estimate
         // on failure to get speed we do not attempt to steer
-        speed = 0.5f;
+        return 0.0f;
     }
-
+    gcs().send_named_float("speed", speed);
     // if not called recently, reset input filter and desired speed to actual speed (used for accel limiting)
     if (!speed_control_active()) {
         _throttle_speed_pid.reset_filter();
@@ -643,7 +643,11 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
 {
     Vector3f velocity;
     const AP_AHRS &_ahrs = AP::ahrs();
-   // if (!_ahrs.get_velocity_NED(velocity)) {
+    if (_ahrs.get_recent_extnav_forward_speed(speed, 500)) {
+        return true;
+    }
+
+    if (!_ahrs.get_velocity_NED(velocity)) {
         // use less accurate GPS, assuming entire length is along forward/back axis of vehicle
         if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             if (abs(wrap_180_cd(_ahrs.yaw_sensor - AP::gps().ground_course_cd())) <= 9000) {
@@ -655,9 +659,9 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
         } else {
             return false;
         }
-    //}
+    }
     // calculate forward speed velocity into body frame
-    // speed = velocity.x*_ahrs.cos_yaw() + velocity.y*_ahrs.sin_yaw();
+    speed = velocity.x*_ahrs.cos_yaw() + velocity.y*_ahrs.sin_yaw();
     return true;
 }
 
