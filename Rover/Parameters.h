@@ -225,6 +225,7 @@ public:
 
         k_param_vehicle = 257, // vehicle common block of parameters
         k_param_mode_aoafollow = 259,   //跟随参数
+        k_param_mode_patrol = 260,
         };
 
     AP_Int16    format_version;

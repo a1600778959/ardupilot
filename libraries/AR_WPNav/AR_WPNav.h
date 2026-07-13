@@ -91,6 +91,10 @@ public:
     float get_radius() const { return _radius; }
     float get_pivot_rate() const { return _pivot.get_rate_max(); }
 
+    // read-only pivot state for vehicle-specific safety monitoring
+    bool is_pivot_active() const { return _pivot.active(); }
+    float get_pivot_heading_error_deg() const;
+
     // calculate stopping location using current position and attitude controller provided maximum deceleration
     // returns true on success, false on failure
     bool get_stopping_location(Location& stopping_loc) WARN_IF_UNUSED;

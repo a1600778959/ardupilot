@@ -462,6 +462,9 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::AOAFOLLOW:
         ret = &mode_aoafollow;
         break;
+    case Mode::Number::PATROL:
+        ret = &mode_patrol;
+        break;
     default:
         break;
     }

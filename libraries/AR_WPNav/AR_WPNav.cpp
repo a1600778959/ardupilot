@@ -247,6 +247,7 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
         // skip recalculating this leg by simply shifting next leg
         _scurve_this_leg = _scurve_next_leg;
     } else {
+        _track_scalar_dt = 1.0f;
         _scurve_this_leg.calculate_track(Vector3f{origin_NE.x, origin_NE.y, 0.0f},              // origin
                                          Vector3f{destination_NE.x, destination_NE.y, 0.0f},    // destination
                                          _pos_control.get_speed_max(),
@@ -529,6 +530,13 @@ void AR_WPNav::set_turn_params(float turn_radius, bool pivot_possible)
 {
     _turn_radius = pivot_possible ? 0.0 : turn_radius;
     _pivot.enable(pivot_possible);
+}
+
+// return the absolute heading error used by the pivot controller
+float AR_WPNav::get_pivot_heading_error_deg() const
+{
+    const float target_heading_cd = _reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd();
+    return fabsf(wrap_180(target_heading_cd * 0.01f - AP::ahrs().yaw_sensor * 0.01f));
 }
 
 // calculate the crosstrack error

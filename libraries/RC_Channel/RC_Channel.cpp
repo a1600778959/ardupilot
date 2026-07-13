@@ -635,6 +635,9 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::WEATHER_VANE_ENABLE, "Weathervane"},
     { AUX_FUNC::TURBINE_START, "Turbine Start"},
     { AUX_FUNC::FFT_NOTCH_TUNE, "FFT Notch Tuning"},
+    { AUX_FUNC::PATROL, "Patrol"},
+    { AUX_FUNC::PATROL_DIST_INC, "PatrolDistInc"},
+    { AUX_FUNC::PATROL_DIST_DEC, "PatrolDistDec"},
 #if HAL_LOGGING_ENABLED
     { AUX_FUNC::LOG_PAUSE, "Pause Stream Logging"},
 #endif

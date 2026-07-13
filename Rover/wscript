@@ -32,3 +32,5 @@ def build(bld):
         program_groups=['bin', 'rover'],
         use=vehicle + '_libs',
     )
+
+    bld.recurse('tests')

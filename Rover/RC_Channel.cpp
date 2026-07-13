@@ -38,6 +38,9 @@ void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwit
     case AUX_FUNC::LEARN_CRUISE:
     case AUX_FUNC::LOITER:
     case AUX_FUNC::MANUAL:
+    case AUX_FUNC::PATROL:
+    case AUX_FUNC::PATROL_DIST_INC:
+    case AUX_FUNC::PATROL_DIST_DEC:
     case AUX_FUNC::RTL:
     case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
     case AUX_FUNC::SAVE_WP:
@@ -109,6 +112,11 @@ bool RC_Channel_Rover::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         break;
     case AUX_FUNC::SAVE_WP:
         if (ch_flag == AuxSwitchPos::HIGH) {
+            if (rover.control_mode == &rover.mode_patrol) {
+                rover.mode_patrol.save_point();
+                break;
+            }
+
             // do nothing if in AUTO mode
             if (rover.control_mode == &rover.mode_auto) {
                 break;
@@ -179,6 +187,22 @@ bool RC_Channel_Rover::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
 
     case AUX_FUNC::CIRCLE:
         do_aux_function_change_mode(rover.g2.mode_circle, ch_flag);
+        break;
+
+    case AUX_FUNC::PATROL:
+        do_aux_function_change_mode(rover.mode_patrol, ch_flag);
+        break;
+
+    case AUX_FUNC::PATROL_DIST_INC:
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            rover.mode_patrol.adjust_spacing(1);
+        }
+        break;
+
+    case AUX_FUNC::PATROL_DIST_DEC:
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            rover.mode_patrol.adjust_spacing(-1);
+        }
         break;
 
     // save steering trim

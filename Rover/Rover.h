@@ -90,6 +90,7 @@ public:
     friend class ModeHold;
     friend class ModeLoiter;
     friend class ModeManual;
+    friend class ModePatrol;
     friend class ModeRTL;
     friend class ModeSmartRTL;
     friend class ModeAoafllow;
@@ -216,6 +217,7 @@ private:
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
     ModeAoafllow mode_aoafollow; // <- 新增此行
+    ModePatrol mode_patrol;
 
     // cruise throttle and speed learning
     typedef struct {

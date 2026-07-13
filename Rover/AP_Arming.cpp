@@ -145,6 +145,7 @@ bool AP_Arming_Rover::disarm(const AP_Arming::Method method, bool do_disarm_chec
         // reset the mission on disarm if we are not in auto
         rover.mode_auto.mission.reset();
     }
+    rover.mode_patrol.clear_points();
 
     update_soft_armed();
 

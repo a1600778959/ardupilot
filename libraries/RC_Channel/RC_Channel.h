@@ -232,6 +232,10 @@ public:
                                   // saved for 4.7-dev feature in-flight AHRS autotrim
                                   //saved for 4.7-dev feature Fixed Wing AUTOLAND Mode
         SYSTEMID =           184,  // system ID as an aux switch
+        PATROL =             185,  // patrol mode
+        RESERVED_186 =       186,
+        PATROL_DIST_INC =    188,  // increase Rover patrol spacing
+        PATROL_DIST_DEC =    189,  // decrease Rover patrol spacing
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input

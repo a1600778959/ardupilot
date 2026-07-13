@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Rover.h"
+#include "mode_patrol_state.h"
 
 // pre-define ModeRTL so Auto can appear higher in this file
 class ModeRTL;
@@ -22,6 +23,7 @@ public:
         GUIDED       = 15,
         INITIALISING = 16,
         AOAFOLLOW    = 17,
+        PATROL       = 18,
     };
 
     // Constructor
@@ -632,6 +634,62 @@ protected:
         uint32_t start_time_ms; // system time in milliseconds that control was handed to the external computer
         Location start_loc; // starting location for checking horiz_max limit
     } limit;
+};
+
+class ModePatrol : public Mode
+{
+public:
+    ModePatrol();
+
+    Number mode_number() const override { return Number::PATROL; }
+    const char *name4() const override { return "PTRL"; }
+
+    void update() override;
+
+    bool is_autopilot_mode() const override { return true; }
+    bool has_manual_input() const override { return _route.waiting_for_points(); }
+
+    float wp_bearing() const override;
+    float nav_bearing() const override;
+    float crosstrack_error() const override;
+    float get_desired_lat_accel() const override;
+    float get_distance_to_destination() const override { return _route.navigating() ? _distance_to_destination : 0.0f; }
+    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+    bool reached_destination() const override { return false; }
+    bool set_desired_speed(float speed) override;
+    void save_point();
+    void clear_points();
+    void adjust_spacing(int8_t direction);
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+protected:
+    bool _enter() override;
+    void _exit() override;
+
+private:
+    bool start_patrol() WARN_IF_UNUSED;
+    bool resume_patrol() WARN_IF_UNUSED;
+    bool make_offset_leg(uint16_t line_index, Location &start, Location &end) WARN_IF_UNUSED;
+    bool set_target(const ModePatrolRoute::Target &target,
+                    const Location &destination,
+                    const Location &line_start,
+                    const Location &line_end) WARN_IF_UNUSED;
+    bool advance_to_next_target() WARN_IF_UNUSED;
+    bool pivot_stalled();
+    void set_fault(const char *message);
+    float get_spacing_m() const;
+
+    AP_Float _dist;
+    AP_Float _pivot_timeout_s;
+
+    ModePatrolRoute _route;
+    ModePatrolPivotWatchdog _pivot_watchdog;
+    Location _point_a;
+    Location _point_b;
+    Location _line_start;
+    Location _line_end;
+    uint8_t _point_count;
 };
 
 
