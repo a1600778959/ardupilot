@@ -132,3 +132,14 @@
 #endif
 #define HAL_USE_QUADSPI (HAL_USE_QUADSPI1 || HAL_USE_QUADSPI2)
 #define HAL_USE_OCTOSPI (HAL_USE_OCTOSPI1 || HAL_USE_OCTOSPI2)
+
+#if defined(STM32H7) && HAL_MEM_CLASS >= HAL_MEM_CLASS_1000
+// 32k gives huge performance improvements on boards that can cope
+// the memory check excludes things like STM32H750 and STM32H730
+#ifndef AP_FATFS_MAX_IO_SIZE
+#define AP_FATFS_MAX_IO_SIZE 32768
+#endif
+#ifndef AP_FATFS_MIN_IO_SIZE
+#define AP_FATFS_MIN_IO_SIZE 4096
+#endif
+#endif

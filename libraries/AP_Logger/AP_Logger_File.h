@@ -14,7 +14,11 @@
 #if HAL_LOGGING_FILESYSTEM_ENABLED
 
 #ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
-#define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
+#if AP_FILESYSTEM_FATFS_ENABLED
+#define HAL_LOGGER_WRITE_CHUNK_SIZE (AP_Filesystem_FATFS::get_io_size())
+#else
+#define HAL_LOGGER_WRITE_CHUNK_SIZE AP_FATFS_MIN_IO_SIZE
+#endif
 #endif
 
 class AP_Logger_File : public AP_Logger_Backend
