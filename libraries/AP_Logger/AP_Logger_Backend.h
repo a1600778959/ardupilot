@@ -139,6 +139,7 @@ public:
     }
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);
+    bool Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq);
     bool Write_Mission_Cmd(const AP_Mission &mission,
                            const AP_Mission::Mission_Command &cmd,
                            LogMessages id);
@@ -274,6 +275,8 @@ private:
     bool ensure_format_emitted(const void *pBuffer, uint16_t size);
     bool emit_format_for_type(LogMessages a_type);
     Bitmask<256> _formats_written;
+
+    uint8_t msg_id;
 
 };
 

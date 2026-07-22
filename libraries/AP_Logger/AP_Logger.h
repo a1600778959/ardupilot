@@ -257,6 +257,16 @@ public:
     void Write_Power(void);
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
+    // support for multi-chunk messages
+    uint8_t get_MSG_id()
+    {
+        uint8_t ret = ++MSG_id;
+        if (ret > 0) {
+            return ret;
+        }
+        return ++MSG_id;
+    }
+    void Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq);
     void Write_MessageF(const char *fmt, ...);
     void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct,
                            float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error);
@@ -609,6 +619,9 @@ private:
     void log_file_content(FileContent &file_content, const char *filename);
     void file_content_update(FileContent &file_content);
 #endif
+
+    // support for multi-chunk messages
+    uint8_t MSG_id;
 };
 
 namespace AP {
