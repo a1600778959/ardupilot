@@ -108,9 +108,6 @@ void AP_Arming_Rover::update_soft_armed()
 {
     hal.util->set_soft_armed(is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
-#if HAL_LOGGING_ENABLED
-    AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
-#endif
 }
 
 /*
@@ -125,6 +122,11 @@ bool AP_Arming_Rover::arm(AP_Arming::Method method, const bool do_arming_checks)
 
     // Set the SmartRTL home location. If activated, SmartRTL will ultimately try to land at this point
     rover.g2.smart_rtl.set_home(true);
+
+#if HAL_LOGGING_ENABLED
+    // Tell logger it can start logging
+    AP::logger().set_vehicle_armed(true);
+#endif
 
     update_soft_armed();
 
@@ -146,6 +148,11 @@ bool AP_Arming_Rover::disarm(const AP_Arming::Method method, bool do_disarm_chec
         rover.mode_auto.mission.reset();
     }
     rover.mode_patrol.clear_points();
+
+#if HAL_LOGGING_ENABLED
+    // Tell logger it can stop logging
+    AP::logger().set_vehicle_armed(false);
+#endif
 
     update_soft_armed();
 
