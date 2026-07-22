@@ -50,6 +50,7 @@ public:
      */
     enum DevTypes {
         DEVTYPE_IST8310 = 0x0A,
+        DEVTYPE_RM3100 = 0x11,
         DEVTYPE_SITL  = 0x0F,
     };
 

@@ -20,6 +20,7 @@
 #include "AP_Compass_SITL.h"
 #include "AP_Compass_Backend.h"
 #include "AP_Compass_IST8310.h"
+#include "AP_Compass_RM3100.h"
 #if AP_COMPASS_DRONECAN_ENABLED
 #include "AP_Compass_DroneCAN.h"
 #endif
@@ -1121,6 +1122,32 @@ void Compass::_probe_external_i2c_compasses(void)
         }
     }
 #endif  // AP_COMPASS_IST8310_ENABLED
+
+#if AP_COMPASS_RM3100_ENABLED
+#ifdef HAL_COMPASS_RM3100_I2C_ADDR
+    const uint8_t rm3100_addresses[] = { HAL_COMPASS_RM3100_I2C_ADDR };
+#else
+    // RM3100 can be on 4 different addresses
+    const uint8_t rm3100_addresses[] = { HAL_COMPASS_RM3100_I2C_ADDR1,
+                                         HAL_COMPASS_RM3100_I2C_ADDR2,
+                                         HAL_COMPASS_RM3100_I2C_ADDR3,
+                                         HAL_COMPASS_RM3100_I2C_ADDR4 };
+#endif
+    // external i2c bus
+    FOREACH_I2C_EXTERNAL(i) {
+        for (uint8_t j=0; j<ARRAY_SIZE(rm3100_addresses); j++) {
+            ADD_BACKEND(DRIVER_RM3100, AP_Compass_RM3100::probe(GET_I2C_DEVICE(i, rm3100_addresses[j]), true, ROTATION_NONE));
+        }
+    }
+
+#if !defined(HAL_SKIP_AUTO_INTERNAL_I2C_PROBE)
+    FOREACH_I2C_INTERNAL(i) {
+        for (uint8_t j=0; j<ARRAY_SIZE(rm3100_addresses); j++) {
+            ADD_BACKEND(DRIVER_RM3100, AP_Compass_RM3100::probe(GET_I2C_DEVICE(i, rm3100_addresses[j]), all_external, ROTATION_NONE));
+        }
+    }
+#endif
+#endif  // AP_COMPASS_RM3100_ENABLED
 }
 
 /*
