@@ -29,6 +29,8 @@ extern const AP_HAL::HAL& hal;
 #define AR_PIVOT_ANGLE_ACCURACY 5   // vehicle will pivot to within this many degrees of destination
 #define AR_PIVOT_RATE_DEFAULT   60  // default PIVOT_RATE parameter value
 #define AR_PIVOT_DELAY_DEFAULT  0   // default PIVOT_DELAY parameter value
+#define AR_PIVOT_DIRECTION_LOCK_DEG 170.0f
+#define AR_PIVOT_DIRECTION_RELEASE_DEG 160.0f
 
 const AP_Param::GroupInfo AR_PivotTurn::var_info[] = {
 
@@ -73,7 +75,7 @@ void AR_PivotTurn::enable(bool enable_pivot)
 {
     _enabled = enable_pivot;
     if (!_enabled) {
-        _active = false;
+        deactivate();
     }
 }
 
@@ -89,32 +91,45 @@ void AR_PivotTurn::check_activation(float desired_heading_deg, bool force_active
 {
     // check cases where we clearly cannot use pivot steering
     if (!_enabled || (_angle <= AR_PIVOT_ANGLE_ACCURACY)) {
-        _active = false;
+        deactivate();
         return;
     }
 
-    // calc yaw error in degrees
-    const float yaw_error = fabsf(wrap_180(desired_heading_deg - (AP::ahrs().yaw_sensor * 0.01f)));
+    const float yaw_error = get_heading_error_deg(desired_heading_deg);
 
     // if error is larger than _pivot_angle start pivot steering
     if (yaw_error > _angle || force_active) {
+        if (!_active) {
+            _completion.reset();
+            clear_planned_state();
+        }
         _active = true;
-        _delay_start_ms = 0;
+        _legacy_delay_start_ms = 0U;
         return;
     }
 
-    uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
 
-    // if within 5 degrees of the target heading, set start time of pivot steering
-    if (_active && (yaw_error < AR_PIVOT_ANGLE_ACCURACY) && (_delay_start_ms == 0)) {
-        _delay_start_ms = now_ms;
+    // Preserve the established completion behavior for ordinary AUTO/Guided
+    // pivots.  Exact planned spins use update_completion() instead.
+    if (_active && !_planned_turn &&
+        (yaw_error < AR_PIVOT_ANGLE_ACCURACY) &&
+        (_legacy_delay_start_ms == 0U)) {
+        // Zero means "not started", so avoid storing the boot-time sentinel.
+        _legacy_delay_start_ms = MAX(now_ms, 1U);
     }
 
-    // exit pivot steering after the time set by pivot_delay has elapsed
-    if ((_delay_start_ms > 0) &&
-        (now_ms - _delay_start_ms) >= get_delay_duration_ms()) {
-        _active = false;
-        _delay_start_ms = 0;
+    // Leaving the accuracy window invalidates an ordinary pivot's completion
+    // delay just as it does for a planned pivot.
+    if (_active && !_planned_turn &&
+        (yaw_error >= AR_PIVOT_ANGLE_ACCURACY)) {
+        _legacy_delay_start_ms = 0U;
+    }
+
+    if (!_planned_turn &&
+        (_legacy_delay_start_ms > 0U) &&
+        ((now_ms - _legacy_delay_start_ms) >= get_delay_duration_ms())) {
+        deactivate();
     }
 }
 
@@ -131,22 +146,109 @@ bool AR_PivotTurn::would_activate(float yaw_change_deg) const
     return fabsf(wrap_180(yaw_change_deg)) > _angle;
 }
 
-// get turn rate (in rad/sec)
-// desired heading should be the heading towards the next waypoint in degrees
-// dt should be the time since the last call in seconds
-float AR_PivotTurn::get_turn_rate_rads(float desired_heading_deg, float dt)
+bool AR_PivotTurn::activate_planned(int8_t preferred_direction)
 {
-    // handle pivot turns
-    const float desired_turn_rate_rads = _atc.get_turn_rate_from_heading(radians(desired_heading_deg), radians(_rate_max));
+    if (!_enabled) {
+        deactivate();
+        return false;
+    }
+    preferred_direction = constrain_int16(preferred_direction, -1, 1);
+    _completion.reset();
+    _planned_turn = true;
+    _planned_preferred_direction = preferred_direction;
+    _planned_direction_initialised = preferred_direction != 0;
+    _planned_turn_direction = preferred_direction;
+    _legacy_delay_start_ms = 0U;
+    _active = true;
+    return true;
+}
 
-    // update flag so that it can be cleared
-    check_activation(desired_heading_deg);
+// forcibly deactivate this controller
+void AR_PivotTurn::deactivate()
+{
+    _active = false;
+    _legacy_delay_start_ms = 0U;
+    _completion.reset();
+    clear_planned_state();
+}
 
-    return desired_turn_rate_rads;
+// get turn rate (in rad/sec) without changing completion state
+// desired heading should be the heading towards the next waypoint in degrees
+float AR_PivotTurn::get_turn_rate_rads(float desired_heading_deg)
+{
+    float yaw_error_deg = wrap_180(desired_heading_deg - (AP::ahrs().yaw_sensor * 0.01f));
+
+    if (_planned_turn && !_planned_direction_initialised) {
+        _planned_direction_initialised = true;
+        if (fabsf(yaw_error_deg) >= AR_PIVOT_DIRECTION_LOCK_DEG) {
+            _planned_turn_direction = is_negative(yaw_error_deg) ? -1 : 1;
+        }
+    }
+
+    if (_planned_turn_direction != 0) {
+        if (fabsf(yaw_error_deg) < AR_PIVOT_DIRECTION_RELEASE_DEG) {
+            _planned_turn_direction = 0;
+            _planned_preferred_direction = 0;
+        } else {
+            // wrap_PI maps both +PI and -PI to +PI. Keep a negative planned
+            // 180-degree turn just inside that boundary so the attitude
+            // controller cannot lose the selected direction on a second wrap.
+            const float directed_error_deg = MIN(fabsf(yaw_error_deg), 179.99f);
+            yaw_error_deg = copysignf(directed_error_deg,
+                                      float(_planned_turn_direction));
+        }
+    }
+
+    // Convert the selected signed error back into a live heading target.  This
+    // preserves the planned direction around 180 degrees using the existing
+    // attitude-controller interface.
+    const float desired_heading_rad = AP::ahrs().get_yaw() + radians(yaw_error_deg);
+    return _atc.get_turn_rate_from_heading(desired_heading_rad, radians(_rate_max));
+}
+
+// reset completion and planned direction after an estimator yaw reset
+void AR_PivotTurn::handle_yaw_reset()
+{
+    _completion.reset();
+    _planned_direction_initialised = _planned_preferred_direction != 0;
+    _planned_turn_direction = _planned_preferred_direction;
+}
+
+// update completion state after the caller has applied its speed gate
+bool AR_PivotTurn::update_completion(float desired_heading_deg, float yaw_rate_rads, uint32_t now_ms)
+{
+    if (!active()) {
+        _completion.reset();
+        return false;
+    }
+
+    if (!_completion.update(get_heading_error_deg(desired_heading_deg),
+                            degrees(yaw_rate_rads),
+                            now_ms,
+                            get_delay_duration_ms())) {
+        return false;
+    }
+
+    deactivate();
+    return true;
 }
 
 // return post-turn delay duration in milliseconds
 uint32_t AR_PivotTurn::get_delay_duration_ms() const
 {
     return constrain_float(_delay.get(), 0.0f, 60.0f) * 1000;
+}
+
+// return absolute heading error in degrees
+float AR_PivotTurn::get_heading_error_deg(float desired_heading_deg) const
+{
+    return fabsf(wrap_180(desired_heading_deg - (AP::ahrs().yaw_sensor * 0.01f)));
+}
+
+void AR_PivotTurn::clear_planned_state()
+{
+    _planned_turn = false;
+    _planned_direction_initialised = false;
+    _planned_turn_direction = 0;
+    _planned_preferred_direction = 0;
 }

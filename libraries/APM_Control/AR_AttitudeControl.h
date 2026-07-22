@@ -54,6 +54,9 @@ public:
     // get the lateral acceleration limit (in m/s/s).  Returns at least 0.1G or approximately 1 m/s/s
     float get_turn_lat_accel_max() const { return MAX(_turn_lateral_G_max, 0.1f) * GRAVITY_MSS; }
 
+    // get the configured steering rate limit in deg/s. Zero means no limit
+    float get_steer_rate_max() const { return MAX(_steer_rate_max, 0.0f); }
+
     // returns true if the steering has been limited which can be caused by the physical steering surface
     // reaching its physical limits (aka motor limits) or acceleration or turn rate limits being applied
     bool steering_limit_left() const { return _steering_limit_left; }

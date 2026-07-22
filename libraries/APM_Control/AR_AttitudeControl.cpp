@@ -537,7 +537,6 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
         // on failure to get speed we do not attempt to steer
         return 0.0f;
     }
-    gcs().send_named_float("speed", speed);
     // if not called recently, reset input filter and desired speed to actual speed (used for accel limiting)
     if (!speed_control_active()) {
         _throttle_speed_pid.reset_filter();

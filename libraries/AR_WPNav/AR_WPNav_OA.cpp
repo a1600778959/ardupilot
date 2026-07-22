@@ -26,10 +26,29 @@ extern const AP_HAL::HAL& hal;
 void AR_WPNav_OA::update(float dt)
 {
 #if AP_OAPATHPLANNER_ENABLED
+    constexpr uint16_t diag_constraint_mask = DiagStateRejoinActive |
+                                              DiagStateHandoffActive;
+    // Fixed-geometry owners such as Patrol may explicitly bypass obstacle
+    // replanning.  AUTO exact-pivot transactions remain subject to OA and are
+    // cancelled by the normal setters below if an alternate path is required.
+    if (is_exact_pivot_sequence_active() && _exact_pivot_oa_bypass) {
+        AR_WPNav::update(dt);
+        return;
+    }
+
     // exit immediately if no current location, origin or destination
     Location current_loc;
     float speed;
     if (!hal.util->get_soft_armed() || !is_destination_valid() || !AP::ahrs().get_location(current_loc) || !_atc.get_forward_speed(speed)) {
+        // The Exact state machine has phase-specific estimator requirements and
+        // owns its transient Hold, 500ms input-loss fault and pivot timeout.
+        // In particular, an in-place Spin deliberately does not require a
+        // forward-speed estimate. Let the parent process those states instead
+        // of indefinitely stopping here ahead of its health gates.
+        if (is_exact_pivot_sequence_active()) {
+            AR_WPNav::update(dt);
+            return;
+        }
         _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
         _desired_lat_accel = 0.0f;
         _desired_turn_rate_rads = 0.0f;
@@ -67,6 +86,7 @@ void AR_WPNav_OA::update(float dt)
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             if (_oa_active) {
                 // object avoidance has become inactive so reset target to original destination
+                clear_promoted_path_constraints();
                 if (!AR_WPNav::set_desired_location(_destination_oabak)) {
                     // this should never happen because we should have an EKF origin and the destination must be valid
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
@@ -80,8 +100,39 @@ void AR_WPNav_OA::update(float dt)
         case AP_OAPathPlanner::OA_PROCESSING:
         case AP_OAPathPlanner::OA_ERROR:
             // during processing or in case of error, slow vehicle to a stop
-            stop_vehicle = true;
-            _oa_active = false;
+            // This also clears a promoted-path handoff that survived an
+            // ordinary mission ACK after the Exact phase returned to None.
+            {
+                const bool replacing_exact = is_exact_pivot_sequence_active();
+                const ExactPivotDiagSnapshot diag_before = get_exact_pivot_diag_snapshot();
+                const bool cancelling_constraints =
+                    (diag_before.state_flags & diag_constraint_mask) != 0U;
+                clear_promoted_path_constraints();
+                if (replacing_exact) {
+                    // OA owns this wait. Do not leave an Exact SPIN or completion
+                    // transaction frozen behind the early return below because its
+                    // timeout and health state would never advance. Restore the
+                    // ordinary mission waypoint contract; OA can replan it on a
+                    // later successful cycle.
+                    if (!AR_WPNav::set_desired_location(_destination_oabak)) {
+                        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                    } else {
+                        note_exact_pivot_oa_cancel(
+                            diag_before.phase,
+                            oa_retstate == AP_OAPathPlanner::OA_PROCESSING ?
+                                ExactPivotOACancelReason::Processing :
+                                ExactPivotOACancelReason::Error);
+                    }
+                } else if (cancelling_constraints) {
+                    note_exact_pivot_oa_cancel(
+                        diag_before.phase,
+                        oa_retstate == AP_OAPathPlanner::OA_PROCESSING ?
+                            ExactPivotOACancelReason::Processing :
+                            ExactPivotOACancelReason::Error);
+                }
+                stop_vehicle = true;
+                _oa_active = false;
+            }
             break;
 
         case AP_OAPathPlanner::OA_SUCCESS:
@@ -92,18 +143,48 @@ void AR_WPNav_OA::update(float dt)
             case AP_OAPathPlanner::OAPathPlannerUsed::BendyRulerVertical:
                 // this should never happen.  this means the path planner has returned success but has returned an invalid planner
                 INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-                _oa_active = false;
-                stop_vehicle = true;
-                return;
+                {
+                    const bool replacing_exact = is_exact_pivot_sequence_active();
+                    const ExactPivotDiagSnapshot diag_before = get_exact_pivot_diag_snapshot();
+                    const bool cancelling_constraints =
+                        (diag_before.state_flags & diag_constraint_mask) != 0U;
+                    clear_promoted_path_constraints();
+                    if (replacing_exact) {
+                        if (!AR_WPNav::set_desired_location(_destination_oabak)) {
+                            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                        } else {
+                            note_exact_pivot_oa_cancel(
+                                diag_before.phase,
+                                ExactPivotOACancelReason::InvalidPlanner);
+                        }
+                    } else if (cancelling_constraints) {
+                        note_exact_pivot_oa_cancel(
+                            diag_before.phase,
+                            ExactPivotOACancelReason::InvalidPlanner);
+                    }
+                    _oa_active = false;
+                    stop_vehicle = true;
+                }
+                break;
 
             case AP_OAPathPlanner::OAPathPlannerUsed::Dijkstras:
                 // Dijkstra's.  Action is only needed if path planner has just became active or the target destination's lat or lon has changed
                 if (!_oa_active || !oa_destination_new.same_latlon_as(_oa_destination)) {
+                    const bool replacing_exact = is_exact_pivot_sequence_active();
+                    const ExactPivotDiagSnapshot diag_before = get_exact_pivot_diag_snapshot();
+                    const bool cancelling_constraints =
+                        (diag_before.state_flags & diag_constraint_mask) != 0U;
+                    clear_promoted_path_constraints();
                     if (AR_WPNav::set_desired_location(oa_destination_new)) {
                         // if new target set successfully, update oa state and destination
                         _oa_active = true;
                         _oa_origin = oa_origin_new;
                         _oa_destination = oa_destination_new;
+                        if (replacing_exact || cancelling_constraints) {
+                            note_exact_pivot_oa_cancel(
+                                diag_before.phase,
+                                ExactPivotOACancelReason::Dijkstra);
+                        }
                     } else {
                         // this should never happen
                         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
@@ -115,11 +196,21 @@ void AR_WPNav_OA::update(float dt)
             case AP_OAPathPlanner::OAPathPlannerUsed::BendyRulerHorizontal: {
                 // BendyRuler.  Action is only needed if path planner has just became active or the target destination's lat or lon has changed
                 if (!_oa_active || !oa_destination_new.same_latlon_as(_oa_destination)) {
+                    const bool replacing_exact = is_exact_pivot_sequence_active();
+                    const ExactPivotDiagSnapshot diag_before = get_exact_pivot_diag_snapshot();
+                    const bool cancelling_constraints =
+                        (diag_before.state_flags & diag_constraint_mask) != 0U;
+                    clear_promoted_path_constraints();
                     if (AR_WPNav::set_desired_location_expect_fast_update(oa_destination_new)) {
                         // if new target set successfully, update oa state and destination
                         _oa_active = true;
                         _oa_origin = oa_origin_new;
                         _oa_destination = oa_destination_new;
+                        if (replacing_exact || cancelling_constraints) {
+                            note_exact_pivot_oa_cancel(
+                                diag_before.phase,
+                                ExactPivotOACancelReason::BendyRuler);
+                        }
                     } else {
                         // this should never happen
                         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
@@ -153,6 +244,7 @@ void AR_WPNav_OA::update(float dt)
 // next_destination should be provided if known to allow smooth cornering
 bool AR_WPNav_OA::set_desired_location(const Location& destination, Location next_destination)
 {
+    _exact_pivot_oa_bypass = false;
     const bool ret = AR_WPNav::set_desired_location(destination, next_destination);
 
     if (ret) {
@@ -160,6 +252,15 @@ bool AR_WPNav_OA::set_desired_location(const Location& destination, Location nex
         _oa_active = false;
     }
 
+    return ret;
+}
+
+bool AR_WPNav_OA::set_desired_location_exact_pivot(const Location &destination, const Location &next_destination)
+{
+    const bool ret = AR_WPNav::set_desired_location_exact_pivot(destination, next_destination);
+    if (ret) {
+        _oa_active = false;
+    }
     return ret;
 }
 

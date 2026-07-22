@@ -150,7 +150,8 @@ protected:
 
     // calculate steering output given a turn rate
     // desired turn rate in radians/sec. Positive to the right.
-    void calc_steering_from_turn_rate(float turn_rate);
+    void calc_steering_from_turn_rate(float turn_rate,
+                                      bool allow_stick_mixing = true);
 
     // calculate steering angle given a desired lateral acceleration
     void calc_steering_from_lateral_acceleration(float lat_accel, bool reversed = false);
@@ -315,6 +316,7 @@ private:
 
     bool waiting_to_start;  // true if waiting for EKF origin before starting mission
     bool auto_triggered;        // true when auto has been triggered to start
+    bool _exact_pivot_fault_reported{false}; // true after current WP Exact fault is reported
 
     // HeadingAndSpeed sub mode variables
     float _desired_speed;   // desired speed in HeadingAndSpeed submode
@@ -675,8 +677,22 @@ private:
                     const Location &destination,
                     const Location &line_start,
                     const Location &line_end) WARN_IF_UNUSED;
+    bool get_target_geometry(const ModePatrolRoute::Target &target,
+                             const Location &current_line_start,
+                             const Location &current_line_end,
+                             Location &destination,
+                             Location &line_start,
+                             Location &line_end) WARN_IF_UNUSED;
+    bool get_next_distinct_target(const ModePatrolRoute::Target &current_target,
+                                  const Location &current_destination,
+                                  const Location &current_line_start,
+                                  const Location &current_line_end,
+                                  ModePatrolRoute::Target &next_target,
+                                  Location &next_destination,
+                                  Location &next_line_start,
+                                  Location &next_line_end,
+                                  bool &line_changed) WARN_IF_UNUSED;
     bool advance_to_next_target() WARN_IF_UNUSED;
-    bool pivot_stalled();
     void set_fault(const char *message);
     float get_spacing_m() const;
 
@@ -684,11 +700,19 @@ private:
     AP_Float _pivot_timeout_s;
 
     ModePatrolRoute _route;
-    ModePatrolPivotWatchdog _pivot_watchdog;
     Location _point_a;
     Location _point_b;
     Location _line_start;
     Location _line_end;
+    ModePatrolRoute::Target _preview_target{};
+    Location _preview_destination;
+    Location _preview_line_start;
+    Location _preview_line_end;
+    bool _preview_line_changed{false};
+    bool _preview_valid{false};
+    float _preview_spacing_m{0.0f};
+    float _planning_spacing_m{0.0f};
+    bool _planning_spacing_valid{false};
     uint8_t _point_count;
 };
 

@@ -360,35 +360,53 @@ void Mode::navigate_to_waypoint()
     g2.wp_nav.update(rover.G_Dt);
     _distance_to_destination = g2.wp_nav.get_distance_to_destination();
 
-    // pass desired speed to throttle controller
-    // do not do simple avoidance because this is already handled in the position controller
-    calc_throttle(g2.wp_nav.get_speed(), false);
+    const AR_WPNav::MotionPrimitive primitive = g2.wp_nav.get_motion_primitive();
+    if (primitive == AR_WPNav::MotionPrimitive::Path) {
+        // Simple avoidance is already handled by the position controller.
+        calc_throttle(g2.wp_nav.get_speed(), false);
+        float desired_turn_rate_rads = g2.wp_nav.get_turn_rate_rads();
 
-    // retrieve turn rate from waypoint controller
-    float desired_turn_rate_rads = g2.wp_nav.get_turn_rate_rads();
-
-    // if simple avoidance is active at very low speed do not attempt to turn
+        // If simple avoidance is active at very low speed do not attempt to turn.
 #if AP_AVOIDANCE_ENABLED
-    if (g2.avoid.limits_active() && (fabsf(attitude_control.get_desired_speed()) <= attitude_control.get_stop_speed())) {
-         desired_turn_rate_rads = 0.0f;
-    }
+        if (g2.avoid.limits_active() && (fabsf(attitude_control.get_desired_speed()) <= attitude_control.get_stop_speed())) {
+            desired_turn_rate_rads = 0.0f;
+        }
 #endif
+        calc_steering_from_turn_rate(desired_turn_rate_rads);
+        return;
+    }
 
-    // call turn rate steering controller
-    calc_steering_from_turn_rate(desired_turn_rate_rads);
-    
+    if (primitive == AR_WPNav::MotionPrimitive::Spin) {
+        // A differential-drive SPIN owns yaw only.  Do not invoke the forward
+        // speed stop controller: its GPS/EKF body-axis speed is not a wheel
+        // velocity measurement during an in-place rotation.
+        g2.motors.set_throttle(0.0f);
+        calc_steering_from_turn_rate(g2.wp_nav.get_turn_rate_rads(), false);
+        return;
+    }
+
+    // Hold is reserved for estimator loss and latched navigation faults.  A
+    // successful Exact handoff is promoted inside wp_nav.update() and has
+    // already returned MotionPrimitive::Path above in this same cycle.
+    g2.motors.set_throttle(0.0f);
+    g2.motors.set_steering(0.0f);
 }
 
 // calculate steering output given a turn rate
 // desired turn rate in radians/sec. Positive to the right.
-void Mode::calc_steering_from_turn_rate(float turn_rate)
+void Mode::calc_steering_from_turn_rate(float turn_rate,
+                                        bool allow_stick_mixing)
 {
     // calculate and send final steering command to motor library
     const float steering_out = attitude_control.get_steering_out_rate(turn_rate,
                                                                       g2.motors.limit.steer_left,
                                                                       g2.motors.limit.steer_right,
                                                                       rover.G_Dt);
-    set_steering(steering_out * 4500.0f);
+    if (allow_stick_mixing) {
+        set_steering(steering_out * 4500.0f);
+    } else {
+        g2.motors.set_steering(steering_out * 4500.0f);
+    }
 }
 
 /*

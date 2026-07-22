@@ -12,9 +12,13 @@ bool ModeAuto::_enter()
 
     // initialise waypoint navigation library
     g2.wp_nav.init();
+    // AUTO exact-pivot legs must remain subject to obstacle avoidance.  Other
+    // fixed-geometry modes may explicitly bypass OA while they own wp_nav.
+    g2.wp_nav.set_exact_pivot_oa_bypass(false);
 
     // other initialisation
     auto_triggered = false;
+    _exact_pivot_fault_reported = false;
 
     // clear guided limits
     rover.mode_guided.limit_clear();
@@ -81,6 +85,35 @@ void ModeAuto::update()
             // update navigation controller
             if (keep_navigating) {
                 navigate_to_waypoint();
+                if (g2.wp_nav.exact_pivot_failed() && !_exact_pivot_fault_reported) {
+                    _exact_pivot_fault_reported = true;
+                    // Exact faults are latched inside WPNav so they cannot be
+                    // mistaken for a completed waypoint. Estimator loss must
+                    // remain a visible Hold for the vehicle failsafe; changing
+                    // it to an ordinary waypoint would re-enter that path's
+                    // legacy zero-output return without a health watchdog.
+                    const AR_WPNav::ExactPivotFault pivot_fault =
+                        g2.wp_nav.get_exact_pivot_fault();
+                    if (pivot_fault == AR_WPNav::ExactPivotFault::Estimator) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL,
+                                        "Auto: pivot estimator fault, hold");
+                    } else if (pivot_fault == AR_WPNav::ExactPivotFault::RecoveryInfeasible) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL,
+                                        "Auto: pivot recovery infeasible, hold");
+                    } else if (pivot_fault == AR_WPNav::ExactPivotFault::RecoveryBounds) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL,
+                                        "Auto: pivot recovery bounds, hold");
+                    } else if (pivot_fault == AR_WPNav::ExactPivotFault::Timeout) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL,
+                                        "Auto: pivot timeout, hold");
+                    } else if (pivot_fault == AR_WPNav::ExactPivotFault::Internal) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL,
+                                        "Auto: pivot internal fault, hold");
+                    } else {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL,
+                                        "Auto: pivot fault, hold");
+                    }
+                }
             }
             break;
         }
@@ -691,24 +724,74 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
         always_stop_at_destination = true;
     }
 
-    // do not add next wp if there are no more navigation commands
+    // A failed setter may belong to a promoted Exact leg that is already the
+    // live navigation contract.  Load this NAV command and leave WPNav's
+    // latched Hold visible; returning false would make AP_Mission scan past it.
+    const auto load_exact_fault_hold = [this]() {
+        if (!g2.wp_nav.exact_pivot_failed()) {
+            return false;
+        }
+        _distance_to_destination = g2.wp_nav.get_distance_to_destination();
+        _reached_destination = false;
+        _submode = SubMode::WP;
+        return true;
+    };
+
+    // get_next_nav_cmd skips DO commands.  Only adjacent ordinary waypoints
+    // form a continuous route transaction; otherwise preserve stop-at-this-WP
+    // semantics so an intervening command (especially DO_SET_REVERSE) can run
+    // without changing direction inside a preplanned leg.
     AP_Mission::Mission_Command next_cmd;
-    if (always_stop_at_destination || !mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
+    const bool next_nav_available = !always_stop_at_destination &&
+                                    mission.get_next_nav_cmd(cmd.index + 1U, next_cmd);
+    const bool adjacent_waypoints = next_nav_available &&
+                                    (cmd.id == MAV_CMD_NAV_WAYPOINT) &&
+                                    (cmd.p1 == 0U) &&
+                                    (next_cmd.index == cmd.index + 1U) &&
+                                    (next_cmd.id == MAV_CMD_NAV_WAYPOINT);
+
+    Location next_cmdloc;
+    bool distinct_next_waypoint = false;
+    if (adjacent_waypoints) {
+        next_cmdloc = next_cmd.content.location;
+        next_cmdloc.sanitize(cmdloc);
+        distinct_next_waypoint = !cmdloc.same_latlon_as(next_cmdloc);
+    }
+
+    if (!adjacent_waypoints || !distinct_next_waypoint) {
         // single destination
-        if (!set_desired_location(cmdloc)) {
+        if (!set_desired_location(cmdloc) && !load_exact_fault_hold()) {
             return false;
         }
     } else {
-        // retrieve and sanitize next destination location
-        Location next_cmdloc = next_cmd.content.location;
-        next_cmdloc.sanitize(cmdloc);
-        if (!set_desired_location(cmdloc, next_cmdloc)) {
+        // AUTO never bypasses OA.  If OA is already replacing the route, keep
+        // the ordinary waypoint contract; if OA becomes necessary after an
+        // exact transaction starts, AR_WPNav_OA cancels it through its normal
+        // replanning setters.
+        g2.wp_nav.set_exact_pivot_oa_bypass(false);
+        const bool use_planned_pivot = !g2.wp_nav.is_oa_active() &&
+                                       g2.wp_nav.would_pivot_at_destination(cmdloc, next_cmdloc);
+        if (use_planned_pivot) {
+            if (!g2.wp_nav.set_desired_location_exact_pivot(cmdloc, next_cmdloc)) {
+                if (!load_exact_fault_hold() &&
+                    !set_desired_location(cmdloc, next_cmdloc) &&
+                    !load_exact_fault_hold()) {
+                    return false;
+                }
+            } else {
+                _distance_to_destination = g2.wp_nav.get_distance_to_destination();
+                _reached_destination = false;
+                _submode = SubMode::WP;
+            }
+        } else if (!set_desired_location(cmdloc, next_cmdloc) &&
+                   !load_exact_fault_hold()) {
             return false;
         }
     }
 
     // just starting so we haven't previously reached the waypoint
     previously_reached_wp = false;
+    _exact_pivot_fault_reported = false;
 
     return true;
 }

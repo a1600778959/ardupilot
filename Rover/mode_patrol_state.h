@@ -27,6 +27,25 @@ public:
         return {1, Phase::LineStart, true};
     }
 
+    static bool target_after(const Target &current, Target &next)
+    {
+        if (current.line_index == 0) {
+            return false;
+        }
+
+        if (current.phase == Phase::LineStart) {
+            next = {current.line_index, Phase::LineEnd, false};
+            return true;
+        }
+
+        if (current.line_index == UINT16_MAX) {
+            return false;
+        }
+
+        next = {static_cast<uint16_t>(current.line_index + 1U), Phase::LineStart, true};
+        return true;
+    }
+
     bool resume_target(Target &target) const
     {
         if (!navigating() || (_line_index == 0)) {
@@ -42,18 +61,7 @@ public:
         if (!navigating() || (_line_index == 0)) {
             return false;
         }
-
-        if (_phase == Phase::LineStart) {
-            target = {_line_index, Phase::LineEnd, false};
-            return true;
-        }
-
-        if (_line_index == UINT16_MAX) {
-            return false;
-        }
-
-        target = {static_cast<uint16_t>(_line_index + 1U), Phase::LineStart, true};
-        return true;
+        return target_after({_line_index, _phase, false}, target);
     }
 
     void commit(const Target &target)

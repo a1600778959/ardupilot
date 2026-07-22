@@ -6,9 +6,136 @@
 #include <APM_Control/AR_PosControl.h>
 #include <AC_Avoidance/AP_OAPathPlanner.h>
 #include "AR_PivotTurn.h"
+#include "AR_WPNav_Differential.h"
 
 class AR_WPNav {
 public:
+
+    enum class MotionPrimitive : uint8_t {
+        Path,
+        Spin,
+        Hold,
+    };
+
+    enum class ExactPivotFault : uint8_t {
+        None,
+        Estimator,
+        Timeout,
+        Internal,
+        RecoveryInfeasible,
+        RecoveryBounds,
+    };
+
+    // Stable numeric phase values exported to XPNV.Ph and STATUSTEXT.  Keep
+    // this independent from the private controller enum so log decoding does
+    // not depend on implementation ordering.
+    enum class ExactPivotDiagPhase : uint8_t {
+        None,
+        Move,
+        CapturePath,
+        Spin,
+        PromotedMove,
+        Fault,
+    };
+
+    // Sticky diagnostic events.  Vehicle code acknowledges a snapshot by its
+    // sequence number after it has written the corresponding log records and
+    // STATUSTEXT messages.  Control code never consumes these flags.
+    enum ExactPivotDiagTransition : uint16_t {
+        DiagNewExact      = 1U << 0,
+        DiagEarlyCaptureA = 1U << 1,
+        DiagCapturePathB  = 1U << 2,
+        DiagEnterSpin     = 1U << 3,
+        DiagPromotePath   = 1U << 4,
+        DiagAckOrdinary   = 1U << 5,
+        DiagAckExact      = 1U << 6,
+        DiagFault         = 1U << 7,
+        DiagOACancel      = 1U << 8,
+        DiagHandoffDone   = 1U << 9,
+    };
+
+    // Live state bits recorded in XPNV.Flg.
+    enum ExactPivotDiagState : uint16_t {
+        DiagStateExactActive      = 1U << 0,
+        DiagStateEndpointValid    = 1U << 1,
+        DiagStatePlanValid        = 1U << 2,
+        DiagStatePathTerminal     = 1U << 3,
+        DiagStateCompletion       = 1U << 4,
+        DiagStatePivotActive      = 1U << 5,
+        DiagStateCaptureActive    = 1U << 6,
+        DiagStateCaptureArc       = 1U << 7,
+        DiagStateRejoinActive     = 1U << 8,
+        DiagStateHandoffActive    = 1U << 9,
+        DiagStateTimeoutActive    = 1U << 10,
+        DiagStatePositionLoss     = 1U << 11,
+        DiagStateDriftActive      = 1U << 12,
+        DiagStateCaptureViolation = 1U << 13,
+        DiagStateReversed         = 1U << 14,
+        DiagStateYawErrorValid    = 1U << 15,
+    };
+
+    enum class ExactPivotOACancelReason : uint8_t {
+        None,
+        Processing,
+        Error,
+        InvalidPlanner,
+        Dijkstra,
+        BendyRuler,
+    };
+
+    struct ExactPivotCaptureDiag {
+        bool valid{false};
+        uint8_t segment{0U};       // 0=None, 1=Arc, 2=Line
+        int8_t direction{0};
+        float progress_m{0.0f};
+        float length_m{0.0f};
+        float radius_m{0.0f};
+        float target_speed_mps{0.0f};
+        float tracking_error_m{0.0f};
+        float heading_error_deg{0.0f};
+        float endpoint_distance_m{0.0f};
+    };
+
+    struct ExactPivotHandoffDiag {
+        bool valid{false};
+        float along_m{0.0f};
+        float rejoin_m{0.0f};
+        float blend_m{0.0f};
+        float distance_ratio{0.0f};
+        float heading_ratio{0.0f};
+        float path_weight{0.0f};
+        float heading_error_deg{0.0f};
+        float heading_rate_rads{0.0f};
+        float path_rate_rads{0.0f};
+        float output_rate_rads{0.0f};
+    };
+
+    struct ExactPivotDiagSnapshot {
+        uint8_t phase{0U};
+        uint8_t primitive{0U};
+        uint8_t fault{0U};
+        uint8_t fault_from_phase{0U};
+        uint16_t transition_flags{0U};
+        uint16_t state_flags{0U};
+        uint32_t transition_sequence{0U};
+        uint32_t leg_id{0U};
+        uint32_t handoff_generation{0U};
+        uint32_t acknowledged_generation{0U};
+        float endpoint_distance_m{0.0f};
+        float planned_distance_m{0.0f};
+        float planned_speed_mps{0.0f};
+        float desired_speed_mps{0.0f};
+        float desired_turn_rate_rads{0.0f};
+        float yaw_error_deg{0.0f};
+        float xtrack_error_m{0.0f};
+        float target_heading_deg{0.0f};
+        uint8_t spin_source{0U};   // 'A' for early capture, 'B' for CapturePath
+        int8_t turn_direction{0};
+        uint8_t oa_cancel_from_phase{0U};
+        uint8_t oa_cancel_reason{0U};
+        ExactPivotCaptureDiag capture;
+        ExactPivotHandoffDiag handoff;
+    };
 
     // constructor
     AR_WPNav(AR_AttitudeControl& atc, AR_PosControl &pos_control);
@@ -30,7 +157,7 @@ public:
 
     // execute the mission in reverse (i.e. drive backwards to destination)
     bool get_reversed() const { return _reversed; }
-    void set_reversed(bool reversed) { _reversed = reversed; }
+    void set_reversed(bool reversed);
 
     // get navigation outputs for speed (in m/s) and turn rate (in rad/sec)
     float get_speed() const { return _desired_speed_limited; }
@@ -42,6 +169,12 @@ public:
     // set desired location and (optionally) next_destination
     // next_destination should be provided if known to allow smooth cornering
     virtual bool set_desired_location(const Location &destination, Location next_destination = Location()) WARN_IF_UNUSED;
+
+    // set a stopping S-curve followed by a planned in-place turn toward next_destination
+    virtual bool set_desired_location_exact_pivot(const Location &destination, const Location &next_destination) WARN_IF_UNUSED;
+
+    // return true if the corner at destination would normally require a pivot
+    bool would_pivot_at_destination(const Location &destination, const Location &next_destination) const;
 
     // set desired location to a reasonable stopping point, return true on success
     bool set_desired_location_to_stopping_location()  WARN_IF_UNUSED;
@@ -56,7 +189,13 @@ public:
     bool set_desired_location_expect_fast_update(const Location &destination) WARN_IF_UNUSED;
 
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
-    virtual bool reached_destination() const { return _reached_destination; }
+    virtual bool reached_destination() const
+    {
+        if (_exact_phase == ExactPivotPhase::Fault) {
+            return false;
+        }
+        return _completion_event_pending || _reached_destination;
+    }
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const { return _distance_to_destination; }
@@ -93,7 +232,27 @@ public:
 
     // read-only pivot state for vehicle-specific safety monitoring
     bool is_pivot_active() const { return _pivot.active(); }
+    bool is_exact_pivot_active() const { return _exact_phase == ExactPivotPhase::Spin; }
+    bool is_exact_pivot_turn_in_progress() const
+    {
+        return (_exact_phase == ExactPivotPhase::Spin) ||
+               (_exact_phase == ExactPivotPhase::CapturePath);
+    }
+    bool is_exact_pivot_sequence_active() const
+    {
+        return (_exact_phase != ExactPivotPhase::None) || _completion_event_pending;
+    }
+    bool exact_pivot_failed() const { return _exact_phase == ExactPivotPhase::Fault; }
+    ExactPivotFault get_exact_pivot_fault() const { return _exact_fault; }
+    MotionPrimitive get_motion_primitive() const;
     float get_pivot_heading_error_deg() const;
+
+    // Return the current read-only diagnostic snapshot. Transition flags are a
+    // cumulative sticky batch since the previous ACK; accompanying values are
+    // the latest controller/cache state, not a per-event journal. Flags are
+    // cleared only by an ACK for the exact sequence returned here.
+    ExactPivotDiagSnapshot get_exact_pivot_diag_snapshot() const;
+    void ack_exact_pivot_diag(uint32_t transition_sequence);
 
     // calculate stopping location using current position and attitude controller provided maximum deceleration
     // returns true on success, false on failure
@@ -140,12 +299,66 @@ protected:
     // updates position controller limits and recalculate scurve path if required
     void update_speed_max();
 
+    // return the pivot target heading, applying reverse at time of use
+    float get_pivot_target_heading_cd() const;
+
+    // clear exact-pivot state when another navigation contract is selected
+    void clear_exact_pivot();
+
+    // clear exact-pivot transaction state after an ordinary handoff ACK while
+    // preserving the promoted path and its forward-rejoin constraint
+    void clear_exact_pivot_after_ack();
+
+    // true when destination acknowledges the currently pending atomic handoff
+    bool atomic_handoff_ack_matches(const Location &destination, uint32_t &generation) const;
+
+    // attach an ordinary next-leg preview without modifying the active leg
+    bool attach_ordinary_next_leg(const Location &destination, const Location &next_destination) WARN_IF_UNUSED;
+
+    // exact differential-drive transition helpers
+    bool exact_endpoint_captured(const Location &current_loc,
+                                 float planned_distance_m,
+                                 bool path_terminal,
+                                 float planned_speed_mps) const;
+    float exact_crosstrack_error(const Location &current_loc) const;
+    bool exact_spin_position_within_limit(const Location &current_loc) const;
+    bool exact_pivot_timed_out(uint32_t now_ms) const;
+    void start_exact_pivot_timeout(uint32_t now_ms);
+    void enter_exact_spin();
+    void enter_exact_fault(ExactPivotFault reason);
+    bool start_exact_capture_path(const Location &current_loc) WARN_IF_UNUSED;
+    void update_exact_capture_path(const Location &current_loc, float dt);
+    void clear_exact_capture_path();
+    int8_t select_exact_turn_direction() const;
+    bool promote_exact_preview(const Location &current_loc) WARN_IF_UNUSED;
+    void apply_forward_rejoin(const Vector2f &origin_ne_m, Vector3f &target_pos);
+    void update_path_outputs(float dt);
+    void apply_heading_handoff();
+    void clear_heading_handoff();
+    void clear_promoted_path_constraints();
+
+    // Called only after OA has successfully replaced an Exact navigation
+    // contract.  from_phase must be captured before the ordinary setter clears
+    // the state machine.
+    void note_exact_pivot_oa_cancel(uint8_t from_phase,
+                                    ExactPivotOACancelReason reason);
+
+    // build a stopping S-curve between two locations
+    bool calculate_stopping_scurve(const Location &origin, const Location &destination, SCurve &scurve) WARN_IF_UNUSED;
+
     // parameters
     AP_Float _speed_max;            // target speed between waypoints in m/s
     AP_Float _radius;               // distance in meters from a waypoint when we consider the waypoint has been reached
     AR_PivotTurn _pivot;            // pivot turn controller
     AP_Float _accel_max;            // max acceleration.  If zero then attitude controller's specified max accel is used
     AP_Float _jerk_max;             // max jerk (change in acceleration).  If zero then value is same as accel_max
+    AP_Float _pivot_radius;          // exact endpoint capture radius before a planned pivot
+    AP_Float _pivot_exit;            // heading error at which a planned pivot atomically promotes its next leg
+    AP_Float _pivot_drift;           // position and cross-track error tolerated during a planned pivot
+    AP_Float _pivot_rejoin;          // forward distance used to rejoin a promoted frozen route
+    AP_Float _pivot_timeout;         // total planned CapturePath/Spin timeout
+    AP_Float _pivot_capture_speed;   // planned speed below which the S-curve may hand off inside the exact endpoint circle
+    AP_Float _pivot_blend;           // distance used to blend planned heading control into path steering
 
     // references
     AR_AttitudeControl& _atc;       // rover attitude control library
@@ -159,6 +372,63 @@ protected:
     bool _pivot_at_next_wp;         // true if vehicle should pivot at next waypoint
     bool _overspeed_enabled;        // if true scurve's position target will speedup to catch vehicles travelling faster than WP_SPEED
     float _track_scalar_dt;         // time scaler to ensure scurve target doesn't get too far ahead of vehicle
+    enum class ExactPivotPhase : uint8_t {
+        None,
+        Move,
+        CapturePath,
+        Spin,
+        PromotedMove,
+        Fault,
+    } _exact_phase{ExactPivotPhase::None};
+    ExactPivotFault _exact_fault{ExactPivotFault::None};
+    Location _exact_next_destination;
+    Location _exact_frozen_origin;
+    float _exact_pivot_heading_cd{0.0f};
+    uint32_t _last_yaw_reset_ms{0U};
+    uint32_t _exact_position_loss_start_ms{0U};
+    bool _exact_position_loss_active{false};
+    uint32_t _exact_drift_start_ms{0U};
+    bool _exact_drift_active{false};
+    uint32_t _exact_timeout_start_ms{0U};
+    bool _exact_timeout_active{false};
+    bool _exact_reversed{false};
+    int8_t _exact_turn_direction{0};
+    bool _exact_capture_attempted{false};
+    struct ExactCapturePath {
+        Vector2f center_from_destination;
+        Vector2f start_radial_unit;
+        Vector2f tangent_from_destination;
+        Vector2f line_unit;
+        float radius_m{0.0f};
+        float arc_angle_rad{0.0f};
+        float arc_length_m{0.0f};
+        float total_length_m{0.0f};
+        int8_t turn_direction{0};
+        bool valid{false};
+    } _exact_capture_path;
+    SCurve _exact_capture_scurve;
+    SCurve _exact_capture_scurve_aux;
+    uint32_t _exact_capture_violation_start_ms{0U};
+    bool _completion_event_pending{false};
+    uint32_t _handoff_generation{0U};
+    Location _completed_destination;
+    Location _active_destination;
+    Vector2f _rejoin_unit;
+    float _rejoin_floor_m{0.0f};
+    bool _rejoin_active{false};
+    struct HeadingHandoff {
+        Location origin;
+        Vector2f track_unit;
+        float track_length_m{0.0f};
+        float start_along_m{0.0f};
+        float blend_distance_m{0.0f};
+        float heading_cd{0.0f};
+        uint32_t generation{0U};
+        bool active{false};
+    } _heading_handoff;
+    bool _pivot_handoff{false};      // one-cycle zero-output edge after an ordinary pivot
+    float _pivot_heading_cd{0.0f};   // locked effective heading for an ordinary pivot
+    bool _pivot_heading_valid{false};
 
     // variables held in vehicle code (for now)
     float _turn_radius;             // vehicle turn radius in meters
@@ -191,4 +461,36 @@ protected:
     // variables for reporting
     float _distance_to_destination; // distance from vehicle to final destination in meters
     bool _reached_destination;      // true once the vehicle has reached the destination
+
+private:
+    struct ExactPivotDiagCache {
+        uint16_t transition_flags{0U};
+        uint32_t transition_sequence{0U};
+        uint32_t leg_id{0U};
+        uint32_t acknowledged_generation{0U};
+        bool endpoint_valid{false};
+        bool plan_valid{false};
+        bool path_terminal{false};
+        bool target_heading_valid{false};
+        float endpoint_distance_m{0.0f};
+        float planned_distance_m{0.0f};
+        float planned_speed_mps{0.0f};
+        float target_heading_deg{0.0f};
+        uint8_t spin_source{0U};
+        uint8_t fault_from_phase{0U};
+        uint8_t oa_cancel_from_phase{0U};
+        uint8_t oa_cancel_reason{0U};
+        ExactPivotCaptureDiag capture;
+        ExactPivotHandoffDiag handoff;
+    } _exact_diag;
+
+    // return the common speed limit for an exact-pivot capture path
+    float get_exact_capture_speed_max(float radius_m) const;
+
+    // Exact-pivot diagnostic writers.  These only copy values already used by
+    // the controller and are never read by navigation decisions.
+    void mark_exact_pivot_diag_event(uint16_t event);
+    void start_exact_pivot_diag_leg(uint16_t event);
+    void update_exact_pivot_diag_endpoint(const Location &current_loc);
+    static uint8_t exact_pivot_phase_to_diag(ExactPivotPhase phase);
 };

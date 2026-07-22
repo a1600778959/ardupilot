@@ -15,7 +15,12 @@ enum LoggingParameters {
     LOG_NTUN_MSG,
     LOG_STEERING_MSG,
     LOG_GUIDEDTARGET_MSG,
+    LOG_XPNV_MSG,
+    LOG_XCAP_MSG,
+    LOG_XHOF_MSG,
 };
+
+static_assert(LOG_XHOF_MSG < 32, "Rover vehicle log IDs exhausted");
 
 #define MASK_LOG_ATTITUDE_FAST  (1<<0)
 #define MASK_LOG_ATTITUDE_MED   (1<<1)
