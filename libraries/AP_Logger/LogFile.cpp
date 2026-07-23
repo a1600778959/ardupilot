@@ -10,6 +10,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_RSSI/AP_RSSI.h>
+#include <AP_RTC/AP_RTC.h>
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AC_PID/AP_PIDInfo.h>
@@ -473,6 +474,23 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
     };
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
+
+#if AP_RTC_LOGGING_ENABLED
+// emit an RTC message to the onboard logs
+bool AP_Logger_Backend::Write_RTC()
+{
+    uint64_t time_unix = 0;
+    AP::rtc().get_utc_usec(time_unix);
+
+    const struct log_RTC pkt{
+        LOG_PACKET_HEADER_INIT(LOG_RTC_MSG),
+        time_us : AP_HAL::micros64(),
+        epoch_us : time_unix,
+        source_type : uint8_t(AP::rtc().get_source_type()),
+    };
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+#endif
 
 /*
   write servo status from CAN servo
