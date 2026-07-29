@@ -64,8 +64,6 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[0], "1", 21, AP_Proximity, AP_Proximity_Params),
 
-    // @Group: 1_
-    // @Path: AP_Proximity_MR72_CAN.cpp
     AP_SUBGROUPVARPTR(drivers[0], "1_",  26, AP_Proximity, backend_var_info[0]),
 
 #if PROXIMITY_MAX_INSTANCES > 1
@@ -73,8 +71,6 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[1], "2", 22, AP_Proximity, AP_Proximity_Params),
 
-    // @Group: 2_
-    // @Path: AP_Proximity_MR72_CAN.cpp
     AP_SUBGROUPVARPTR(drivers[1], "2_",  27, AP_Proximity, backend_var_info[1]),
 #endif
 
@@ -83,8 +79,6 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[2], "3", 23, AP_Proximity, AP_Proximity_Params),
 
-    // @Group: 3_
-    // @Path: AP_Proximity_MR72_CAN.cpp
     AP_SUBGROUPVARPTR(drivers[2], "3_",  28, AP_Proximity, backend_var_info[2]),
 #endif
 
@@ -93,8 +87,6 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[3], "4", 24, AP_Proximity, AP_Proximity_Params),
 
-    // @Group: 4_
-    // @Path: AP_Proximity_MR72_CAN.cpp
     AP_SUBGROUPVARPTR(drivers[3], "4_",  29, AP_Proximity, backend_var_info[3]),
 #endif
 
@@ -103,8 +95,6 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[4], "5", 30, AP_Proximity, AP_Proximity_Params),
 
-    // @Group: 5_
-    // @Path: AP_Proximity_MR72_CAN.cpp
     AP_SUBGROUPVARPTR(drivers[4], "5_",  31, AP_Proximity, backend_var_info[4]),
 #endif
 
