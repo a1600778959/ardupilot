@@ -251,9 +251,6 @@ def process_library(vehicle, library, pathprefix=None):
                                                        param_match[2])
             if len(only_vehicles):
                 only_vehicles_list = [x.strip() for x in only_vehicles.split(",")]
-                for only_vehicle in only_vehicles_list:
-                    if only_vehicle not in valid_truenames:
-                        raise ValueError("Invalid only_vehicle %s" % only_vehicle)
                 if vehicle.name not in only_vehicles_list:
                     continue
             p = Parameter(library.name+param_name, current_file)
