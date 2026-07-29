@@ -325,9 +325,50 @@ void NavEKF3_core::calcGpsGoodForFlight(void)
 // Detect if we are in flight or on ground
 void NavEKF3_core::detectFlight()
 {
-    // store current on-ground  and in-air status for next time
-    prevOnGround = true;
-    prevInFlight = false;
+    // Rover uses the EKF in-flight state to enable compass learning, GPS-yaw
+    // compass fallback and the GSF yaw estimator.  The vehicle reports
+    // likely-flying while it is soft-armed, so retain the upstream five-second
+    // qualification without the Plane/Sub takeoff detection paths.
+    if (motorsArmed) {
+        onGround = false;
+        if (dal.get_time_flying_ms() > 5000) {
+            inFlight = true;
+        }
+    } else {
+        onGround = true;
+        inFlight = false;
+    }
+
+    // Preserve the references used by magnetic-field reset checks before the
+    // Rover starts moving.
+    if (onGround) {
+        posDownAtTakeoff = stateStruct.position.z;
+        if (magStateInitComplete) {
+            posDownAtLastMagReset = stateStruct.position.z;
+            quatAtLastMagReset = stateStruct.quat;
+            yawInnovAtLastMagReset = innovYaw;
+        }
+    }
+
+    // Start the GSF yaw estimator once the armed state is established and GPS
+    // velocity is suitable.  Stop it on disarm or when GPS quality is lost.
+    if ((!prevOnGround && onGround) || !gpsSpdAccPass) {
+        EKFGSF_run_filterbank = false;
+    } else if (yawEstimator != nullptr &&
+               !EKFGSF_run_filterbank &&
+               inFlight &&
+               gpsSpdAccPass) {
+        EKFGSF_yaw_reset_ms = 0;
+        EKFGSF_yaw_reset_request_ms = 0;
+        EKFGSF_yaw_reset_count = 0;
+        EKFGSF_yaw_valid_count = 0;
+        EKFGSF_run_filterbank = true;
+        Vector3f gyroBias;
+        getGyroBias(gyroBias);
+        yawEstimator->setGyroBias(gyroBias);
+    }
+
+    prevOnGround = onGround;
 
 }
 

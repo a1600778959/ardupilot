@@ -982,12 +982,12 @@ private:
     bool onGround;                  // true when the flight vehicle is definitely on the ground
     bool prevOnGround;              // value of onGround from previous frame - used to detect transition
     bool inFlight;                  // true when the vehicle is definitely flying
-    bool prevInFlight;              // value inFlight from previous frame - used to detect transition
     bool manoeuvring;               // boolean true when the flight vehicle is performing horizontal changes in velocity
     Vector6 innovVelPos;            // innovation output for a group of measurements
     Vector6 varInnovVelPos;         // innovation variance output for a group of measurements
     Vector6 velPosObs;              // observations for combined velocity and positon group of measurements (3x1 m , 3x1 m/s)
-    bool fuseVelData;               // this boolean causes the velNED measurements to be fused
+    bool fuseVelData;               // this boolean causes the velNE measurements to be fused
+    bool fuseVelVertData;           // this boolean causes the velD measurement to be fused
     bool fusePosData;               // this boolean causes the posNE measurements to be fused
     bool fuseHgtData;               // this boolean causes the hgtMea measurements to be fused
     Vector3F innovMag;              // innovation output from fusion of X,Y,Z compass measurements
@@ -1237,11 +1237,6 @@ private:
     // height source selection logic
     AP_NavEKF_Source::SourceZ activeHgtSource;  // active height source
     AP_NavEKF_Source::SourceZ prevHgtSource;    // previous height source used to detect changes in source
-
-    // Movement detector
-    bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected
-    ftype rngAtStartOfFlight;       // range finder measurement at start of flight
-    uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
 
     // control of post takeoff magnetic field and heading resets
     bool finalInflightYawInit;      // true when the final post takeoff initialisation of yaw angle has been performed

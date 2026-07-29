@@ -233,7 +233,6 @@ void NavEKF3_core::InitialiseVariables()
     onGround = true;
     prevOnGround = true;
     inFlight = false;
-    prevInFlight = false;
     manoeuvring = false;
     inhibitWindStates = true;
     windStateIsObservable = false;
@@ -1657,18 +1656,6 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         }
     }
 
-    // inactive delta velocity bias states have all covariances zeroed to prevent
-    // interacton with other states
-    if (!inhibitDelVelBiasStates) {
-        for (uint8_t index=0; index<3; index++) {
-            const uint8_t stateIndex = index + 13;
-            if (dvelBiasAxisInhibit[index]) {
-                zeroCols(nextP,stateIndex,stateIndex);
-                nextP[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
-            }
-        }
-    }
-
     // if the total position variance exceeds 1e4 (100m), then stop covariance
     // growth by setting the predicted to the previous values
     // This prevent an ill conditioned matrix from occurring for long periods
@@ -1692,6 +1679,19 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         // copy off diagonals
         for (uint8_t column = 0 ; column < row; column++) {
             P[row][column] = P[column][row] = nextP[column][row];
+        }
+    }
+
+    // inactive delta velocity bias states have all covariances zeroed to
+    // prevent interaction with other states
+    if (!inhibitDelVelBiasStates) {
+        for (uint8_t index=0; index<3; index++) {
+            const uint8_t stateIndex = index + 13;
+            if (dvelBiasAxisInhibit[index]) {
+                zeroRows(P, stateIndex, stateIndex);
+                zeroCols(P, stateIndex, stateIndex);
+                P[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
+            }
         }
     }
 

@@ -12,10 +12,6 @@ void NavEKF3_core::controlFilterModes()
     // Determine motor arm status
     prevMotorsArmed = motorsArmed;
     motorsArmed = dal.get_armed();
-    if (motorsArmed && !prevMotorsArmed) {
-        // set the time at which we arm to assist with checks
-        timeAtArming_ms =  imuSampleTime_ms;
-    }
 
     // Detect if we are in flight on or ground
     detectFlight();
@@ -416,9 +412,11 @@ void NavEKF3_core::setAidingMode()
                     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial vel NED = %3.1f,%3.1f,%3.1f (m/s)",(unsigned)imu_index,(double)extNavVelDelayed.vel.x,(double)extNavVelDelayed.vel.y,(double)extNavVelDelayed.vel.z);
                 }
                 // handle height reset as special case
-                hgtMea = -extNavDataDelayed.pos.z;
-                posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
-                ResetHeight();
+                if (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::EXTNAV) {
+                    hgtMea = -extNavDataDelayed.pos.z;
+                    posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                    ResetHeight();
+                }
 #endif // EK3_FEATURE_EXTERNAL_NAV
             }
 
@@ -688,7 +686,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.const_pos_mode = (PV_AidingMode == AID_NONE) && filterHealthyHorizontal;     // constant position mode
     status.flags.pred_horiz_pos_rel = status.flags.horiz_pos_rel; // EKF3 enters the required mode before flight
     status.flags.pred_horiz_pos_abs = status.flags.horiz_pos_abs; // EKF3 enters the required mode before flight
-    status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
+    status.flags.takeoff_detected = false; // optical flow takeoff detection is not available
     status.flags.takeoff = dal.get_takeoff_expected(); // The EKF has been told to expect takeoff is in a ground effect mitigation mode and has started the EKF-GSF yaw estimator
     status.flags.touchdown = dal.get_touchdown_expected(); // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     status.flags.using_gps = ((imuSampleTime_ms - lastGpsPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
