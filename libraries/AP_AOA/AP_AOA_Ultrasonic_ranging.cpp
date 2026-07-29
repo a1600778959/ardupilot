@@ -1,4 +1,3 @@
-// File: libraries/AP_Modbus/AP_MultiDistanceSensor.cpp
 #include "AP_AOA_Ultrasonic_ranging.h"
 
 // singleton instance
@@ -21,7 +20,6 @@ void AP_MultiDistanceSensor::init()
     {
         sensors[i].address = 0x01 + i;
         sensors[i].distance = 6666.0f;
-        sensors[i].last_update = 0;
         sensors[i].valid = false;
     }
 
@@ -35,11 +33,7 @@ void AP_MultiDistanceSensor::init()
 
     _uart->set_stop_bits(1);
     _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    // hal.serial(MODBUS_UART_NUM)->set_unbuffered_writes(true);
-    //_uart->begin(115200);
     hal.scheduler->delay(100); // 等待初始化串口
-    // hal.serial(MODBUS_UART_NUM)->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    // hal.serial(MODBUS_UART_NUM)->set_stop_bits(1);
 }
 
 void AP_MultiDistanceSensor::send_request()
@@ -64,7 +58,6 @@ void AP_MultiDistanceSensor::send_request()
     uint16_t crc = calc_crc_modbus(request, sizeof(request) - 2);
     request[6] = crc & 0xFF;
     request[7] = (crc >> 8) & 0xFF;
-    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "start collect:%d", current_sensor_idx);
     // 发送请求
     _uart->write(request, 8);
 
@@ -84,9 +77,6 @@ void AP_MultiDistanceSensor::read_data(uint8_t *rep)
             uint16_t raw_val = (rep[3] << 8) | rep[4];
             sensors[sensor_idx].distance = raw_val;
             sensors[sensor_idx].valid = true;
-            sensors[sensor_idx].last_update = AP_HAL::millis();
-            // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "S%d: %.2fm OK",
-            //               rep[0], sensors[sensor_idx].distance * 0.001f);
         }
         else
         {
@@ -117,7 +107,6 @@ void AP_MultiDistanceSensor::update()
     else
     {
         sensors[current_sensor_idx].valid = false;
-        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AOA data is invalid");
     }
     // 发送请求
     send_request();
@@ -156,11 +145,3 @@ namespace AP {
         return AP_MultiDistanceSensor::get_singleton();
     }
 }
-
-// 任务调度注册
-// static void update_sensor_task()
-// {
-//     AP_MultiDistanceSensor::instance().update();
-// }
-
-// AP_SCHEDULER_TASK(update_sensor_task, 50, 100);

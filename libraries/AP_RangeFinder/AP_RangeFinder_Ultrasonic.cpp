@@ -8,7 +8,6 @@ AP_RangeFinder_Ultrasonic::AP_RangeFinder_Ultrasonic(
     for (uint8_t i = 0; i < SENSOR_COUNT; i++) {
         sensors[i].address = 0x01 + i;
         sensors[i].distance = 6666.0f;
-        sensors[i].last_update = 0;
         sensors[i].valid = false;
     }
 }
@@ -32,7 +31,6 @@ void AP_RangeFinder_Ultrasonic::send_request() {
     uint16_t crc = calc_crc_modbus(request, sizeof(request) - 2);
     request[6] = crc & 0xFF;
     request[7] = (crc >> 8) & 0xFF;
-    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "start collect:%d", current_sensor_idx);
     // 发送请求
     uart->write(request, 8);
 }
@@ -47,9 +45,6 @@ void AP_RangeFinder_Ultrasonic::read_data(uint8_t* rep) {
             uint16_t raw_val = (rep[3] << 8) | rep[4];
             sensors[sensor_idx].distance = raw_val * 0.001f;
             sensors[sensor_idx].valid = true;
-            sensors[sensor_idx].last_update = AP_HAL::millis();
-            // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "S%d: %.2fm OK",
-            //               rep[0], sensors[sensor_idx].distance * 0.001f);
         } else {
             sensors[sensor_idx].valid = false;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "S%d CRC Error", rep[0]);
@@ -68,7 +63,6 @@ bool AP_RangeFinder_Ultrasonic::get_reading(float& reading_m) {
         isRead = true;
     } else {
         sensors[current_sensor_idx].valid = false;
-        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AOA data is invalid");
     }
     // 发送请求
     send_request();
