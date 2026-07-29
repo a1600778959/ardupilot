@@ -1,8 +1,12 @@
 #include "AP_DDS_Client.h"
 
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include <errno.h>
+
+static constexpr uint16_t SERIAL_CLOSE_DRAIN_TIMEOUT_MS = 100;
+static constexpr uint16_t SERIAL_ERROR_REPORT_INTERVAL_MS = 5000;
 
 /*
   open connection on a serial port
@@ -11,21 +15,51 @@ bool AP_DDS_Client::serial_transport_open(uxrCustomTransport *t)
 {
     AP_DDS_Client *dds = (AP_DDS_Client *)t->args;
     AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
-    auto *dds_port = serial_manager->find_serial(AP_SerialManager::SerialProtocol_DDS_XRCE, 0);
-    if (dds_port == nullptr) {
+    if (serial_manager == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Serial manager unavailable", msg_prefix);
         return false;
     }
 
-    // Ensure the UART is actively configured with the SERIALx_BAUD value used
-    // for DDS (not only ownership transfer), so the transport matches agent baud.
-    const uint32_t dds_baud = serial_manager->find_baudrate(AP_SerialManager::SerialProtocol_DDS_XRCE, 0);
-    if (dds_baud == 0) {
+    const int8_t port_num = serial_manager->find_portnum(AP_SerialManager::SerialProtocol_DDS_XRCE, 0);
+    if (port_num < 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s No serial port with protocol 45", msg_prefix);
         return false;
     }
-    dds_port->begin(dds_baud);
+
+    auto *dds_port = serial_manager->find_serial(AP_SerialManager::SerialProtocol_DDS_XRCE, 0);
+    if (dds_port == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s SERIAL%d unavailable", msg_prefix, (int)port_num);
+        return false;
+    }
+
+    const uint32_t dds_baud = serial_manager->find_baudrate(AP_SerialManager::SerialProtocol_DDS_XRCE, 0);
+    if (dds_baud == 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s SERIAL%d invalid baud", msg_prefix, (int)port_num);
+        return false;
+    }
+
+    // AP_SerialManager normally configures the UART before the DDS thread starts.
+    // Reconnecting only needs to transfer ownership to this thread; avoid
+    // reconfiguring active UART/DMA hardware unless initialisation was lost.
+    if (dds_port->is_initialized()) {
+        dds_port->begin(0);
+    } else {
+        dds_port->begin(dds_baud);
+    }
+    if (!dds_port->is_initialized()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s SERIAL%d init failed", msg_prefix, (int)port_num);
+        return false;
+    }
+
     // Drop stale bytes from a previous session before starting framing again.
-    dds_port->discard_input();
+    if (!dds_port->discard_input()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s SERIAL%d ownership failed", msg_prefix, (int)port_num);
+        return false;
+    }
+
     dds->serial.port = dds_port;
+    dds->serial.port_num = port_num;
+    dds->serial.baud = dds_baud;
     return true;
 }
 
@@ -36,10 +70,15 @@ bool AP_DDS_Client::serial_transport_close(uxrCustomTransport *t)
 {
     AP_DDS_Client *dds = (AP_DDS_Client *)t->args;
     if (dds->serial.port != nullptr) {
-        // Drain pending TX as much as possible and clear stale RX bytes to reduce
-        // framing corruption after reconnect.
+        // flush() wakes the UART TX thread but does not wait for queued bytes.
+        // Give a session-delete or final frame a bounded opportunity to drain.
         dds->serial.port->flush();
-        dds->serial.port->discard_input();
+        const uint32_t start_ms = AP_HAL::millis();
+        while (dds->serial.port->tx_pending() &&
+               AP_HAL::millis() - start_ms < SERIAL_CLOSE_DRAIN_TIMEOUT_MS) {
+            hal.scheduler->delay_microseconds(100);
+        }
+        return dds->serial.port->discard_input();
     }
     return true;
 }
@@ -86,7 +125,18 @@ size_t AP_DDS_Client::serial_transport_write(uxrCustomTransport *t, const uint8_
         total_written += (size_t)n;
     }
 
-    *error = (total_written == len) ? 0 : 1;
+    if (total_written != len) {
+        *error = EIO;
+        const uint32_t now_ms = AP_HAL::millis();
+        if (dds->serial.last_write_error_report_ms == 0 ||
+            now_ms - dds->serial.last_write_error_report_ms >= SERIAL_ERROR_REPORT_INTERVAL_MS) {
+            dds->serial.last_write_error_report_ms = now_ms;
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Serial write failed", msg_prefix);
+        }
+        return total_written;
+    }
+
+    *error = 0;
     return total_written;
 }
 
@@ -101,11 +151,30 @@ size_t AP_DDS_Client::serial_transport_read(uxrCustomTransport *t, uint8_t* buf,
         return 0;
     }
 
+    const uint8_t no_reconnect = static_cast<uint8_t>(ReconnectReason::NONE);
+    if (dds->reconnect_reason.load(std::memory_order_relaxed) != no_reconnect) {
+        dds->serial.read_cancelled = true;
+        *error = ECANCELED;
+        return 0;
+    }
+
+    // A transport read is normally bounded by the XRCE timeout.  Also observe
+    // the supervisor request so a stalled owner can leave the UART wait and
+    // perform session cleanup itself.  Returning no bytes preserves the XRCE
+    // partial-frame state for the subsequent transport reset.
+    const uint32_t bounded_timeout_ms = timeout_ms > 0 ? uint32_t(timeout_ms) : 0U;
     const uint32_t tstart = AP_HAL::millis();
-    while (AP_HAL::millis() - tstart < uint32_t(timeout_ms) &&
-           dds->serial.port->available() < len) {
+    while (AP_HAL::millis() - tstart < bounded_timeout_ms &&
+           dds->serial.port->available() < len &&
+           dds->reconnect_reason.load(std::memory_order_relaxed) == no_reconnect) {
         hal.scheduler->delay_microseconds(100); // TODO select or poll this is limiting speed (100us)
     }
+    if (dds->reconnect_reason.load(std::memory_order_relaxed) != no_reconnect) {
+        dds->serial.read_cancelled = true;
+        *error = ECANCELED;
+        return 0;
+    }
+
     const ssize_t bytes_read = dds->serial.port->read(buf, len);
     if (bytes_read <= 0) {
         *error = 1;

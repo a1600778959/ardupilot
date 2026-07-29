@@ -26,7 +26,7 @@ static bool is_valid_quaternion(const Quaternion& quat)
            !quat.is_zero();
 }
 
-bool AP_DDS_ExternalNav::handle_tf(const tf2_msgs_msg_TFMessage& tf)
+bool AP_DDS_ExternalNav::handle_tf(const tf2_msgs_msg_TFMessage& tf, uint32_t receive_time_ms)
 {
     for (uint32_t i = 0; i < tf.transforms_size; i++) {
         const geometry_msgs_msg_TransformStamped& transform = tf.transforms[i];
@@ -71,8 +71,7 @@ bool AP_DDS_ExternalNav::handle_tf(const tf2_msgs_msg_TFMessage& tf)
         }
         orientation_ap.normalize();
 
-        const uint32_t now_ms = AP_HAL::millis();
-        AP::ahrs().writeExtNavData(position_ned, orientation_ap, EXTNAV_TF_POS_ERROR_M, EXTNAV_TF_ANG_ERROR_RAD, now_ms, EXTNAV_TF_DELAY_MS, 0);
+        AP::ahrs().writeExtNavData(position_ned, orientation_ap, EXTNAV_TF_POS_ERROR_M, EXTNAV_TF_ANG_ERROR_RAD, receive_time_ms, EXTNAV_TF_DELAY_MS, 0);
         return true;
     }
 
@@ -81,7 +80,10 @@ bool AP_DDS_ExternalNav::handle_tf(const tf2_msgs_msg_TFMessage& tf)
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
 
 #if AP_DDS_EXTNAV_VEL_SUB_ENABLED
-bool AP_DDS_ExternalNav::handle_velocity(const geometry_msgs_msg_TwistStamped& velocity, float velocity_error, uint16_t delay_ms)
+bool AP_DDS_ExternalNav::handle_velocity(const geometry_msgs_msg_TwistStamped& velocity,
+                                         float velocity_error,
+                                         uint16_t delay_ms,
+                                         uint32_t receive_time_ms)
 {
     if (strcmp(velocity.header.frame_id, BASE_LINK_FRAME_ID) != 0) {
         return false;
@@ -110,8 +112,7 @@ bool AP_DDS_ExternalNav::handle_velocity(const geometry_msgs_msg_TwistStamped& v
 
     auto &ahrs = AP::ahrs();
     const Vector3f velocity_ned = ahrs.body_to_earth(velocity_frd);
-    const uint32_t now_ms = AP_HAL::millis();
-    ahrs.writeExtNavVelData(velocity_ned, velocity_error, now_ms, delay_ms);
+    ahrs.writeExtNavVelData(velocity_ned, velocity_error, receive_time_ms, delay_ms);
     ahrs.writeExtNavForwardSpeedData(velocity_frd.x);
     return true;
 }

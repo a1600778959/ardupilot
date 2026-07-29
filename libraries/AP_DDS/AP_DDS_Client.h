@@ -59,6 +59,8 @@
 #include <AP_HAL/Scheduler.h>
 #include <AP_HAL/Semaphores.h>
 
+#include <atomic>
+
 #include "fcntl.h"
 
 #include <AP_Param/AP_Param.h>
@@ -100,7 +102,12 @@ private:
 #if AP_DDS_TIME_PUB_ENABLED
     builtin_interfaces_msg_Time time_topic;
     // The last ms timestamp AP_DDS wrote a Time message
-    uint64_t last_time_time_ms;
+    uint64_t last_time_time_ms{};
+    // Sequence and reception time of the last confirmed Time sample.  This is
+    // the application-data heartbeat and cannot be refreshed by raw UART RX.
+    bool time_ack_pending{};
+    uxrSeqNum time_ack_sequence{};
+    uint32_t last_time_ack_ms{};
     //! @brief Serialize the current time state and publish to the IO stream(s)
     void write_time_topic();
     static void update_topic(builtin_interfaces_msg_Time& msg);
@@ -111,8 +118,8 @@ private:
     // The last ms timestamp AP_DDS wrote a gps global origin message
     uint64_t last_gps_global_origin_time_ms;
     //! @brief Serialize the current gps global origin and publish to the IO stream(s)
-    void write_gps_global_origin_topic();
-    static void update_topic(geographic_msgs_msg_GeoPointStamped& msg);
+    bool write_gps_global_origin_topic() WARN_IF_UNUSED;
+    bool update_topic(geographic_msgs_msg_GeoPointStamped& msg) WARN_IF_UNUSED;
 # endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
 #if AP_DDS_GEOPOSE_PUB_ENABLED
@@ -120,8 +127,8 @@ private:
     // The last ms timestamp AP_DDS wrote a GeoPose message
     uint64_t last_geo_pose_time_ms;
     //! @brief Serialize the current geo_pose and publish to the IO stream(s)
-    void write_geo_pose_topic();
-    static void update_topic(geographic_msgs_msg_GeoPoseStamped& msg);
+    bool write_geo_pose_topic() WARN_IF_UNUSED;
+    bool update_topic(geographic_msgs_msg_GeoPoseStamped& msg) WARN_IF_UNUSED;
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
 
 #if AP_DDS_LOCAL_POSE_PUB_ENABLED
@@ -130,7 +137,7 @@ private:
     uint64_t last_local_pose_time_ms;
     //! @brief Serialize the current local_pose and publish to the IO stream(s)
     bool write_local_pose_topic() WARN_IF_UNUSED;
-    static void update_topic(geometry_msgs_msg_PoseStamped& msg);
+    bool update_topic(geometry_msgs_msg_PoseStamped& msg) WARN_IF_UNUSED;
 #endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
 
 #if AP_DDS_LOCAL_VEL_PUB_ENABLED
@@ -138,8 +145,8 @@ private:
     // The last ms timestamp AP_DDS wrote a Local Velocity message
     uint64_t last_local_velocity_time_ms;
     //! @brief Serialize the current local velocity and publish to the IO stream(s)
-    void write_tx_local_velocity_topic();
-    static void update_topic(geometry_msgs_msg_TwistStamped& msg);
+    bool write_tx_local_velocity_topic() WARN_IF_UNUSED;
+    bool update_topic(geometry_msgs_msg_TwistStamped& msg) WARN_IF_UNUSED;
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
 
 #if AP_DDS_BATTERY_STATE_PUB_ENABLED
@@ -164,7 +171,7 @@ private:
     sensor_msgs_msg_Imu imu_topic;
     // The last ms timestamp AP_DDS wrote an IMU message
     uint64_t last_imu_time_ms;
-    static void update_topic(sensor_msgs_msg_Imu& msg);
+    bool update_topic(sensor_msgs_msg_Imu& msg) WARN_IF_UNUSED;
     //! @brief Serialize the current IMU data and publish to the IO stream(s)
     bool write_imu_topic() WARN_IF_UNUSED;
 #endif // AP_DDS_IMU_PUB_ENABLED
@@ -198,23 +205,42 @@ private:
 #if AP_DDS_JOY_SUB_ENABLED
     // incoming joystick data
     static sensor_msgs_msg_Joy rx_joy_topic;
+    bool joy_pending{};
+    uint32_t joy_epoch{};
+    uint32_t joy_receive_time_ms{};
 #endif // AP_DDS_JOY_SUB_ENABLED
 #if AP_DDS_VEL_CTRL_ENABLED
     // incoming REP147 velocity control
     static geometry_msgs_msg_TwistStamped rx_velocity_control_topic;
+    bool velocity_control_pending{};
+    uint32_t velocity_control_epoch{};
 #endif // AP_DDS_VEL_CTRL_ENABLED
 #if AP_DDS_EXTNAV_VEL_SUB_ENABLED
     // incoming external navigation velocity observation
     static geometry_msgs_msg_TwistStamped rx_extnav_velocity_topic;
+    bool extnav_velocity_pending{};
+    uint32_t extnav_velocity_epoch{};
+    uint32_t extnav_velocity_receive_time_ms{};
 #endif // AP_DDS_EXTNAV_VEL_SUB_ENABLED
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
     // incoming REP147 goal interface global position
     static ardupilot_msgs_msg_GlobalPosition rx_global_position_control_topic;
+    bool global_position_control_pending{};
+    uint32_t global_position_control_epoch{};
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
 #if AP_DDS_DYNAMIC_TF_SUB_ENABLED
     // incoming transforms
     static tf2_msgs_msg_TFMessage rx_dynamic_transforms_topic;
+    bool dynamic_transforms_pending{};
+    uint32_t dynamic_transforms_epoch{};
+    uint32_t dynamic_transforms_receive_time_ms{};
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
+
+    // DDS callbacks are run by the DDS owner thread.  They only update these
+    // fixed-size mailboxes while the vehicle thread consumes them without
+    // ever making the DDS thread wait for vehicle/EKF locks.
+    HAL_Semaphore input_sem;
+    std::atomic<bool> topic_input_pending{};
     HAL_Semaphore csem;
 
 #if AP_DDS_PARAMETER_SERVER_ENABLED
@@ -229,14 +255,88 @@ private:
     bool status_ok{false};
     bool connected{false};
     bool session_created{false};
+    std::atomic<uint32_t> session_epoch{};
+
+    enum class ServiceCommand : uint8_t {
+        NONE,
+        ARM,
+        MODE_SWITCH,
+        TAKEOFF,
+        PREARM_CHECK,
+        SET_PARAMETERS,
+        GET_PARAMETERS,
+    };
+
+    enum class ServiceState : uint8_t {
+        IDLE,
+        FILLING,
+        QUEUED,
+        PROCESSING,
+        COMPLETED,
+    };
+
+    struct PendingServiceRequest {
+        ServiceCommand command{ServiceCommand::NONE};
+        SampleIdentity sample_id{};
+        uint8_t replier_id{};
+        uint32_t epoch{};
+        bool arm{};
+        uint8_t mode{};
+        float takeoff_alt{};
+        bool result{};
+        uint8_t current_mode{};
+    } pending_service;
+    std::atomic<uint8_t> pending_service_state{static_cast<uint8_t>(ServiceState::IDLE)};
+
+    enum class RuntimePhase : uint8_t {
+        IDLE,
+        TRANSPORT_OPEN,
+        STARTUP_PING,
+        SESSION_CREATE,
+        ENTITY_CREATE,
+        TOPIC_UPDATE,
+        GPS_SNAPSHOT,
+        AHRS_SNAPSHOT,
+        XRCE_RUN,
+        TOPIC_CALLBACK,
+        SERVICE_CALLBACK,
+        HEALTH_PING,
+        SESSION_CLEANUP,
+        TRANSPORT_CLOSE,
+        BACKOFF,
+    };
+
+    enum class ReconnectReason : uint8_t {
+        NONE,
+        WATCHDOG_STALL,
+    };
 
     void cleanup_session(bool notify_agent);
     void note_transport_rx(size_t wire_bytes);
+    bool take_topic_semaphore(AP_HAL::Semaphore &semaphore) WARN_IF_UNUSED;
+    void set_runtime_phase(RuntimePhase phase, uint32_t allowed_ms = 3000U);
+    void runtime_supervisor();
+    void request_reconnect(ReconnectReason reason);
+    ReconnectReason consume_reconnect_request();
+    static const char *runtime_phase_name(RuntimePhase phase);
+    bool begin_service_request(ServiceCommand command, uint8_t replier_id, const SampleIdentity &sample_id) WARN_IF_UNUSED;
+    void commit_service_request();
+    void cancel_service_request();
+    void send_service_failure(uxrSession *uxr_session, ServiceCommand command, uint8_t replier_id, const SampleIdentity &sample_id);
+    void process_service_request_main_thread();
+    void drain_service_reply();
+    void discard_stale_service_request();
     uxrStreamId output_stream_for_qos(const uxrQoS_t& qos) const;
     uxrStreamId input_stream_for_qos(const uxrQoS_t& qos) const;
     void finalize_topic_write(const uxrQoS_t& qos, uint32_t payload_bytes);
     bool prepare_topic_stream(ucdrBuffer& ub, uxrObjectId datawriter_id, uint32_t topic_size, const char* topic_name, const uxrQoS_t& qos, uint16_t* request_id = nullptr);
     uint64_t last_rx_activity_ms{};
+    std::atomic<uint8_t> runtime_phase{static_cast<uint8_t>(RuntimePhase::IDLE)};
+    std::atomic<uint32_t> runtime_progress_ms{};
+    std::atomic<uint32_t> runtime_allowed_ms{3000U};
+    std::atomic<bool> runtime_owner_active{};
+    std::atomic<bool> runtime_stall_reported{};
+    std::atomic<uint8_t> reconnect_reason{static_cast<uint8_t>(ReconnectReason::NONE)};
 
     // subscription callback function
     static void on_topic_trampoline(uxrSession* session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length, void* args);
@@ -263,6 +363,10 @@ private:
     struct {
         AP_HAL::UARTDriver *port{nullptr};
         uxrCustomTransport transport;
+        int8_t port_num{-1};
+        uint32_t baud{};
+        uint32_t last_write_error_report_ms{};
+        bool read_cancelled{};
     } serial;
 
 #if AP_DDS_UDP_ENABLED
@@ -309,6 +413,9 @@ public:
 
     //! @brief Update the internally stored DDS messages with latest data
     void update();
+
+    //! @brief Apply queued DDS input from the vehicle main thread
+    void update_main_thread();
 
     //! @brief GCS message prefix
     static constexpr const char* msg_prefix = "DDS:";

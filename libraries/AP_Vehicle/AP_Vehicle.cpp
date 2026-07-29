@@ -413,6 +413,11 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_GYROFFT_ENABLED
     FAST_TASK_CLASS(AP_GyroFFT,    &vehicle.gyro_fft,       sample_gyros),
 #endif
+#if AP_DDS_ENABLED
+    // Apply DDS input in the vehicle thread. DDS callbacks only enqueue fixed
+    // size snapshots and never mutate vehicle or EKF state directly.
+    SCHED_TASK(update_dds,                              400, 500, 74),
+#endif
 #if COMPASS_CAL_ENABLED
     SCHED_TASK_CLASS(Compass,      &vehicle.compass,        cal_update,     100, 200, 75),
 #endif
@@ -837,6 +842,13 @@ void AP_Vehicle::check_motor_noise()
 }
 
 #if AP_DDS_ENABLED
+void AP_Vehicle::update_dds()
+{
+    if (dds_client != nullptr) {
+        dds_client->update_main_thread();
+    }
+}
+
 bool AP_Vehicle::init_dds_client()
 {
     dds_client = NEW_NOTHROW AP_DDS_Client();
