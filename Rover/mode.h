@@ -136,25 +136,14 @@ protected:
     // throttle_out is in the range -100 ~ +100
     void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out) const;
 
-    // decode pilot input steering and return steering_out and speed_out (in m/s)
-    void get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out) const;
-
-    // decode pilot lateral movement input and return in lateral_out argument
-    void get_pilot_desired_lateral(float &lateral_out) const;
-
-    // decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
-    void get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out) const;
-
     // high level call to navigate to waypoint
-    void navigate_to_waypoint();
+    void navigate_to_waypoint(bool allow_speed_nudge = true,
+                              bool allow_stick_mixing = true);
 
     // calculate steering output given a turn rate
     // desired turn rate in radians/sec. Positive to the right.
     void calc_steering_from_turn_rate(float turn_rate,
                                       bool allow_stick_mixing = true);
-
-    // calculate steering angle given a desired lateral acceleration
-    void calc_steering_from_lateral_acceleration(float lat_accel, bool reversed = false);
 
     // calculate steering output to drive towards desired heading
     // rate_max is a maximum turn rate in deg/s.  set to zero to use default turn rate limits
@@ -190,12 +179,10 @@ protected:
     class ParametersG2 &g2;
     class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
-    class RC_Channel *&channel_lateral;
     class AR_AttitudeControl &attitude_control;
 
     // private members for waypoint navigation
     float _distance_to_destination; // distance from vehicle to final destination in meters
-    bool _reached_destination;  // true once the vehicle has reached the destination
     float _desired_yaw_cd;      // desired yaw in centi-degrees.  used in Auto, Guided and Loiter
 };
 
@@ -253,9 +240,10 @@ public:
         FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
 
     enum class DoneBehaviour : uint8_t {
-        HOLD      = 0,
-        LOITER    = 1,
-        MANUAL    = 3,
+        HOLD        = 0,
+        LOITER      = 1,
+        LEGACY_ACRO = 2, // removed ACRO selection; handled as HOLD
+        MANUAL      = 3,
     };
 
 protected:
@@ -316,7 +304,6 @@ private:
 
     bool waiting_to_start;  // true if waiting for EKF origin before starting mission
     bool auto_triggered;        // true when auto has been triggered to start
-    bool _exact_pivot_fault_reported{false}; // true after current WP Exact fault is reported
 
     // HeadingAndSpeed sub mode variables
     float _desired_speed;   // desired speed in HeadingAndSpeed submode
@@ -641,6 +628,70 @@ protected:
 class ModePatrol : public Mode
 {
 public:
+    enum class MotionState : uint8_t {
+        WaitingForPoints,
+        Drive,
+        Spin,
+        Hold,
+    };
+
+    enum class LogEvent : uint8_t {
+        Heartbeat = 0,
+        SaveA = 1,
+        SaveB = 2,
+        Resume = 4,
+        SpacingQueued = 6,
+        SpacingApplied = 7,
+        Release = 9,
+        Clear = 10,
+        RecaptureRejected = 11,
+        DriveStart = 12,
+        EndpointReached = 13,
+        SpinStart = 14,
+        SpinDone = 15,
+        Hold = 16,
+    };
+
+    enum class FaultReason : uint8_t {
+        None = 0,
+        Configuration = 1,
+        Estimator = 2,
+        PastFinishPlane = 3,
+        CrossTrack = 4,
+        SpinDrift = 5,
+        RouteGeometry = 6,
+        Internal = 7,
+    };
+
+    enum LogFlags : uint16_t {
+        LogFlagPointAValid       = 1U << 0,
+        LogFlagPointBValid       = 1U << 1,
+        LogFlagNextValid         = 1U << 2,
+        LogFlagMotionInputBlocked = 1U << 3,
+        LogFlagTerminalGuidance  = 1U << 4,
+        LogFlagSpacingQueued     = 1U << 5,
+        LogFlagObservationValid  = 1U << 6,
+    };
+
+    struct LogSnapshot {
+        uint8_t event{0U};
+        uint8_t state{0U};
+        uint8_t leg{0U};
+        uint8_t fault{0U};
+        uint16_t flags{0U};
+        uint16_t line{0U};
+        uint16_t geometry_line{0U};
+        float spacing_m{0.0f};
+        float offset_m{0.0f};
+        float xtrack_m{0.0f};
+        float distance_m{0.0f};
+        Location point_a;
+        Location point_b;
+        Location origin;
+        Location destination;
+        Location next_destination;
+    };
+
     ModePatrol();
 
     Number mode_number() const override { return Number::PATROL; }
@@ -649,13 +700,13 @@ public:
     void update() override;
 
     bool is_autopilot_mode() const override { return true; }
-    bool has_manual_input() const override { return _route.waiting_for_points(); }
+    bool has_manual_input() const override { return _motion_state == MotionState::WaitingForPoints; }
 
     float wp_bearing() const override;
     float nav_bearing() const override;
     float crosstrack_error() const override;
     float get_desired_lat_accel() const override;
-    float get_distance_to_destination() const override { return _route.navigating() ? _distance_to_destination : 0.0f; }
+    float get_distance_to_destination() const override { return _motion_state == MotionState::Drive ? _distance_to_destination : 0.0f; }
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
     bool reached_destination() const override { return false; }
     bool set_desired_speed(float speed) override;
@@ -670,49 +721,98 @@ protected:
     void _exit() override;
 
 private:
+    enum class SpinPurpose : uint8_t {
+        TurnToNextLeg,
+        AlignDrive,
+    };
+
+    struct TargetGeometry {
+        Location destination;
+        Location line_start;
+        Location line_end;
+        float offset_m{0.0f};
+        float spacing_m{0.0f};
+    };
+
     bool start_patrol() WARN_IF_UNUSED;
     bool resume_patrol() WARN_IF_UNUSED;
-    bool make_offset_leg(uint16_t line_index, Location &start, Location &end) WARN_IF_UNUSED;
+    bool install_saved_drive() WARN_IF_UNUSED;
+    void update_drive();
+    bool begin_spin() WARN_IF_UNUSED;
+    bool begin_drive_alignment() WARN_IF_UNUSED;
+    void update_spin();
+    bool finish_spin_and_start_drive() WARN_IF_UNUSED;
+    void start_installed_drive();
+    void reset_drive_boundary_monitors();
+    bool drive_completion_conditions_met(const Location &current_loc) const;
+    bool calculate_planned_turn(float &heading_cd,
+                                int8_t &preferred_direction) const WARN_IF_UNUSED;
+    void hold(const char *message, FaultReason reason, bool latched);
+    bool make_offset_leg(uint16_t line_index,
+                         float offset_m,
+                         Location &start,
+                         Location &end) const WARN_IF_UNUSED;
     bool set_target(const ModePatrolRoute::Target &target,
-                    const Location &destination,
-                    const Location &line_start,
-                    const Location &line_end) WARN_IF_UNUSED;
+                    const Location &origin,
+                    const TargetGeometry &geometry,
+                    bool defer_drive_start = false) WARN_IF_UNUSED;
     bool get_target_geometry(const ModePatrolRoute::Target &target,
-                             const Location &current_line_start,
-                             const Location &current_line_end,
-                             Location &destination,
-                             Location &line_start,
-                             Location &line_end) WARN_IF_UNUSED;
+                             const TargetGeometry &current_geometry,
+                             TargetGeometry &geometry) WARN_IF_UNUSED;
     bool get_next_distinct_target(const ModePatrolRoute::Target &current_target,
                                   const Location &current_destination,
-                                  const Location &current_line_start,
-                                  const Location &current_line_end,
+                                  const TargetGeometry &current_geometry,
                                   ModePatrolRoute::Target &next_target,
-                                  Location &next_destination,
-                                  Location &next_line_start,
-                                  Location &next_line_end,
-                                  bool &line_changed) WARN_IF_UNUSED;
+                                  TargetGeometry &next_geometry,
+                                  bool &line_generated) WARN_IF_UNUSED;
     bool advance_to_next_target() WARN_IF_UNUSED;
-    void set_fault(const char *message);
-    float get_spacing_m() const;
+    void set_fault(const char *message, FaultReason reason);
+    float get_leg_speed_cap(ModePatrolRoute::LegType leg) const;
+    bool spacing_is_valid(float spacing_m) const;
+    bool refresh_spacing_queue(bool report_fault);
+    uint16_t first_unplanned_line() const;
+    static const char *leg_name(ModePatrolRoute::LegType leg);
+    void write_patrol_log(LogEvent event,
+                          bool critical,
+                          const ModePatrolRoute::Target *target_override = nullptr,
+                          uint16_t line_override = 0U,
+                          float spacing_override_m = NAN,
+                          float offset_override_m = NAN);
+    void write_patrol_heartbeat();
 
     AP_Float _dist;
-    AP_Float _pivot_timeout_s;
+    AP_Float _transition_speed;
 
-    ModePatrolRoute _route;
+    MotionState _motion_state{MotionState::WaitingForPoints};
     Location _point_a;
     Location _point_b;
-    Location _line_start;
-    Location _line_end;
-    ModePatrolRoute::Target _preview_target{};
-    Location _preview_destination;
-    Location _preview_line_start;
-    Location _preview_line_end;
-    bool _preview_line_changed{false};
-    bool _preview_valid{false};
-    float _preview_spacing_m{0.0f};
-    float _planning_spacing_m{0.0f};
-    bool _planning_spacing_valid{false};
+    ModePatrolRoute::Target _active_target{};
+    Location _active_origin;
+    Location _active_destination;
+    float _active_offset_m{0.0f};
+    float _active_spacing_m{0.0f};
+    ModePatrolRoute::Target _next_target{};
+    Location _next_destination;
+    Location _next_line_start;
+    Location _next_line_end;
+    bool _next_valid{false};
+    float _next_offset_m{0.0f};
+    float _next_spacing_m{0.0f};
+    float _queued_spacing_m{0.0f};
+    float _last_parameter_spacing_m{NAN};
+    FaultReason _fault_reason{FaultReason::None};
+    bool _fault_latched{false};
+    uint32_t _terminal_miss_violation_start_ms{0U};
+    uint32_t _xtrack_violation_start_ms{0U};
+    float _xtrack_violation_start_m{0.0f};
+    bool _xtrack_steering_limited{false};
+    uint32_t _spin_drift_violation_start_ms{0U};
+    SpinPurpose _spin_purpose{SpinPurpose::TurnToNextLeg};
+    bool _spin_pivot_started{false};
+    Location _spin_anchor;
+    float _spin_heading_cd{0.0f};
+    uint32_t _last_heartbeat_ms{0U};
+    bool _recapture_rejection_reported{false};
     uint8_t _point_count;
 };
 
@@ -822,7 +922,6 @@ protected:
     bool _enter() override;
 
     bool send_notification; // used to send one time notification to ground station
-    bool _loitering;        // true if loitering at end of RTL
 
 };
 
@@ -867,7 +966,6 @@ protected:
 
     bool _enter() override;
     bool _load_point;
-    bool _loitering;        // true if loitering at end of SRTL
 };
 
 class ModeInitializing : public Mode

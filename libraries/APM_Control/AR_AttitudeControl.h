@@ -19,11 +19,6 @@ public:
     // steering controller
     //
 
-    // return a steering servo output given a desired lateral acceleration rate in m/s/s.
-    // positive lateral acceleration is to the right.  dt should normally be the main loop rate.
-    // return value is normally in range -1.0 to +1.0 but can be higher or lower
-    float get_steering_out_lat_accel(float desired_accel, bool motor_limit_left, bool motor_limit_right, float dt);
-
     // return a steering servo output given a heading in radians
     // set rate_max_rads to a non-zero number to apply a limit on the desired turn rate
     // return value is normally in range -1.0 to +1.0 but can be higher or lower
@@ -42,9 +37,6 @@ public:
     // get latest desired turn rate in rad/sec recorded during calls to get_steering_out_rate.  For reporting purposes only
     float get_desired_turn_rate() const;
 
-    // get latest desired lateral acceleration in m/s/s recorded during calls to get_steering_out_lat_accel.  For reporting purposes only
-    float get_desired_lat_accel() const;
-
     // get actual lateral acceleration in m/s/s.  returns true on success.  For reporting purposes only
     bool get_lat_accel(float &lat_accel) const;
 
@@ -53,9 +45,6 @@ public:
 
     // get the lateral acceleration limit (in m/s/s).  Returns at least 0.1G or approximately 1 m/s/s
     float get_turn_lat_accel_max() const { return MAX(_turn_lateral_G_max, 0.1f) * GRAVITY_MSS; }
-
-    // get the configured steering rate limit in deg/s. Zero means no limit
-    float get_steer_rate_max() const { return MAX(_steer_rate_max, 0.0f); }
 
     // returns true if the steering has been limited which can be caused by the physical steering surface
     // reaching its physical limits (aka motor limits) or acceleration or turn rate limits being applied
@@ -139,10 +128,8 @@ private:
     AP_Float _turn_lateral_G_max;   // sterring maximum lateral acceleration limit in 'G'
 
     // steering control
-    uint32_t _steer_lat_accel_last_ms;  // system time of last call to lateral acceleration controller (i.e. get_steering_out_lat_accel)
     uint32_t _steer_turn_last_ms;   // system time of last call to steering rate controller
-    float    _desired_lat_accel;    // desired lateral acceleration (in m/s/s) from latest call to get_steering_out_lat_accel (for reporting purposes)
-    float    _desired_turn_rate;    // desired turn rate (in radians/sec) either from external caller or from lateral acceleration controller
+    float    _desired_turn_rate;    // desired turn rate (in radians/sec) from the rate controller
     bool     _steering_limit_left;  // true when the steering control has reached its left limit (e.g. motor has reached limits or accel or turn rate limits applied)
     bool     _steering_limit_right; // true when the steering control has reached its right limit (e.g. motor has reached limits or accel or turn rate limits applied)
 

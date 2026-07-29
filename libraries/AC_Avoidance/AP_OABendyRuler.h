@@ -24,26 +24,18 @@ public:
     enum class OABendyType {
         OA_BENDY_DISABLED   = 0,
         OA_BENDY_HORIZONTAL = 1,
-        OA_BENDY_VERTICAL   = 2,
     };
 
     // run background task to find best path
     // returns true and updates origin_new and destination_new if a best path has been found.  returns false if OA is not required
-    // bendy_type is set to the type of BendyRuler used
-    bool update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, OABendyType &bendy_type, bool proximity_only);
+    bool update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, bool proximity_only);
 
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
-    // return type of BendyRuler in use
-    OABendyType get_type() const;
-
     // search for path in XY direction
     bool search_xy_path(const Location& current_loc, const Location& destination, float ground_course_deg, Location &destination_new, float lookahead_step_1_dist, float lookahead_step_2_dist, float bearing_to_dest, float distance_to_dest, bool proximity_only);
-
-    // search for path in the Vertical directions
-    bool search_vertical_path(const Location &current_loc, const Location &destination, Location &destination_new, float lookahead_step1_dist, float lookahead_step2_dist, float bearing_to_dest, float distance_to_dest, bool proximity_only);
 
     // calculate minimum distance between a path and any obstacle
     float calc_avoidance_margin(const Location &start, const Location &end, bool proximity_only) const;
@@ -54,10 +46,6 @@ private:
     // calculate minimum distance between a path and the circular fence (centered on home)
     // on success returns true and updates margin
     bool calc_margin_from_circular_fence(const Location &start, const Location &end, float &margin) const;
-
-    // calculate minimum distance between a path and the altitude fence
-    // on success returns true and updates margin
-    bool calc_margin_from_alt_fence(const Location &start, const Location &end, float &margin) const;
 
     // calculate minimum distance between a path and all inclusion and exclusion polygons
     // on success returns true and updates margin
@@ -85,7 +73,6 @@ private:
     AP_Float _lookahead;            // object avoidance will look this many meters ahead of vehicle
     AP_Float _bendy_ratio;          // object avoidance will avoid major directional change if change in margin ratio is less than this param
     AP_Int16 _bendy_angle;          // object avoidance will try avoiding change in direction over this much angle
-    AP_Int8  _bendy_type;           // Type of BendyRuler to run
     
     // internal variables used by background thread
     float _current_lookahead;       // distance (in meters) ahead of the vehicle we are looking for obstacles

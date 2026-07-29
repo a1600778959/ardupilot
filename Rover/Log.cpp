@@ -113,57 +113,60 @@ struct PACKED log_Throttle {
     float accel_x;
 };
 
-// Exact-pivot state, CapturePath and heading-handoff diagnostics.  These are
-// vehicle-specific packets so their message IDs remain in Rover's 0..31 range.
-struct PACKED log_XPNV {
+static constexpr char patrol_log_format[] = "QBBBBHHffff";
+static constexpr char patrol_log_labels[] =
+    "TimeUS,Ev,St,Leg,Flt,Flg,Line,Sp,Off,XTrk,Dist";
+static constexpr char patrol_geometry_log_format[] = "QHLLLLLLLLLL";
+static constexpr char patrol_geometry_log_labels[] =
+    "TimeUS,Line,ALat,ALng,BLat,BLng,OLat,OLng,DLat,DLng,NLat,NLng";
+
+static_assert((sizeof(patrol_log_format) - 1U) <=
+              sizeof(((log_Format *)nullptr)->format),
+              "PTRL format exceeds DataFlash FMT limit");
+static_assert((sizeof(patrol_geometry_log_format) - 1U) <=
+              sizeof(((log_Format *)nullptr)->format),
+              "PTRG format exceeds DataFlash FMT limit");
+static_assert((sizeof(patrol_log_labels) - 1U) <=
+              sizeof(((log_Format *)nullptr)->labels),
+              "PTRL labels exceed DataFlash FMT limit");
+static_assert((sizeof(patrol_geometry_log_labels) - 1U) <=
+              sizeof(((log_Format *)nullptr)->labels),
+              "PTRG labels exceed DataFlash FMT limit");
+
+struct PACKED log_Patrol {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint8_t phase;
-    uint8_t primitive;
+    uint8_t event;
+    uint8_t state;
+    uint8_t leg;
     uint8_t fault;
-    uint16_t events;
     uint16_t flags;
-    uint32_t generation;
-    float endpoint_distance;
-    float planned_distance;
-    float planned_speed;
-    float desired_speed;
-    float desired_turn_rate;
-    float yaw_error;
-    float xtrack_error;
+    uint16_t line;
+    float spacing;
+    float offset;
+    float xtrack;
+    float distance;
 };
 
-struct PACKED log_XCAP {
+struct PACKED log_PatrolGeometry {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint8_t segment;
-    int8_t direction;
-    float progress;
-    float length;
-    float radius;
-    float target_speed;
-    float tracking_error;
-    float heading_error;
-    float endpoint_distance;
+    uint16_t line;
+    int32_t point_a_lat;
+    int32_t point_a_lng;
+    int32_t point_b_lat;
+    int32_t point_b_lng;
+    int32_t origin_lat;
+    int32_t origin_lng;
+    int32_t destination_lat;
+    int32_t destination_lng;
+    int32_t next_destination_lat;
+    int32_t next_destination_lng;
 };
 
-struct PACKED log_XHOF {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float along;
-    float rejoin;
-    float blend;
-    float distance_ratio;
-    float heading_ratio;
-    float path_weight;
-    float heading_rate;
-    float path_rate;
-    float output_rate;
-};
-
-static_assert(sizeof(log_XPNV) == 50, "XPNV format/struct mismatch");
-static_assert(sizeof(log_XCAP) == 41, "XCAP format/struct mismatch");
-static_assert(sizeof(log_XHOF) == 47, "XHOF format/struct mismatch");
+static_assert(sizeof(log_Patrol) == 35, "PTRL format/struct mismatch");
+static_assert(sizeof(log_PatrolGeometry) == 53,
+              "PTRG format/struct mismatch");
 
 // Write a throttle control packet
 void Rover::Log_Write_Throttle()
@@ -183,104 +186,45 @@ void Rover::Log_Write_Throttle()
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
-void Rover::Log_Write_Exact_Pivot_Nav(
-    const AR_WPNav::ExactPivotDiagSnapshot &snapshot,
-    uint64_t time_us,
-    bool critical)
+void Rover::Log_Write_Patrol(const ModePatrol::LogSnapshot &snapshot,
+                             bool critical)
 {
-    const float quiet_nan = logger.quiet_nanf();
-    const bool endpoint_valid =
-        (snapshot.state_flags & AR_WPNav::DiagStateEndpointValid) != 0U;
-    const bool plan_valid =
-        (snapshot.state_flags & AR_WPNav::DiagStatePlanValid) != 0U;
-    const bool yaw_valid =
-        (snapshot.state_flags & AR_WPNav::DiagStateYawErrorValid) != 0U;
-    const log_XPNV pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_XPNV_MSG),
-        time_us             : time_us,
-        phase               : snapshot.phase,
-        primitive           : snapshot.primitive,
-        fault               : snapshot.fault,
-        events              : snapshot.transition_flags,
-        flags               : snapshot.state_flags,
-        generation          : snapshot.handoff_generation,
-        endpoint_distance   : endpoint_valid && isfinite(snapshot.endpoint_distance_m) ?
-                              snapshot.endpoint_distance_m : quiet_nan,
-        planned_distance    : plan_valid && isfinite(snapshot.planned_distance_m) ?
-                              snapshot.planned_distance_m : quiet_nan,
-        planned_speed       : plan_valid && isfinite(snapshot.planned_speed_mps) ?
-                              snapshot.planned_speed_mps : quiet_nan,
-        desired_speed       : isfinite(snapshot.desired_speed_mps) ?
-                              snapshot.desired_speed_mps : quiet_nan,
-        desired_turn_rate   : isfinite(snapshot.desired_turn_rate_rads) ?
-                              snapshot.desired_turn_rate_rads : quiet_nan,
-        yaw_error           : yaw_valid && isfinite(snapshot.yaw_error_deg) ?
-                              snapshot.yaw_error_deg : quiet_nan,
-        xtrack_error        : endpoint_valid && isfinite(snapshot.xtrack_error_m) ?
-                              snapshot.xtrack_error_m : quiet_nan,
+    const uint64_t time_us = AP_HAL::micros64();
+    const log_Patrol pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_PTRL_MSG),
+        time_us              : time_us,
+        event                : snapshot.event,
+        state                : snapshot.state,
+        leg                  : snapshot.leg,
+        fault                : snapshot.fault,
+        flags                : snapshot.flags,
+        line                 : snapshot.line,
+        spacing              : snapshot.spacing_m,
+        offset               : snapshot.offset_m,
+        xtrack               : snapshot.xtrack_m,
+        distance             : snapshot.distance_m,
+    };
+    const log_PatrolGeometry geometry_pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_PTRG_MSG),
+        time_us              : time_us,
+        line                 : snapshot.geometry_line,
+        point_a_lat          : snapshot.point_a.lat,
+        point_a_lng          : snapshot.point_a.lng,
+        point_b_lat          : snapshot.point_b.lat,
+        point_b_lng          : snapshot.point_b.lng,
+        origin_lat           : snapshot.origin.lat,
+        origin_lng           : snapshot.origin.lng,
+        destination_lat      : snapshot.destination.lat,
+        destination_lng      : snapshot.destination.lng,
+        next_destination_lat : snapshot.next_destination.lat,
+        next_destination_lng : snapshot.next_destination.lng,
     };
     if (critical) {
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
+        logger.WriteCriticalBlock(&geometry_pkt, sizeof(geometry_pkt));
     } else {
         logger.WriteBlock(&pkt, sizeof(pkt));
-    }
-}
-
-void Rover::Log_Write_Exact_Pivot_Capture(
-    const AR_WPNav::ExactPivotDiagSnapshot &snapshot,
-    uint64_t time_us,
-    bool critical)
-{
-    const float quiet_nan = logger.quiet_nanf();
-    const auto finite_or_nan = [quiet_nan](float value) {
-        return isfinite(value) ? value : quiet_nan;
-    };
-    const log_XCAP pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_XCAP_MSG),
-        time_us             : time_us,
-        segment             : snapshot.capture.segment,
-        direction           : snapshot.capture.direction,
-        progress            : finite_or_nan(snapshot.capture.progress_m),
-        length              : finite_or_nan(snapshot.capture.length_m),
-        radius              : finite_or_nan(snapshot.capture.radius_m),
-        target_speed        : finite_or_nan(snapshot.capture.target_speed_mps),
-        tracking_error      : finite_or_nan(snapshot.capture.tracking_error_m),
-        heading_error       : finite_or_nan(snapshot.capture.heading_error_deg),
-        endpoint_distance   : finite_or_nan(snapshot.capture.endpoint_distance_m),
-    };
-    if (critical) {
-        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
-    } else {
-        logger.WriteBlock(&pkt, sizeof(pkt));
-    }
-}
-
-void Rover::Log_Write_Exact_Pivot_Handoff(
-    const AR_WPNav::ExactPivotDiagSnapshot &snapshot,
-    uint64_t time_us,
-    bool critical)
-{
-    const float quiet_nan = logger.quiet_nanf();
-    const auto finite_or_nan = [quiet_nan](float value) {
-        return isfinite(value) ? value : quiet_nan;
-    };
-    const log_XHOF pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_XHOF_MSG),
-        time_us        : time_us,
-        along          : finite_or_nan(snapshot.handoff.along_m),
-        rejoin         : finite_or_nan(snapshot.handoff.rejoin_m),
-        blend          : finite_or_nan(snapshot.handoff.blend_m),
-        distance_ratio : finite_or_nan(snapshot.handoff.distance_ratio),
-        heading_ratio  : finite_or_nan(snapshot.handoff.heading_ratio),
-        path_weight    : finite_or_nan(snapshot.handoff.path_weight),
-        heading_rate   : finite_or_nan(snapshot.handoff.heading_rate_rads),
-        path_rate      : finite_or_nan(snapshot.handoff.path_rate_rads),
-        output_rate    : finite_or_nan(snapshot.handoff.output_rate_rads),
-    };
-    if (critical) {
-        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
-    } else {
-        logger.WriteBlock(&pkt, sizeof(pkt));
+        logger.WriteBlock(&geometry_pkt, sizeof(geometry_pkt));
     }
 }
 
@@ -362,35 +306,40 @@ const LogStructure Rover::log_structure[] = {
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUIP",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
 
-// @LoggerMessage: XPNV
-// @Description: Exact-pivot navigation state and transition diagnostics
-// @Field: Ph: Exact-pivot phase
-// @Field: Pr: Active motion primitive
-// @Field: Flt: Exact-pivot fault reason
-// @Field: Ev: Sticky transition flags
-// @Field: Flg: Live state and validity flags
-// @Field: Gen: Atomic handoff generation
+// @LoggerMessage: PTRL
+// @Description: Patrol route state, events and live theoretical-line observations
+// @Field: Ev: Patrol event
+// @Field: St: Patrol route state
+// @Field: Leg: Active or event-related leg type
+// @Field: Flt: Patrol fault reason
+// @Field: Flg: Patrol state, observation-validity and input-blocking flags
+// @Field: Line: Patrol line number
+// @Field: Sp: Effective or queued adjacent-line spacing
+// @Field: Off: Cumulative offset from the saved A-B baseline
+// @Field: XTrk: Live cross-track error to the active theoretical leg
+// @Field: Dist: Live distance to the active destination
 
-    { LOG_XPNV_MSG, sizeof(log_XPNV),
-      "XPNV", "QBBBHHIfffffff",
-      "TimeUS,Ph,Pr,Flt,Ev,Flg,Gen,EndD,PlanD,PlanV,DesV,DesR,YErr,XTrk",
-      "s------mmnnEdm", "F------0000000", true },
+    { LOG_PTRL_MSG, sizeof(log_Patrol),
+      "PTRL", patrol_log_format, patrol_log_labels,
+      "s------mmmm", "F------0000", true },
 
-// @LoggerMessage: XCAP
-// @Description: Exact-pivot one-shot CapturePath diagnostics
+// @LoggerMessage: PTRG
+// @Description: Patrol fixed A-B geometry and active theoretical endpoints
+// @Field: Line: Active theoretical geometry line; event PTRL may name a queued line
+// @Field: ALat: Saved A latitude
+// @Field: ALng: Saved A longitude
+// @Field: BLat: Saved B latitude
+// @Field: BLng: Saved B longitude
+// @Field: OLat: Active theoretical origin latitude
+// @Field: OLng: Active theoretical origin longitude
+// @Field: DLat: Active theoretical destination latitude
+// @Field: DLng: Active theoretical destination longitude
+// @Field: NLat: Next theoretical destination latitude
+// @Field: NLng: Next theoretical destination longitude
 
-    { LOG_XCAP_MSG, sizeof(log_XCAP),
-      "XCAP", "QBbfffffff",
-      "TimeUS,Seg,Dir,Prog,Length,Radius,TgtSpd,TrkErr,HdgErr,D0Dist",
-      "s--mmmnmdm", "F--0000000", true },
-
-// @LoggerMessage: XHOF
-// @Description: Exact-pivot Spin-to-Path heading handoff diagnostics
-
-    { LOG_XHOF_MSG, sizeof(log_XHOF),
-      "XHOF", "Qfffffffff",
-      "TimeUS,Along,Rejoin,Blend,DRat,HRat,Lambda,HRate,PRate,OutRate",
-      "smmm---EEE", "F000000000", true },
+    { LOG_PTRG_MSG, sizeof(log_PatrolGeometry),
+      "PTRG", patrol_geometry_log_format, patrol_geometry_log_labels,
+      "s-DUDUDUDUDU", "F-GGGGGGGGGG", true },
 };
 
 uint8_t Rover::get_num_log_structures() const

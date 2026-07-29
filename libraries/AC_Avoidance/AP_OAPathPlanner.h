@@ -46,9 +46,8 @@ public:
     // path planner responsible for a particular result
     enum OAPathPlannerUsed : uint8_t {
         None = 0,
-        BendyRulerHorizontal,
-        BendyRulerVertical,
-        Dijkstras
+        BendyRulerHorizontal = 1,
+        Dijkstras = 3
     };
 
     // provides an alternative target location if path planning around obstacles is required
@@ -90,9 +89,6 @@ private:
     // avoidance thread that continually updates the avoidance_result structure based on avoidance_request
     void avoidance_thread();
     bool start_thread();
-
-    // helper function to map OABendyType to OAPathPlannerUsed
-    OAPathPlannerUsed map_bendytype_to_pathplannerused(AP_OABendyRuler::OABendyType bendy_type);
 
     // an avoidance request from the navigation code
     struct avoidance_info {

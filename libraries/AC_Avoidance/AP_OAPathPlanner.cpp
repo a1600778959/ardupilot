@@ -172,22 +172,6 @@ bool AP_OAPathPlanner::start_thread()
     return true;
 }
 
-// helper function to map OABendyType to OAPathPlannerUsed
-AP_OAPathPlanner::OAPathPlannerUsed AP_OAPathPlanner::map_bendytype_to_pathplannerused(AP_OABendyRuler::OABendyType bendy_type)
-{
-    switch (bendy_type) {
-    case AP_OABendyRuler::OABendyType::OA_BENDY_HORIZONTAL:
-        return OAPathPlannerUsed::BendyRulerHorizontal;
-
-    case AP_OABendyRuler::OABendyType::OA_BENDY_VERTICAL:
-        return OAPathPlannerUsed::BendyRulerVertical;
-
-    default:
-    case AP_OABendyRuler::OABendyType::OA_BENDY_DISABLED:
-        return OAPathPlannerUsed::None;
-    }
-}
-
 // provides an alternative target location if path planning around obstacles is required
 // returns true and updates result_origin, result_destination, result_next_destination with an intermediate path
 // result_dest_to_next_dest_clear is set to true if the path from result_destination to result_next_destination is clear (only supported by Dijkstras)
@@ -316,11 +300,10 @@ void AP_OAPathPlanner::avoidance_thread()
             }
             _oabendyruler->set_config(_margin_max);
 
-            AP_OABendyRuler::OABendyType bendy_type;
-            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, bendy_type, false)) {
+            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, false)) {
                 res = OA_SUCCESS;
             }
-            path_planner_used = map_bendytype_to_pathplannerused(bendy_type);
+            path_planner_used = OAPathPlannerUsed::BendyRulerHorizontal;
             break;
         }
 
@@ -358,12 +341,11 @@ void AP_OAPathPlanner::avoidance_thread()
                 continue;
             } 
             _oabendyruler->set_config(_margin_max);
-            AP_OABendyRuler::OABendyType bendy_type;
-            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, bendy_type, proximity_only)) {
+            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, proximity_only)) {
                 // detected a obstacle by vehicle's proximity sensor. Switch avoidance to BendyRuler till obstacle is out of the way
                 proximity_only = false;
                 res = OA_SUCCESS;
-                path_planner_used = map_bendytype_to_pathplannerused(bendy_type);
+                path_planner_used = OAPathPlannerUsed::BendyRulerHorizontal;
                 break;
             } else {
                 // cleared all obstacles, trigger Dijkstra's to calculate path based on current deviated position  

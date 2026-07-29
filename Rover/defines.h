@@ -15,12 +15,13 @@ enum LoggingParameters {
     LOG_NTUN_MSG,
     LOG_STEERING_MSG,
     LOG_GUIDEDTARGET_MSG,
-    LOG_XPNV_MSG,
-    LOG_XCAP_MSG,
-    LOG_XHOF_MSG,
+    // IDs 4, 5 and 6 were XPNV, XCAP and XHOF. Keep them reserved so
+    // existing logs cannot be decoded as a different Rover message.
+    LOG_PTRL_MSG = 7,
+    LOG_PTRG_MSG = 8,
 };
 
-static_assert(LOG_XHOF_MSG < 32, "Rover vehicle log IDs exhausted");
+static_assert(LOG_PTRG_MSG < 32, "Rover vehicle log IDs exhausted");
 
 #define MASK_LOG_ATTITUDE_FAST  (1<<0)
 #define MASK_LOG_ATTITUDE_MED   (1<<1)
@@ -90,9 +91,4 @@ enum class PilotSteerType : uint8_t {
     TWO_PADDLES = 1,
     DIR_REVERSED_WHEN_REVERSING = 2,
     DIR_UNCHANGED_WHEN_REVERSING = 3,
-};
-
-// manual mode options
-enum ManualOptions {
-    SPEED_SCALING = (1 << 0),
 };

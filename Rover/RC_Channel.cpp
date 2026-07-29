@@ -42,7 +42,6 @@ void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwit
     case AUX_FUNC::PATROL_DIST_INC:
     case AUX_FUNC::PATROL_DIST_DEC:
     case AUX_FUNC::RTL:
-    case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
     case AUX_FUNC::SAVE_WP:
     case AUX_FUNC::SMART_RTL:
         break;
@@ -202,16 +201,6 @@ bool RC_Channel_Rover::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
     case AUX_FUNC::PATROL_DIST_DEC:
         if (ch_flag == AuxSwitchPos::HIGH) {
             rover.mode_patrol.adjust_spacing(-1);
-        }
-        break;
-
-    // save steering trim
-    case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
-        if (!rover.g2.motors.have_skid_steering() && rover.arming.is_armed() &&
-            (rover.control_mode != &rover.mode_loiter)
-            && (rover.control_mode != &rover.mode_hold) && ch_flag == AuxSwitchPos::HIGH) {
-            SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_steering);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Steering trim saved!");
         }
         break;
 

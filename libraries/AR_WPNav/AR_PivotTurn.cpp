@@ -18,13 +18,6 @@
 #include <AP_Math/AP_Math.h>
 #include "AR_PivotTurn.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <stdio.h>
-#endif
-
-extern const AP_HAL::HAL& hal;
-
-#define AR_PIVOT_TIMEOUT_MS     100 // pivot controller timesout and reset target if not called within this many milliseconds
 #define AR_PIVOT_ANGLE_DEFAULT  60  // default PIVOT_ANGLE parameter value
 #define AR_PIVOT_ANGLE_ACCURACY 5   // vehicle will pivot to within this many degrees of destination
 #define AR_PIVOT_RATE_DEFAULT   60  // default PIVOT_RATE parameter value
@@ -109,11 +102,13 @@ void AR_PivotTurn::check_activation(float desired_heading_deg, bool force_active
     }
 
     const uint32_t now_ms = AP_HAL::millis();
+    if (!_active || _planned_turn) {
+        return;
+    }
 
     // Preserve the established completion behavior for ordinary AUTO/Guided
-    // pivots.  Exact planned spins use update_completion() instead.
-    if (_active && !_planned_turn &&
-        (yaw_error < AR_PIVOT_ANGLE_ACCURACY) &&
+    // pivots. Explicit mode-owned spins use update_completion() instead.
+    if ((yaw_error < AR_PIVOT_ANGLE_ACCURACY) &&
         (_legacy_delay_start_ms == 0U)) {
         // Zero means "not started", so avoid storing the boot-time sentinel.
         _legacy_delay_start_ms = MAX(now_ms, 1U);
@@ -121,13 +116,11 @@ void AR_PivotTurn::check_activation(float desired_heading_deg, bool force_active
 
     // Leaving the accuracy window invalidates an ordinary pivot's completion
     // delay just as it does for a planned pivot.
-    if (_active && !_planned_turn &&
-        (yaw_error >= AR_PIVOT_ANGLE_ACCURACY)) {
+    if (yaw_error >= AR_PIVOT_ANGLE_ACCURACY) {
         _legacy_delay_start_ms = 0U;
     }
 
-    if (!_planned_turn &&
-        (_legacy_delay_start_ms > 0U) &&
+    if ((_legacy_delay_start_ms > 0U) &&
         ((now_ms - _legacy_delay_start_ms) >= get_delay_duration_ms())) {
         deactivate();
     }
@@ -142,7 +135,6 @@ bool AR_PivotTurn::would_activate(float yaw_change_deg) const
         return false;
     }
 
-    // return true if yaw change is larger than _pivot_angle
     return fabsf(wrap_180(yaw_change_deg)) > _angle;
 }
 
@@ -199,7 +191,18 @@ float AR_PivotTurn::get_turn_rate_rads(float desired_heading_deg)
         }
     }
 
-    // Convert the selected signed error back into a live heading target.  This
+    if (_planned_turn &&
+        (fabsf(yaw_error_deg) < AR_PIVOT_ANGLE_ACCURACY)) {
+        // Use the full heading error until the vehicle enters the completion
+        // window. Subtracting the window from the error makes the requested
+        // rate asymptotically approach zero outside the window and can leave a
+        // skid-steer vehicle chattering against drivetrain static friction.
+        // Once inside the window, request zero rate so the existing rate
+        // controller brakes the turn before update_completion() releases it.
+        yaw_error_deg = 0.0f;
+    }
+
+    // Convert the selected signed error back into a live heading target. This
     // preserves the planned direction around 180 degrees using the existing
     // attitude-controller interface.
     const float desired_heading_rad = AP::ahrs().get_yaw() + radians(yaw_error_deg);
@@ -215,17 +218,22 @@ void AR_PivotTurn::handle_yaw_reset()
 }
 
 // update completion state after the caller has applied its speed gate
-bool AR_PivotTurn::update_completion(float desired_heading_deg, float yaw_rate_rads, uint32_t now_ms)
+bool AR_PivotTurn::update_completion(float desired_heading_deg,
+                                     float yaw_rate_rads,
+                                     uint32_t now_ms,
+                                     CompletionDelayPolicy delay_policy)
 {
     if (!active()) {
         _completion.reset();
         return false;
     }
 
+    const uint32_t delay_ms = delay_policy == CompletionDelayPolicy::NoDelay ?
+        0U : get_delay_duration_ms();
     if (!_completion.update(get_heading_error_deg(desired_heading_deg),
                             degrees(yaw_rate_rads),
                             now_ms,
-                            get_delay_duration_ms())) {
+                            delay_ms)) {
         return false;
     }
 

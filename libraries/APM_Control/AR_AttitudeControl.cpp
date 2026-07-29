@@ -350,27 +350,6 @@ AR_AttitudeControl::AR_AttitudeControl() :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// return a steering servo output from -1.0 to +1.0 given a desired lateral acceleration rate in m/s/s.
-// positive lateral acceleration is to the right.
-float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool motor_limit_left, bool motor_limit_right, float dt)
-{
-    // record desired accel for reporting purposes
-    _steer_lat_accel_last_ms = AP_HAL::millis();
-    _desired_lat_accel = desired_accel;
-
-    // get speed forward
-    float speed;
-    if (!get_forward_speed(speed)) {
-        // we expect caller will not try to control heading using rate control without a valid speed estimate
-        // on failure to get speed we do not attempt to steer
-        return 0.0f;
-    }
-
-    const float desired_rate = get_turn_rate_from_lat_accel(desired_accel, speed);
-
-    return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right, dt);
-}
-
 // return a steering servo output from -1 to +1 given a heading in radians
 // set rate_max_rads to a non-zero number to apply a limit on the desired turn rate
 // return value is normally in range -1.0 to +1.0 but can be higher or lower
@@ -484,16 +463,6 @@ float AR_AttitudeControl::get_desired_turn_rate() const
         return 0.0f;
     }
     return _desired_turn_rate;
-}
-
-// get latest desired lateral acceleration in m/s/s (recorded during calls to get_steering_out_lat_accel)
-float AR_AttitudeControl::get_desired_lat_accel() const
-{
-    // return zero if no recent calls to lateral acceleration controller
-    if ((_steer_lat_accel_last_ms == 0) || ((AP_HAL::millis() - _steer_lat_accel_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
-        return 0.0f;
-    }
-    return _desired_lat_accel;
 }
 
 // get actual lateral acceleration in m/s/s.  returns true on success

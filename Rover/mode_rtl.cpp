@@ -23,7 +23,6 @@ bool ModeRTL::_enter()
 #endif
 
     send_notification = true;
-    _loitering = false;
     return true;
 }
 
@@ -41,8 +40,6 @@ void ModeRTL::update()
         }
 
         // we have reached the destination
-        // boats loiter, rovers stop
-
         stop_vehicle();
         
 

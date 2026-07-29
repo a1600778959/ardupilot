@@ -23,7 +23,6 @@ bool ModeSmartRTL::_enter()
 
     // init state
     smart_rtl_state = SmartRTLState::WaitForPathCleanup;
-    _loitering = false;
 
     return true;
 }
@@ -83,10 +82,7 @@ void ModeSmartRTL::update()
 
         case SmartRTLState::StopAtHome:
         case SmartRTLState::Failure:
-            _reached_destination = true;
-            // we have reached the destination
-            // boats loiters, rovers stop
-               stop_vehicle();
+            stop_vehicle();
             break;
     }
 }

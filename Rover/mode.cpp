@@ -6,7 +6,6 @@ Mode::Mode() :
     g2(rover.g2),
     channel_steer(rover.channel_steer),
     channel_throttle(rover.channel_throttle),
-    channel_lateral(rover.channel_lateral),
     attitude_control(g2.attitude_control)
 { }
 
@@ -124,58 +123,6 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
     throttle_out = throttle_out_limited;
 }
 
-// decode pilot steering and return steering_out and speed_out (in m/s)
-void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out) const
-{
-    float desired_throttle;
-    get_pilot_input(steering_out, desired_throttle);
-    speed_out = desired_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
-    // check for special case of input and output throttle being in opposite directions
-    float speed_out_limited = g2.attitude_control.get_desired_speed_accel_limited(speed_out, rover.G_Dt);
-    if ((is_negative(speed_out) != is_negative(speed_out_limited)) &&
-        (g.pilot_steer_type == PilotSteerType::DEFAULT ||
-         g.pilot_steer_type == PilotSteerType::DIR_REVERSED_WHEN_REVERSING)) {
-        steering_out *= -1;
-    }
-    speed_out = speed_out_limited;
-}
-
-// decode pilot lateral movement input and return in lateral_out argument
-void Mode::get_pilot_desired_lateral(float &lateral_out) const
-{
-    // no RC input means no lateral input
-    if ((rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (rover.channel_lateral == nullptr)) {
-        lateral_out = 0;
-        return;
-    }
-
-    // get pilot lateral input
-    lateral_out = rover.channel_lateral->get_control_in();
-}
-
-// decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
-void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out) const
-{
-    // get steering and throttle in the -1 to +1 range
-    float desired_steering = constrain_float(rover.channel_steer->norm_input_dz(), -1.0f, 1.0f);
-    float desired_throttle = constrain_float(rover.channel_throttle->norm_input_dz(), -1.0f, 1.0f);
-
-    // handle two paddle input
-    if (g.pilot_steer_type == PilotSteerType::TWO_PADDLES) {
-        const float left_paddle = desired_steering;
-        const float right_paddle = desired_throttle;
-        desired_steering = (left_paddle - right_paddle) * 0.5f;
-        desired_throttle = (left_paddle + right_paddle) * 0.5f;
-    }
-
-    // calculate angle of input stick vector
-    heading_out = wrap_360_cd(atan2f(desired_steering, desired_throttle) * DEGX100);
-
-    // calculate throttle using magnitude of input stick vector
-    const float throttle = MIN(safe_sqrt(sq(desired_throttle) + sq(desired_steering)), 1.0f);
-    speed_out = throttle * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
-}
-
 // return heading (in degrees) to target destination (aka waypoint)
 float Mode::wp_bearing() const
 {
@@ -221,7 +168,6 @@ bool Mode::set_desired_location(const Location &destination, Location next_desti
 
     // initialise distance
     _distance_to_destination = g2.wp_nav.get_distance_to_destination();
-    _reached_destination = false;
 
     return true;
 }
@@ -347,49 +293,38 @@ float Mode::calc_speed_nudge(float target_speed, bool reversed)
 // high level call to navigate to waypoint
 // uses wp_nav to calculate turn rate and speed to drive along the path from origin to destination
 // this function updates _distance_to_destination
-void Mode::navigate_to_waypoint()
+void Mode::navigate_to_waypoint(bool allow_speed_nudge,
+                                bool allow_stick_mixing)
 {
-    // apply speed nudge from pilot
-    // calc_speed_nudge's "desired_speed" argument should be negative when vehicle is reversing
-    // AR_WPNav nudge_speed_max argu,ent should always be positive even when reversing
-    const float calc_nudge_input_speed = g2.wp_nav.get_speed_max() * (g2.wp_nav.get_reversed() ? -1.0 : 1.0);
-    const float nudge_speed_max = calc_speed_nudge(calc_nudge_input_speed, g2.wp_nav.get_reversed());
-    g2.wp_nav.set_nudge_speed_max(fabsf(nudge_speed_max));
+    if (allow_speed_nudge) {
+        // calc_speed_nudge's desired-speed argument should be negative when
+        // reversing. WPNav's nudge limit remains positive in both directions.
+        const float calc_nudge_input_speed = g2.wp_nav.get_speed_max() *
+            (g2.wp_nav.get_reversed() ? -1.0f : 1.0f);
+        const float nudge_speed_max = calc_speed_nudge(calc_nudge_input_speed,
+                                                       g2.wp_nav.get_reversed());
+        g2.wp_nav.set_nudge_speed_max(fabsf(nudge_speed_max));
+    } else {
+        // Explicitly clear a nudge left by the previous mode or update cycle.
+        g2.wp_nav.set_nudge_speed_max(0.0f);
+    }
 
     // update navigation controller
     g2.wp_nav.update(rover.G_Dt);
     _distance_to_destination = g2.wp_nav.get_distance_to_destination();
 
-    const AR_WPNav::MotionPrimitive primitive = g2.wp_nav.get_motion_primitive();
-    if (primitive == AR_WPNav::MotionPrimitive::Path) {
-        // Simple avoidance is already handled by the position controller.
-        calc_throttle(g2.wp_nav.get_speed(), false);
-        float desired_turn_rate_rads = g2.wp_nav.get_turn_rate_rads();
+    // Simple avoidance is already handled by the position controller.
+    calc_throttle(g2.wp_nav.get_speed(), false);
+    float desired_turn_rate_rads = g2.wp_nav.get_turn_rate_rads();
 
-        // If simple avoidance is active at very low speed do not attempt to turn.
+    // If simple avoidance is active at very low speed do not attempt to turn.
 #if AP_AVOIDANCE_ENABLED
-        if (g2.avoid.limits_active() && (fabsf(attitude_control.get_desired_speed()) <= attitude_control.get_stop_speed())) {
-            desired_turn_rate_rads = 0.0f;
-        }
+    if (g2.avoid.limits_active() && (fabsf(attitude_control.get_desired_speed()) <= attitude_control.get_stop_speed())) {
+        desired_turn_rate_rads = 0.0f;
+    }
 #endif
-        calc_steering_from_turn_rate(desired_turn_rate_rads);
-        return;
-    }
-
-    if (primitive == AR_WPNav::MotionPrimitive::Spin) {
-        // A differential-drive SPIN owns yaw only.  Do not invoke the forward
-        // speed stop controller: its GPS/EKF body-axis speed is not a wheel
-        // velocity measurement during an in-place rotation.
-        g2.motors.set_throttle(0.0f);
-        calc_steering_from_turn_rate(g2.wp_nav.get_turn_rate_rads(), false);
-        return;
-    }
-
-    // Hold is reserved for estimator loss and latched navigation faults.  A
-    // successful Exact handoff is promoted inside wp_nav.update() and has
-    // already returned MotionPrimitive::Path above in this same cycle.
-    g2.motors.set_throttle(0.0f);
-    g2.motors.set_steering(0.0f);
+    calc_steering_from_turn_rate(desired_turn_rate_rads,
+                                allow_stick_mixing);
 }
 
 // calculate steering output given a turn rate
@@ -407,22 +342,6 @@ void Mode::calc_steering_from_turn_rate(float turn_rate,
     } else {
         g2.motors.set_steering(steering_out * 4500.0f);
     }
-}
-
-/*
-    calculate steering output given lateral_acceleration
-*/
-void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reversed)
-{
-    // constrain to max G force
-    lat_accel = constrain_float(lat_accel, -attitude_control.get_turn_lat_accel_max(), attitude_control.get_turn_lat_accel_max());
-
-    // send final steering command to motor library
-    const float steering_out = attitude_control.get_steering_out_lat_accel(lat_accel,
-                                                                           g2.motors.limit.steer_left,
-                                                                           g2.motors.limit.steer_right,
-                                                                           rover.G_Dt);
-    set_steering(steering_out * 4500.0f);
 }
 
 // calculate steering output to drive towards desired heading

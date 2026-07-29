@@ -15,15 +15,11 @@ public:
     // next_destination should be provided if known to allow smooth cornering
     bool set_desired_location(const Location &destination, Location next_destination = Location()) override WARN_IF_UNUSED;
 
-    bool set_desired_location_exact_pivot(const Location &destination, const Location &next_destination) override WARN_IF_UNUSED;
-
-    // Exact pivot transactions normally remain subject to obstacle-avoidance
-    // replanning.  Fixed-geometry owners such as Patrol may explicitly bypass
-    // OA for the lifetime of their transaction.
-    void set_exact_pivot_oa_bypass(bool bypass) { _exact_pivot_oa_bypass = bypass; }
-
-    // return true while OA is actively replacing the mission path
-    bool is_oa_active() const { return _oa_active; }
+    bool set_desired_location_stopping_from_origin(
+        const Location &origin,
+        const Location &destination,
+        float speed_max_mps = 0.0f) override WARN_IF_UNUSED;
+    void cancel_stopping_line() override;
 
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     bool reached_destination() const override;
@@ -36,18 +32,12 @@ public:
 
 private:
 
-    // update distance and bearing from vehicle's current position to destination
-    void update_oa_distance_and_bearing_to_destination();
-
     // object avoidance variables
     bool _oa_active;                // true if we should use alternative destination to avoid obstacles
-    bool _exact_pivot_oa_bypass{false}; // true only for fixed-geometry exact transactions
+    bool _stopping_line_oa_bypass{false};
     Location _origin_oabak;         // backup of _origin so it can be restored when oa completes
     Location _destination_oabak;    // backup of _desitnation so it can be restored when oa completes
     Location _next_destination_oabak; // backup of _next_destination so it can be restored when oa completes
     Location _oa_origin;            // intermediate origin during avoidance
     Location _oa_destination;       // intermediate destination during avoidance
-    Location _oa_next_destination;  // intermediate next destination during avoidance
-    float _oa_distance_to_destination; // OA (object avoidance) distance from vehicle to _oa_destination in meters
-    float _oa_wp_bearing_cd;        // OA adjusted heading to _oa_destination in centi-degrees
 };

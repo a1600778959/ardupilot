@@ -171,7 +171,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Param: MODE1
     // @DisplayName: Mode1
-    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,6:Follow,7:Simple,8:Dock,9:Circle,10:Auto,11:RTL,12:SmartRTL,15:Guided,17:AOAFollow,18:Patrol
+    // @Values: 0:Manual,4:Hold,5:Loiter,9:Circle,10:Auto,11:RTL,12:SmartRTL,15:Guided,17:AOAFollow,18:Patrol
     // @User: Standard
     // @Description: Driving mode for switch position 1 (910 to 1230 and above 2049)
     GSCALAR(mode1,           "MODE1",         (int8_t)Mode::Number::MANUAL),
@@ -397,21 +397,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: TURN_RADIUS
     // @DisplayName: Turn radius of vehicle
-    // @Description: Turn radius of vehicle in meters while at low speeds.  Lower values produce tighter turns in steering mode
+    // @Description: Turn radius of vehicle in meters while at low speeds. Lower values produce tighter turns in navigation and circle control
     // @Units: m
     // @Range: 0 10
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("TURN_RADIUS", 11, ParametersG2, turn_radius, 0.9),
 
-    // @Param: ACRO_TURN_RATE
-    // @DisplayName: Acro mode turn rate maximum
-    // @Description: Acro mode turn rate maximum
-    // @Units: deg/s
-    // @Range: 0 360
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("ACRO_TURN_RATE", 12, ParametersG2, acro_turn_rate, 180.0f),
+    // 12 was ACRO_TURN_RATE and should not be re-used
 
     // @Group: SRTL_
     // @Path: ../libraries/AP_SmartRTL/AP_SmartRTL.cpp
@@ -474,13 +467,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(rally, "RALLY_", 28, ParametersG2, AP_Rally_Rover),
 #endif
 
-    // @Param: SIMPLE_TYPE
-    // @DisplayName: Simple_Type
-    // @Description: Simple mode types
-    // @Values: 0:InitialHeading,1:CardinalDirections
-    // @User: Standard
-    // @RebootRequired: True
-    AP_GROUPINFO("SIMPLE_TYPE", 29, ParametersG2, simple_type, 0),
+    // 29 was SIMPLE_TYPE and should not be re-used
 
     // @Param: LOIT_RADIUS
     // @DisplayName: Loiter radius
@@ -498,7 +485,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: MIS_DONE_BEHAVE
     // @DisplayName: Mission done behave
     // @Description: Behaviour after mission completes
-    // @Values: 0:Hold in Auto Mode,1:Loiter in Auto Mode,2:Acro Mode,3:Manual Mode
+    // @Values: 0:Hold in Auto Mode,1:Loiter in Auto Mode,2:Hold in Auto Mode,3:Manual Mode
     // @User: Standard
     AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
 
@@ -558,12 +545,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GUID_OPTIONS", 52, ParametersG2, guided_options, 0),
 
-    // @Param: MANUAL_OPTIONS
-    // @DisplayName: Manual mode options
-    // @Description: Manual mode specific options
-    // @Bitmask: 0:Enable steering speed scaling
-    // @User: Advanced
-    AP_GROUPINFO("MANUAL_OPTIONS", 53, ParametersG2, manual_options, 0),
+    // 53 was MANUAL_OPTIONS and should not be re-used
 
     // @Param: MANUAL_STR_EXPO
     // @DisplayName: Manual Steering Expo
@@ -595,7 +577,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 // @Param: CH7_OPTION
 // @DisplayName: Channel 7 option
 // @Description: What to do use channel 7 for
-// @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed,3:ArmDisarm,4:Manual,5:Acro,6:Steering,7:Hold,8:Auto,9:RTL,10:SmartRTL,11:Guided,12:Loiter
+// @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed,3:ArmDisarm,4:Manual,5:Unused,6:Unused,7:Hold,8:Auto,9:RTL,10:SmartRTL,11:Guided,12:Loiter
 // @User: Standard
 
 // @Param: AUX_CH

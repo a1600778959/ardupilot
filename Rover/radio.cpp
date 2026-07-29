@@ -9,14 +9,10 @@ void Rover::set_control_channels(void)
     // the library gaurantees that these are non-nullptr:
     channel_steer    = &rc().get_roll_channel();
     channel_throttle = &rc().get_throttle_channel();
-    channel_lateral  = &rc().get_yaw_channel();
 
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);
     channel_throttle->set_angle(100);
-    if (channel_lateral != nullptr) {
-        channel_lateral->set_angle(100);
-    }
 
     // Allow to reconfigure output when not armed
     if (!arming.is_armed()) {
@@ -37,9 +33,6 @@ void Rover::init_rc_in()
     // set rc dead zones
     channel_steer->set_default_dead_zone(30);
     channel_throttle->set_default_dead_zone(30);
-    if (channel_lateral != nullptr) {
-        channel_lateral->set_default_dead_zone(30);
-    }
 }
 
 /*

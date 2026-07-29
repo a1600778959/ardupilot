@@ -21,6 +21,11 @@
 class AR_PivotTurn {
 public:
 
+    enum class CompletionDelayPolicy : uint8_t {
+        Configured,
+        NoDelay,
+    };
+
     // constructor
     AR_PivotTurn(AR_AttitudeControl& atc);
 
@@ -51,7 +56,10 @@ public:
 
     // update completion state using heading error and measured yaw rate
     // returns true only on the active-to-inactive completion edge
-    bool update_completion(float desired_heading_deg, float yaw_rate_rads, uint32_t now_ms);
+    bool update_completion(float desired_heading_deg,
+                           float yaw_rate_rads,
+                           uint32_t now_ms,
+                           CompletionDelayPolicy delay_policy = CompletionDelayPolicy::Configured);
 
     // clear completion timing without leaving the active turn
     void reset_completion() { _completion.reset(); }
@@ -63,14 +71,10 @@ public:
     // direction of -1 or +1 resolves the otherwise ambiguous 180 degree case.
     bool activate_planned(int8_t preferred_direction = 0);
 
-    // accessors for parameter values
-    float get_rate_max() const { return _rate_max; }
-
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-
     // return post-turn delay duration in milliseconds
     uint32_t get_delay_duration_ms() const;
 

@@ -56,15 +56,22 @@ void SCurve::init()
 
 // generate a trigonometric track in 3D space that moves over a straight line
 // between two points defined by the origin and destination
-void SCurve::calculate_track(const Vector3f &origin, const Vector3f &destination,
+void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination,
                              float speed_xy, float speed_up, float speed_down,
                              float accel_xy, float accel_z,
                              float snap_maximum, float jerk_maximum)
 {
     init();
 
+    // ensure arguments are positive
+    speed_xy = fabsf(speed_xy);
+    speed_up = fabsf(speed_up);
+    speed_down = fabsf(speed_down);
+    accel_xy = fabsf(accel_xy);
+    accel_z = fabsf(accel_z);
+
     // leave track as zero length if origin and destination are equal or if the new track length squared is zero
-    const Vector3f track_temp = destination - origin;
+    const Vector3f track_temp = (destination - origin).tofloat();
     if (track_temp.is_zero() || is_zero(track_temp.length_squared())) {
         return;
     }
@@ -111,13 +118,18 @@ void SCurve::calculate_track(const Vector3f &origin, const Vector3f &destination
 // set maximum velocity and re-calculate the path using these limits
 void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
 {
+    // ensure arguments are positive
+    speed_xy = fabsf(speed_xy);
+    speed_up = fabsf(speed_up);
+    speed_down = fabsf(speed_down);
+
     // return immediately if zero length path
     if (num_segs != segments_max) {
         return;
     }
 
     // segment accelerations can not be changed after segment creation.
-    const float track_speed_max = kinematic_limit(delta_unit, speed_xy, speed_up, fabsf(speed_down));
+    const float track_speed_max = kinematic_limit(delta_unit, speed_xy, speed_up, speed_down);
 
     if (is_equal(vel_max, track_speed_max)) {
         // new speed is equal to current speed maximum so no need to change anything
@@ -246,7 +258,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
 
         // add to constant velocity segment to end at the correct position
         const float dP = MAX(0.0f, Pend - segment[SEG_DECEL_END].end_pos);
-        const float t15 =  dP / segment[SEG_CONST].end_vel;
+        const float t15 = is_positive(segment[SEG_CONST].end_vel) ? dP / segment[SEG_CONST].end_vel : 0.0f;
         for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
             segment[i].end_time += t15;
             segment[i].end_pos += dP;
@@ -273,7 +285,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
         float t2 = 0;
         float t4 = 0;
         float t6 = 0;
-        float jerk_time = MIN(powf((fabsf(vel_max - segment[SEG_ACCEL_END].end_vel) * M_PI) / (4 * snap_max), 1/3), jerk_max * M_PI / (2 * snap_max));
+        float jerk_time = MIN(powf((fabsf(vel_max - segment[SEG_ACCEL_END].end_vel) * M_PI) / (4 * snap_max), 1.0f / 3.0f), jerk_max * M_PI / (2 * snap_max));
         if ((vel_max < segment[SEG_ACCEL_END].end_vel) && (jerk_time*12.0f < L/segment[SEG_ACCEL_END].end_vel)) {
             // we have a problem here with small segments.
             calculate_path(snap_max, jerk_max, vel_max, accel_max, segment[SEG_ACCEL_END].end_vel, L * 0.5f, Jm, tj, t6, t4, t2);
@@ -324,7 +336,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
 
     // add to constant velocity segment to end at the correct position
     const float dP = MAX(0.0f, Pend - segment[SEG_DECEL_END].end_pos);
-    const float t15 =  dP / segment[SEG_CONST].end_vel;
+    const float t15 = is_positive(segment[SEG_CONST].end_vel) ? dP / segment[SEG_CONST].end_vel : 0.0f;
     for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
         segment[i].end_time += t15;
         segment[i].end_pos += dP;
@@ -349,6 +361,9 @@ float SCurve::set_origin_speed_max(float speed)
     if (num_segs != segments_max) {
         return 0.0f;
     }
+
+    // ensure speed is positive
+    speed = fabsf(speed);
 
     // avoid re-calculating if unnecessary
     if (is_equal(segment[SEG_INIT].end_vel, speed)) {
@@ -404,7 +419,7 @@ float SCurve::set_origin_speed_max(float speed)
 
     // add to constant velocity segment to end at the correct position
     const float dP = MAX(0.0f, track_length - segment[SEG_DECEL_END].end_pos);
-    const float t15 =  dP / segment[SEG_CONST].end_vel;
+    const float t15 = is_positive(segment[SEG_CONST].end_vel) ? dP / segment[SEG_CONST].end_vel : 0.0f;
     for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
         segment[i].end_time += t15;
         segment[i].end_pos += dP;
@@ -432,6 +447,9 @@ void SCurve::set_destination_speed_max(float speed)
         return;
     }
 
+    // ensure speed is positive
+    speed = fabsf(speed);
+
     // avoid re-calculating if unnecessary
     if (is_equal(segment[segments_max-1].end_vel, speed)) {
         return;
@@ -457,7 +475,7 @@ void SCurve::set_destination_speed_max(float speed)
 
     // add to constant velocity segment to end at the correct position
     const float dP = MAX(0.0f, track_length - segment[SEG_DECEL_END].end_pos);
-    const float t15 =  dP / segment[SEG_CONST].end_vel;
+    const float t15 = is_positive(segment[SEG_CONST].end_vel) ? dP / segment[SEG_CONST].end_vel : 0.0f;
     for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
         segment[i].end_time += t15;
         segment[i].end_pos += dP;
@@ -482,7 +500,7 @@ void SCurve::set_destination_speed_max(float speed)
 // target_pos should be set to this segment's origin and it will be updated to the current position target
 // target_vel and target_accel are updated with new targets
 // returns true if vehicle has passed the apex of the corner
-bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, float accel_corner, bool fast_waypoint, float dt, Vector3f &target_pos, Vector3f &target_vel, Vector3f &target_accel)
+bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, float accel_corner, bool fast_waypoint, float dt, Vector3p &target_pos, Vector3f &target_vel, Vector3f &target_accel)
 {
     prev_leg.move_to_pos_vel_accel(dt, target_pos, target_vel, target_accel);
     move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
@@ -497,7 +515,7 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
         ) {
 
         // Calculate the position, velocity and acceleration at the turn mid point
-        Vector3f turn_pos = -get_track();
+        Vector3p turn_pos = -get_track().topostype();
         Vector3f turn_vel, turn_accel;
         move_from_time_pos_vel_accel(get_time_elapsed() + time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);
         next_leg.move_from_time_pos_vel_accel(time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);
@@ -528,39 +546,39 @@ bool SCurve::finished() const
 }
 
 // increment time pointer and return the position, velocity and acceleration vectors relative to the origin
-void SCurve::move_from_pos_vel_accel(float dt, Vector3f &pos, Vector3f &vel, Vector3f &accel)
+void SCurve::move_from_pos_vel_accel(float dt, Vector3p &pos, Vector3f &vel, Vector3f &accel)
 {
     advance_time(dt);
     float scurve_P1 = 0.0f;
     float scurve_V1, scurve_A1, scurve_J1;
     get_jerk_accel_vel_pos_at_time(time, scurve_J1, scurve_A1, scurve_V1, scurve_P1);
-    pos += delta_unit * scurve_P1;
+    pos += delta_unit.topostype() * static_cast<postype_t>(scurve_P1);
     vel += delta_unit * scurve_V1;
     accel += delta_unit * scurve_A1;
     position_sq = sq(scurve_P1);
 }
 
 // increment time pointer and return the position, velocity and acceleration vectors relative to the destination
-void SCurve::move_to_pos_vel_accel(float dt, Vector3f &pos, Vector3f &vel, Vector3f &accel)
+void SCurve::move_to_pos_vel_accel(float dt, Vector3p &pos, Vector3f &vel, Vector3f &accel)
 {
     advance_time(dt);
     float scurve_P1 = 0.0f;
     float scurve_V1, scurve_A1, scurve_J1;
     get_jerk_accel_vel_pos_at_time(time, scurve_J1, scurve_A1, scurve_V1, scurve_P1);
-    pos += delta_unit * scurve_P1;
+    pos += delta_unit.topostype() * static_cast<postype_t>(scurve_P1);
     vel += delta_unit * scurve_V1;
     accel += delta_unit * scurve_A1;
     position_sq = sq(scurve_P1);
-    pos -= track;
+    pos -= track.topostype();
 }
 
 // return the position, velocity and acceleration vectors relative to the origin at a specified time along the path
-void SCurve::move_from_time_pos_vel_accel(float time_now, Vector3f &pos, Vector3f &vel, Vector3f &accel)
+void SCurve::move_from_time_pos_vel_accel(float time_now, Vector3p &pos, Vector3f &vel, Vector3f &accel)
 {
     float scurve_P1 = 0.0f;
     float scurve_V1 = 0.0f, scurve_A1 = 0.0f, scurve_J1 = 0.0f;
     get_jerk_accel_vel_pos_at_time(time_now, scurve_J1, scurve_A1, scurve_V1, scurve_P1);
-    pos += delta_unit * scurve_P1;
+    pos += delta_unit.topostype() * static_cast<postype_t>(scurve_P1);
     vel += delta_unit * scurve_V1;
     accel += delta_unit * scurve_A1;
 }
@@ -813,9 +831,12 @@ void SCurve::calculate_path(float Sm, float Jm, float V0, float Am, float Vm, fl
     }
 
     float tj = Jm * M_PI / (2 * Sm);
-    float At = MIN(MIN(Am, 
-        (Vm - V0) / (2.0f * tj) ), 
-        (L + 4.0f * V0 * tj) / (4.0f * sq(tj)) );
+    float At = MIN(MIN(Am,
+        (Vm - V0) / (2.0f * tj) ),
+        (L - 4.0f * V0 * tj) / (4.0f * sq(tj)) );
+    if (!is_positive(At)) {
+        return;
+    }
     if (fabsf(At) < Jm * tj) {
         if (is_zero(V0)) {
             // we do not have a solution for non-zero initial velocity
@@ -989,18 +1010,11 @@ void SCurve::add_segment(uint8_t &index, float end_time, SegmentType seg_type, f
 // set speed and acceleration limits for the path
 // origin and destination are offsets from EKF origin
 // speed and acceleration parameters are given in horizontal, up and down.
-void SCurve::set_kinematic_limits(const Vector3f &origin, const Vector3f &destination,
+void SCurve::set_kinematic_limits(const Vector3p &origin, const Vector3p &destination,
                                   float speed_xy, float speed_up, float speed_down,
                                   float accel_xy, float accel_z)
 {
-    // ensure arguments are positive
-    speed_xy = fabsf(speed_xy);
-    speed_up = fabsf(speed_up);
-    speed_down = fabsf(speed_down);
-    accel_xy = fabsf(accel_xy);
-    accel_z = fabsf(accel_z);
-
-    Vector3f direction = destination - origin;
+    Vector3f direction = (destination - origin).tofloat();
     const float track_speed_max = kinematic_limit(direction, speed_xy, speed_up, speed_down);
     const float track_accel_max = kinematic_limit(direction, accel_xy, accel_z, accel_z);
 

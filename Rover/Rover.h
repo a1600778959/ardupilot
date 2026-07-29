@@ -117,7 +117,6 @@ private:
     // primary control channels
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
-    RC_Channel *channel_lateral;
 
     // flight modes convenience array
     AP_Int8 *modes;
@@ -179,16 +178,6 @@ private:
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
-
-    // Exact-pivot diagnostics are polled after the 400Hz mode update.  The
-    // state is vehicle-side only; it never feeds back into navigation.
-    struct {
-        uint64_t last_log_us{0U};
-        uint8_t last_phase{UINT8_MAX};
-        uint8_t last_fault{UINT8_MAX};
-        uint32_t last_generation{UINT32_MAX};
-        bool was_state_relevant{false};
-    } exact_pivot_diag_monitor;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
@@ -261,7 +250,6 @@ private:
     void update_logging2(void);
     void one_second_loop(void);
     void update_current_mode(void);
-    void update_exact_pivot_diagnostics();
 
     // commands.cpp
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
@@ -309,15 +297,8 @@ private:
     void Log_Write_Steering();
     void Log_Write_Throttle();
     void Log_Write_RC(void);
-    void Log_Write_Exact_Pivot_Nav(const AR_WPNav::ExactPivotDiagSnapshot &snapshot,
-                                   uint64_t time_us,
-                                   bool critical);
-    void Log_Write_Exact_Pivot_Capture(const AR_WPNav::ExactPivotDiagSnapshot &snapshot,
-                                       uint64_t time_us,
-                                       bool critical);
-    void Log_Write_Exact_Pivot_Handoff(const AR_WPNav::ExactPivotDiagSnapshot &snapshot,
-                                       uint64_t time_us,
-                                       bool critical);
+    void Log_Write_Patrol(const ModePatrol::LogSnapshot &snapshot,
+                          bool critical);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
 #endif
@@ -416,8 +397,6 @@ public:
     // frame type
     AP_WheelRateControl& get_wheel_rate_control() { return g2.wheel_rate_control; }
 
-    // Simple mode
-    float simple_sin_yaw;
 };
 
 extern Rover rover;

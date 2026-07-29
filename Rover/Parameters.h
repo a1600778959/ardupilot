@@ -4,6 +4,7 @@
 
 #include "RC_Channel.h"
 #include <AC_Avoidance/AC_Avoid.h>
+#include <AC_Avoidance/AP_OAPathPlanner.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include "AP_Rally.h"
 #include <AP_SmartRTL/AP_SmartRTL.h>
@@ -312,11 +313,8 @@ public:
     // steering and throttle controller
     AR_AttitudeControl attitude_control;
 
-    // turn radius of vehicle (only used in steering mode)
+    // turn radius used by navigation and circle control
     AP_Float turn_radius;
-
-    // acro mode turn rate maximum
-    AP_Float acro_turn_rate;
 
     // Safe RTL library
     AP_SmartRTL smart_rtl;
@@ -345,9 +343,6 @@ public:
     // Rally point library
     AP_Rally_Rover rally;
 #endif
-
-    // Simple mode types
-    AP_Int8 simple_type;
 
 #if AP_MISSION_ENABLED
     // mission behave
@@ -379,9 +374,6 @@ public:
 
     // guided options bitmask
     AP_Int32 guided_options;
-
-    // manual mode options
-    AP_Int32 manual_options;
 
     // manual mode steering expo
     AP_Float manual_steering_expo;
