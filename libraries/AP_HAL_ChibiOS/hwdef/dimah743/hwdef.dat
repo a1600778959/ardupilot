@@ -232,10 +232,3 @@ define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 define AP_RELAY_NUM_RELAYS 6
-
-# setup for OSD
-# define OSD_ENABLED 0
-#define HAL_OSD_TYPE_DEFAULT 1
-#ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
-
-#include ../include/save_some_flash.inc
