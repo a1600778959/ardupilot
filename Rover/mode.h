@@ -777,7 +777,8 @@ private:
                           const ModePatrolRoute::Target *target_override = nullptr,
                           uint16_t line_override = 0U,
                           float spacing_override_m = NAN,
-                          float offset_override_m = NAN);
+                          float offset_override_m = NAN,
+                          bool write_geometry = true);
     void write_patrol_heartbeat();
 
     AP_Float _dist;
@@ -812,6 +813,7 @@ private:
     Location _spin_anchor;
     float _spin_heading_cd{0.0f};
     uint32_t _last_heartbeat_ms{0U};
+    uint32_t _last_geometry_log_ms{0U};
     bool _recapture_rejection_reported{false};
     uint8_t _point_count;
 };

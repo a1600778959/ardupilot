@@ -298,7 +298,8 @@ private:
     void Log_Write_Throttle();
     void Log_Write_RC(void);
     void Log_Write_Patrol(const ModePatrol::LogSnapshot &snapshot,
-                          bool critical);
+                          bool critical,
+                          bool write_geometry);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
 #endif

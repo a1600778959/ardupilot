@@ -187,7 +187,8 @@ void Rover::Log_Write_Throttle()
 }
 
 void Rover::Log_Write_Patrol(const ModePatrol::LogSnapshot &snapshot,
-                             bool critical)
+                             bool critical,
+                             bool write_geometry)
 {
     const uint64_t time_us = AP_HAL::micros64();
     const log_Patrol pkt = {
@@ -204,6 +205,16 @@ void Rover::Log_Write_Patrol(const ModePatrol::LogSnapshot &snapshot,
         xtrack               : snapshot.xtrack_m,
         distance             : snapshot.distance_m,
     };
+    if (critical) {
+        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
+    } else {
+        logger.WriteBlock(&pkt, sizeof(pkt));
+    }
+
+    if (!write_geometry) {
+        return;
+    }
+
     const log_PatrolGeometry geometry_pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PTRG_MSG),
         time_us              : time_us,
@@ -220,10 +231,8 @@ void Rover::Log_Write_Patrol(const ModePatrol::LogSnapshot &snapshot,
         next_destination_lng : snapshot.next_destination.lng,
     };
     if (critical) {
-        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
         logger.WriteCriticalBlock(&geometry_pkt, sizeof(geometry_pkt));
     } else {
-        logger.WriteBlock(&pkt, sizeof(pkt));
         logger.WriteBlock(&geometry_pkt, sizeof(geometry_pkt));
     }
 }

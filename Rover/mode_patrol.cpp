@@ -8,7 +8,8 @@ constexpr float patrol_transition_speed_min = 0.05f;
 constexpr float patrol_transition_speed_max = 2.0f;
 constexpr float patrol_transition_speed_default = 0.5f;
 constexpr float patrol_ab_length_min = 1.0f;
-constexpr uint32_t patrol_log_heartbeat_ms = 1000U;
+constexpr uint32_t patrol_dynamic_log_period_ms = 100U;
+constexpr uint32_t patrol_geometry_log_period_ms = 1000U;
 constexpr float patrol_path_speed_stopped_mps = 0.02f;
 constexpr float patrol_yaw_rate_stopped_rads = radians(5.0f);
 constexpr uint32_t patrol_boundary_violation_ms = 500U;
@@ -199,6 +200,7 @@ void ModePatrol::clear_points()
     _spin_anchor = Location();
     _recapture_rejection_reported = false;
     _last_heartbeat_ms = 0U;
+    _last_geometry_log_ms = 0U;
     _last_parameter_spacing_m = _dist.get();
     _queued_spacing_m = spacing_is_valid(_last_parameter_spacing_m) ?
         _last_parameter_spacing_m : 0.0f;
@@ -1309,7 +1311,8 @@ void ModePatrol::write_patrol_log(LogEvent event,
                                   const ModePatrolRoute::Target *target_override,
                                   uint16_t line_override,
                                   float spacing_override_m,
-                                  float offset_override_m)
+                                  float offset_override_m,
+                                  bool write_geometry)
 {
 #if HAL_LOGGING_ENABLED
     if (!rover.should_log(MASK_LOG_NTUN)) {
@@ -1401,9 +1404,13 @@ void ModePatrol::write_patrol_log(LogEvent event,
     snapshot.origin = _active_origin;
     snapshot.destination = _active_destination;
     snapshot.next_destination = _next_destination;
-    rover.Log_Write_Patrol(snapshot, critical);
+    rover.Log_Write_Patrol(snapshot, critical, write_geometry);
+    const uint32_t now_ms = AP_HAL::millis();
     if (critical) {
-        _last_heartbeat_ms = AP_HAL::millis();
+        _last_heartbeat_ms = now_ms;
+    }
+    if (write_geometry) {
+        _last_geometry_log_ms = now_ms;
     }
 #else
     (void)event;
@@ -1412,6 +1419,7 @@ void ModePatrol::write_patrol_log(LogEvent event,
     (void)line_override;
     (void)spacing_override_m;
     (void)offset_override_m;
+    (void)write_geometry;
 #endif
 }
 
@@ -1421,11 +1429,19 @@ void ModePatrol::write_patrol_heartbeat()
         return;
     }
     const uint32_t now_ms = AP_HAL::millis();
-    if ((now_ms - _last_heartbeat_ms) < patrol_log_heartbeat_ms) {
+    if ((now_ms - _last_heartbeat_ms) < patrol_dynamic_log_period_ms) {
         return;
     }
+    const bool write_geometry =
+        (now_ms - _last_geometry_log_ms) >= patrol_geometry_log_period_ms;
     _last_heartbeat_ms = now_ms;
-    write_patrol_log(LogEvent::Heartbeat, false);
+    write_patrol_log(LogEvent::Heartbeat,
+                     false,
+                     nullptr,
+                     0U,
+                     NAN,
+                     NAN,
+                     write_geometry);
 }
 
 float ModePatrol::wp_bearing() const
