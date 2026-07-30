@@ -22,11 +22,6 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
-#if defined(ARDUPILOT_BUILD)
-#pragma GCC diagnostic ignored "-Wunused-function"
-#endif
-
-
 /*
 ** Change this macro to accept other modes for 'fopen' besides
 ** the standard ones.
@@ -46,41 +41,6 @@ static int l_checkmode (const char *mode) {
 }
 
 #endif
-
-/*
-** {======================================================
-** l_popen spawns a new process connected to the current
-** one through the file streams.
-** =======================================================
-*/
-
-#if !defined(l_popen)		/* { */
-
-#if defined(LUA_USE_POSIX)	/* { */
-
-#define l_popen(L,c,m)		(fflush(NULL), popen(c,m))
-#define l_pclose(L,file)	(pclose(file))
-
-#elif defined(LUA_USE_WINDOWS)	/* }{ */
-
-#define l_popen(L,c,m)		(_popen(c,m))
-#define l_pclose(L,file)	(_pclose(file))
-
-#else				/* }{ */
-
-/* ISO C definitions */
-#define l_popen(L,c,m)  \
-	  ((void)((void)c, m), \
-	  luaL_error(L, "'popen' not supported"), \
-	  (FILE*)0)
-#define l_pclose(L,file)		((void)L, (void)file, -1)
-
-#endif				/* } */
-
-#endif				/* } */
-
-/* }====================================================== */
-
 
 #if !defined(l_getc)		/* { */
 
@@ -263,32 +223,6 @@ static int io_open (lua_State *L) {
   luaL_argcheck(L, l_checkmode(md), 2, "invalid mode");
   p->f = fopen(filename, mode);
   return (p->f == NULL) ? luaL_fileresult(L, 0, filename) : 1;
-}
-
-
-/*
-** function to close 'popen' files
-*/
-static int io_pclose (lua_State *L) {
-  LStream *p = tolstream(L);
-  return luaL_execresult(L, l_pclose(L, p->f));
-}
-
-
-static int io_popen (lua_State *L) {
-  const char *filename = luaL_checkstring(L, 1);
-  const char *mode = luaL_optstring(L, 2, "r");
-  LStream *p = newprefile(L);
-  p->f = l_popen(L, filename, mode);
-  p->closef = &io_pclose;
-  return (p->f == NULL) ? luaL_fileresult(L, 0, filename) : 1;
-}
-
-
-static int io_tmpfile (lua_State *L) {
-  LStream *p = newfile(L);
-  p->f = tmpfile();
-  return (p->f == NULL) ? luaL_fileresult(L, 0, NULL) : 1;
 }
 
 
@@ -674,19 +608,6 @@ static int f_seek (lua_State *L) {
 }
 
 
-#if 0
-static int f_setvbuf (lua_State *L) {
-  static const int mode[] = {_IONBF, _IOFBF, _IOLBF};
-  static const char *const modenames[] = {"no", "full", "line", NULL};
-  FILE *f = tofile(L);
-  int op = luaL_checkoption(L, 2, NULL, modenames);
-  lua_Integer sz = luaL_optinteger(L, 3, LUAL_BUFFERSIZE);
-  int res = setvbuf(f, NULL, mode[op], (size_t)sz);
-  return luaL_fileresult(L, res == 0, NULL);
-}
-#endif
-
-
 static int io_flush (lua_State *L) {
   return luaL_fileresult(L, fflush(getiofile(L, IO_OUTPUT)) == 0, NULL);
 }
@@ -707,9 +628,7 @@ static const luaL_Reg iolib[] = {
   {"lines", io_lines},
   {"open", io_open},
   {"output", io_output},
-//  {"popen", io_popen},
   {"read", io_read},
-//  {"tmpfile", io_tmpfile},
   {"type", io_type},
   {"write", io_write},
   {NULL, NULL}
@@ -725,7 +644,6 @@ static const luaL_Reg flib[] = {
   {"lines", f_lines},
   {"read", lf_read},
   {"seek", f_seek},
-//  {"setvbuf", f_setvbuf},
   {"write", lf_write},
   {"__gc", f_gc},
   {"__tostring", f_tostring},
@@ -776,4 +694,3 @@ LUAMOD_API int luaopen_io (lua_State *L) {
   createstdfile(L, stderr, NULL, "stderr");
   return 1;
 }
-
