@@ -393,7 +393,6 @@ private:
                                const Vector2f *control);
     Vector2f _calculate_control(float dist, float angle, float dt);
     void _set_actuators(const Vector2f &control);
-    void _send_debug_info(uint32_t timestamp, float dist, float angle, const Vector2f &control);
     void reset_controllers();
     // 参数声明
     AP_Float _dist_kp, _dist_ki, _dist_kd;
@@ -406,7 +405,6 @@ private:
     AP_Float _thr_friction_offset, _steer_friction_offset;
     AP_Float _loss_decay, _debug_rate_hz;
     AP_Int8 _serial_port;
-    AP_Int32 _rpm;
     // 添加油门和转向输出变量
     bool _emergency_stop;
     float _throttle_out;

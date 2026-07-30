@@ -19,25 +19,16 @@ struct SensorData
 class AP_MultiDistanceSensor
 {
 public:
-    AP_MultiDistanceSensor();
+    AP_MultiDistanceSensor() = default;
     void init();
     void update();
-    bool get_distance(uint8_t sensor_idx, float &dist) const;
     SensorData *get_min_distance();
     void send_request();
     void read_data(uint8_t *response);
-    static AP_MultiDistanceSensor *get_singleton() {
-        return _singleton;
-    }
 private:
-    static AP_MultiDistanceSensor *_singleton;
-    const AP_HAL::HAL &hal = AP_HAL::get_HAL();
     AP_HAL::UARTDriver *_uart;
     bool is_init = false;
     uint8_t response[MODBUS_RESPONSE_SIZE] = {0};
     SensorData sensors[SENSOR_COUNT];
-    int current_sensor_idx;
-};
- namespace AP {
-    AP_MultiDistanceSensor *distance_sensor();
+    int current_sensor_idx = -1;
 };

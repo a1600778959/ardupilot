@@ -1,18 +1,5 @@
 #include "AP_AOA_Ultrasonic_ranging.h"
 
-// singleton instance
-AP_MultiDistanceSensor *AP_MultiDistanceSensor::_singleton;
-
-AP_MultiDistanceSensor::AP_MultiDistanceSensor()
-{
-    current_sensor_idx = -1;
-    if (_singleton != nullptr) {
-        AP_HAL::panic("AOA must be singleton");
-        return;
-    }
-    _singleton = this;
-}
-
 void AP_MultiDistanceSensor::init()
 {
     // 初始化传感器地址(0x01~0x06)
@@ -24,6 +11,7 @@ void AP_MultiDistanceSensor::init()
     }
 
     // 配置UART参数
+    const AP_HAL::HAL &hal = AP_HAL::get_HAL();
     _uart = hal.serial(MODBUS_UART_NUM);
     if (_uart == nullptr)
     {
@@ -113,14 +101,6 @@ void AP_MultiDistanceSensor::update()
     gcs().send_named_float("aoa_dist", get_min_distance()->distance);
 }
 
-bool AP_MultiDistanceSensor::get_distance(uint8_t sensor_idx, float &dist) const
-{
-    if (sensor_idx >= SENSOR_COUNT)
-        return false;
-    dist = sensors[sensor_idx].distance;
-    return sensors[sensor_idx].valid;
-}
-
 // 返回有效的超声波检测的距离最小值
 SensorData *AP_MultiDistanceSensor::get_min_distance(){
     SensorData *min = nullptr;
@@ -137,11 +117,4 @@ SensorData *AP_MultiDistanceSensor::get_min_distance(){
         }
     }
     return min;
-}
-
-namespace AP {
-    AP_MultiDistanceSensor *distance_sensor()
-    {
-        return AP_MultiDistanceSensor::get_singleton();
-    }
 }

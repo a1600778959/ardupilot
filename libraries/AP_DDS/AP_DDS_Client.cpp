@@ -13,7 +13,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_AOA/AP_AOA_ALX.h>
 #if AP_DDS_ARM_SERVER_ENABLED || AP_DDS_ARM_CHECK_SERVER_ENABLED
 #include <AP_Arming/AP_Arming.h>
 #endif // AP_DDS_ARM_SERVER_ENABLED || AP_DDS_ARM_CHECK_SERVER_ENABLED

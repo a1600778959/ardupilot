@@ -307,14 +307,6 @@ const char *ModeAoafllow::_state_to_string(TrackState state)
     }
 }
 
-void ModeAoafllow::_send_debug_info(uint32_t timestamp, float dist, float angle, const Vector2f &control)
-{
-    (void)timestamp;
-    (void)dist;
-    (void)angle;
-    (void)control;
-}
-
 void ModeAoafllow::reset_controllers()
 {
     _dist_pid.reset();

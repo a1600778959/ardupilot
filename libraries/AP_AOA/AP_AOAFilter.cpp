@@ -8,13 +8,6 @@ AOAKalmanFilter::AOAKalmanFilter()
 void AOAKalmanFilter::reset()
 {
     // 初始化协方差矩阵
-    // for (int i = 0; i < 2; i++)
-    // {
-    //     for (int j = 0; j < 2; j++)
-    //     {
-    //         P[i][j] = (i == j) ? 10.0f : 0.0f; // 对角阵
-    //     }
-    // }
     P[0][0] = 0.05f;
     P[0][1] = 0.0f;
     P[1][0] = 0.0f;

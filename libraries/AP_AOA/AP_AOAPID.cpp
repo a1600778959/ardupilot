@@ -1,16 +1,10 @@
 #include "AP_AOAPID.h"
 #include <AP_Math/AP_Math.h>
-AP_AOAPID::AP_AOAPID()
-{
-    // AP_Param::setup_object_defaults(this, var_info);
-}
+
+AP_AOAPID::AP_AOAPID() = default;
 
 void AP_AOAPID::reset()
 {
-    // _kp.set(0);
-    // _ki.set(0);
-    // _kd.set(0);
-    // _imax.set(0);
     _integrator = 0;
     _last_error = 0;
     _last_derivative = 0;
@@ -25,10 +19,6 @@ void AP_AOAPID::set_gains(float kp, float ki, float kd, float imax)
 
 float AP_AOAPID::get_pid(float error, float dt, float scaler)
 {
-    // _kp.set(0.8);
-    // _ki.set(0.05);
-    // _kd.set(0.2);
-    // _imax.set(1);
     if (dt <= 0.0f)
     {
         return 0.0f;

@@ -145,7 +145,6 @@ AP_MotorsUGV::AP_MotorsUGV(AP_WheelRateControl& rate_controller) :
 
 void AP_MotorsUGV::init()
 {
-    dist = AP_MultiDistanceSensor::get_singleton();
     // setup servo output
     setup_servo_output();
 

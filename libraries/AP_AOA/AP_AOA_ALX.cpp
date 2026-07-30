@@ -1,9 +1,5 @@
-// libraries/AP_AOA/AP_AOA_ALX.cpp
 #include "AP_AOA_ALX.h"
 #include <GCS_MAVLink/GCS.h> //地面站
-// const AP_Param::GroupInfo AP_AOA_ALX::var_info[] = {
-//     AP_GROUPINFO("UART_NUM", 1, AP_AOA_ALX, _uart_num, 3),
-//     AP_GROUPEND};
 
 AP_AOA_ALX::AP_AOA_ALX() : _uart(nullptr),
                            _payload_len(0),
@@ -16,12 +12,11 @@ AP_AOA_ALX::AP_AOA_ALX() : _uart(nullptr),
 
 void AP_AOA_ALX::init(uint8_t serial_num)
 {
-    _uart = hal.serial(serial_num);
+    _uart = AP_HAL::get_HAL().serial(serial_num);
     if (_uart == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING, "AOA serial %u unavailable", (unsigned)serial_num);
         return;
     }
-    // _uart->begin(230400, 256, 256);
     _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     _uart->set_stop_bits(1);
 }
@@ -31,16 +26,12 @@ void AP_AOA_ALX::update()
     if (_uart == nullptr) {
         return;
     }
-    // gcs().send_text(MAV_SEVERITY_INFO, "观察传感器采集函数是否执行");
     uint16_t rec_num = _uart->available();
 
-    //gcs().send_text(MAV_SEVERITY_INFO,"rec_num:%d", rec_num); // 发送监控参数指令
     while (rec_num > 0)
     {
         rec_num--;
         uint8_t byte = _uart->read();
-        // gcs().send_text(MAV_SEVERITY_INFO, "byte:%02x", byte);
-        // gcs().send_named_float("byte",byte);   //发送监控参数指令
         switch (_parse_state)
         {
         case WAIT_HEADER1:
@@ -96,13 +87,11 @@ void AP_AOA_ALX::update()
             _rx_buffer[6] = byte;
             _payload_len |= (byte << 8);
             _xor_sum += byte;
-            // gcs().send_text(MAV_SEVERITY_INFO, "PARSE_LENGTH_H:%d", _payload_len);
             if (_payload_len != AOA_MAX_PAYLOAD)  //数据长度不等于37则返回
             {
                 _reset_parser();
                 break;
             }
-            // gcs().send_text(MAV_SEVERITY_INFO, "_payload_len:%d", _payload_len);
             _parse_state = PARSE_PAYLOAD;
             _payload_cnt = 7; //前7个字节已存储
 
@@ -129,7 +118,6 @@ void AP_AOA_ALX::update()
             else
             {
                 gcs().send_text(MAV_SEVERITY_INFO, "AOA XOR Err:%02x vs %02x\n", byte, calc_xor);
-                // gcs().send_text(MAV_SEVERITY_INFO, "_rx_buffer:%02x,%02x,%02x,%02x,%02x,%02x\n", _rx_buffer[125], _rx_buffer[124], _rx_buffer[123], _rx_buffer[122], _rx_buffer[121], _rx_buffer[120]);
             }
             _reset_parser();
             break;
@@ -167,7 +155,6 @@ void AP_AOA_ALX::_process_packet()
 
         _current.timestamp_ms = AP_HAL::millis();
         _current.data_confirmed = _rx_buffer[19];
-        _current.data_RSSI = _rx_buffer[21];
     }
 }
 

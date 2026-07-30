@@ -1,7 +1,5 @@
-// libraries/AP_AOA/AP_AOA_ALX.h
 #pragma once
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Param/AP_Param.h>
 #define AOA_MAX_PAYLOAD 118
 class AP_AOA_ALX
 {
@@ -10,9 +8,6 @@ public:
     void init(uint8_t sernum);
     void update();
     bool get_raw_data(float &dist_m, float &azimuth_deg);
-
-    // // 参数表
-    // static const struct AP_Param::GroupInfo var_info[];
 
 private:
     enum ParseState
@@ -27,7 +22,6 @@ private:
         PARSE_PAYLOAD,
         CHECK_SUM
     };
-    const AP_HAL::HAL &hal = AP_HAL::get_HAL();
     AP_HAL::UARTDriver *_uart;
     uint8_t _rx_buffer[AOA_MAX_PAYLOAD+10];
     uint16_t _payload_len;
@@ -41,7 +35,6 @@ private:
         float distance_m;    //距离，单位米
         float azimuth_deg;   //方位角，单位度
         uint8_t data_confirmed; //数据可信度
-        uint8_t data_RSSI;      //信号强度
 
     } Follow_Data;
     Follow_Data _current;
