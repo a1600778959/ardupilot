@@ -633,6 +633,7 @@ public:
         Drive,
         Spin,
         Hold,
+        Completed,
     };
 
     enum class LogEvent : uint8_t {
@@ -650,6 +651,7 @@ public:
         SpinStart = 14,
         SpinDone = 15,
         Hold = 16,
+        Complete = 17,
     };
 
     enum class FaultReason : uint8_t {
@@ -742,6 +744,7 @@ private:
     bool begin_drive_alignment() WARN_IF_UNUSED;
     void update_spin();
     bool finish_spin_and_start_drive() WARN_IF_UNUSED;
+    void complete_patrol();
     void start_installed_drive();
     void reset_drive_boundary_monitors();
     bool drive_completion_conditions_met(const Location &current_loc) const;
@@ -769,6 +772,7 @@ private:
     void set_fault(const char *message, FaultReason reason);
     float get_leg_speed_cap(ModePatrolRoute::LegType leg) const;
     bool spacing_is_valid(float spacing_m) const;
+    bool run_limit_reached() const;
     bool refresh_spacing_queue(bool report_fault);
     uint16_t first_unplanned_line() const;
     static const char *leg_name(ModePatrolRoute::LegType leg);
@@ -783,6 +787,7 @@ private:
 
     AP_Float _dist;
     AP_Float _transition_speed;
+    AP_Int16 _max_runs;
 
     MotionState _motion_state{MotionState::WaitingForPoints};
     Location _point_a;

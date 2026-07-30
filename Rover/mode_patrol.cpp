@@ -53,6 +53,14 @@ const AP_Param::GroupInfo ModePatrol::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TRANS_SPD", 3, ModePatrol, _transition_speed, patrol_transition_speed_default),
 
+    // @Param: MAX_RUNS
+    // @DisplayName: Maximum patrol runs
+    // @Description: Maximum number of completed work lines before Patrol stops. Zero allows unlimited operation
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("MAX_RUNS", 4, ModePatrol, _max_runs, 0),
+
     AP_GROUPEND
 };
 
@@ -96,6 +104,14 @@ bool ModePatrol::_enter()
     if ((_motion_state == MotionState::Hold) && _fault_latched) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Patrol: fault latched, disarm to clear");
         write_patrol_log(LogEvent::Hold, true);
+        return true;
+    }
+
+    if (_motion_state == MotionState::Completed) {
+        gcs().send_text(MAV_SEVERITY_NOTICE,
+                        "Patrol: completed %u runs",
+                        (unsigned)_active_target.line_index);
+        write_patrol_log(LogEvent::Complete, true);
         return true;
     }
 
@@ -238,6 +254,10 @@ void ModePatrol::update()
         return;
     }
     case MotionState::Hold:
+        g2.motors.set_throttle(0.0f);
+        g2.motors.set_steering(0.0f);
+        break;
+    case MotionState::Completed:
         g2.motors.set_throttle(0.0f);
         g2.motors.set_steering(0.0f);
         break;
@@ -385,6 +405,10 @@ void ModePatrol::update_drive()
     }
 
     write_patrol_log(LogEvent::EndpointReached, true);
+    if (run_limit_reached()) {
+        complete_patrol();
+        return;
+    }
     if (!begin_spin()) {
         hold("Patrol: invalid turn geometry, hold",
              FaultReason::RouteGeometry,
@@ -394,6 +418,23 @@ void ModePatrol::update_drive()
     // The first Spin output is produced on the same scheduler cycle as the
     // physical endpoint/stopped edge.
     update_spin();
+}
+
+void ModePatrol::complete_patrol()
+{
+    g2.wp_nav.cancel_stopping_line();
+    reset_drive_boundary_monitors();
+    _spin_pivot_started = false;
+    _spin_anchor = Location();
+    _motion_state = MotionState::Completed;
+    _fault_reason = FaultReason::None;
+    _fault_latched = false;
+    g2.motors.set_throttle(0.0f);
+    g2.motors.set_steering(0.0f);
+    gcs().send_text(MAV_SEVERITY_NOTICE,
+                    "Patrol: completed %u runs",
+                    (unsigned)_active_target.line_index);
+    write_patrol_log(LogEvent::Complete, true);
 }
 
 bool ModePatrol::drive_completion_conditions_met(const Location &current_loc) const
@@ -1195,6 +1236,14 @@ bool ModePatrol::spacing_is_valid(float spacing_m) const
     return isfinite(spacing_m) &&
            (spacing_m >= patrol_dist_min) &&
            (spacing_m <= patrol_dist_max);
+}
+
+bool ModePatrol::run_limit_reached() const
+{
+    const int16_t max_runs = _max_runs.get();
+    return (max_runs > 0) &&
+           (_active_target.leg_type == ModePatrolRoute::LegType::WorkLine) &&
+           (_active_target.line_index >= static_cast<uint16_t>(max_runs));
 }
 
 bool ModePatrol::refresh_spacing_queue(bool report_fault)
