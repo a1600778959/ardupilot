@@ -263,9 +263,7 @@ void NavEKF3_core::setAidingMode()
     switch (PV_AidingMode) {
         case AID_NONE: {
             // Don't allow filter to start position or velocity aiding until the tilt and yaw alignment is complete
-            // and IMU gyro bias estimates have stabilised
-            // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
-            // GPS aiding is the preferred option unless excluded by the user
+            // and IMU gyro bias estimates have stabilised. GPS aiding is preferred unless excluded by the user.
             if (readyToUseGPS() || readyToUseRangeBeacon() || readyToUseExtNav()) {
                 PV_AidingMode = AID_ABSOLUTE;
             } else if (readyToUseBodyOdm()) {
@@ -274,15 +272,13 @@ void NavEKF3_core::setAidingMode()
             break;
         }
         case AID_RELATIVE: {
-            // Check if the fusion has timed out (flow measurements have been rejected for too long)
-            bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
             // Check if the fusion has timed out (body odometry measurements have been rejected for too long)
-            bool bodyOdmFusionTimeout = ((imuSampleTime_ms - prevBodyVelFuseTime_ms) > 5000);
+            const bool bodyOdmFusionTimeout = ((imuSampleTime_ms - prevBodyVelFuseTime_ms) > 5000);
             // Enable switch to absolute position mode if GPS or range beacon data is available
-            // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
+            // If absolute aiding is unavailable and body odometry has timed out, fall back to no-aiding.
             if (readyToUseGPS() || readyToUseRangeBeacon() || readyToUseExtNav()) {
                 PV_AidingMode = AID_ABSOLUTE;
-            } else if (flowFusionTimeout && bodyOdmFusionTimeout) {
+            } else if (bodyOdmFusionTimeout) {
                 PV_AidingMode = AID_NONE;
             }
             break;
@@ -290,9 +286,6 @@ void NavEKF3_core::setAidingMode()
         case AID_ABSOLUTE: {
             // Find the minimum time without data required to trigger any check
             uint16_t minTestTime_ms = MIN(frontend->tiltDriftTimeMax_ms, MIN(frontend->posRetryTimeNoVel_ms,frontend->posRetryTimeUseVel_ms));
-
-            // Check if optical flow data is being used
-            bool optFlowUsed = (imuSampleTime_ms - prevFlowFuseTime_ms <= minTestTime_ms);
 
             // Check if body odometry data is being used
             bool bodyOdmUsed = (imuSampleTime_ms - prevBodyVelFuseTime_ms <= minTestTime_ms);
@@ -307,14 +300,14 @@ void NavEKF3_core::setAidingMode()
             bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
             // Check if attitude drift has been constrained by a measurement source
-            bool attAiding = posUsed || gpsVelUsed || optFlowUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
+            bool attAiding = posUsed || gpsVelUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
 
             // Check if velocity drift has been constrained by a measurement source
             // Currently these are all the same source as will stabilise attitude because we do not currently have
             // a sensor that only observes attitude
-            velAiding = posUsed || gpsVelUsed || optFlowUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
+            velAiding = posUsed || gpsVelUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
 
-            windStateIsObservable = !inhibitWindStates && (posUsed || gpsVelUsed || optFlowUsed || rngBcnUsed || bodyOdmUsed);
+            windStateIsObservable = !inhibitWindStates && (posUsed || gpsVelUsed || rngBcnUsed || bodyOdmUsed);
 
             // check if position drift has been constrained by a measurement source
             bool posAiding = posUsed || rngBcnUsed;
@@ -322,8 +315,7 @@ void NavEKF3_core::setAidingMode()
             // Check if the loss of attitude aiding has become critical
             bool attAidLossCritical = false;
             if (!attAiding) {
-            	attAidLossCritical = (imuSampleTime_ms - prevFlowFuseTime_ms > frontend->tiltDriftTimeMax_ms) &&
-                        (imuSampleTime_ms - lastGpsPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                attAidLossCritical = (imuSampleTime_ms - lastGpsPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                         (imuSampleTime_ms - lastVelPassTime_ms > frontend->tiltDriftTimeMax_ms);
             }
 
@@ -349,7 +341,7 @@ void NavEKF3_core::setAidingMode()
              } else if (posAidLossCritical) {
                 // if the loss of position is critical, declare all sources of position aiding as being timed out
                 posTimeout = true;
-                velTimeout = !optFlowUsed && !gpsVelUsed && !bodyOdmUsed;
+                velTimeout = !gpsVelUsed && !bodyOdmUsed;
                 gpsIsInUse = false;
 
             }
@@ -379,7 +371,6 @@ void NavEKF3_core::setAidingMode()
             // the last known position
             lastKnownPositionD = stateStruct.position.z;
             // reset relative aiding sensor fusion activity status
-            flowFusionActive = false;
             bodyVelFusionActive = false;
             break;
 
@@ -461,7 +452,6 @@ void NavEKF3_core::checkAttitudeAlignmentStatus()
 // return true if we should use the range finder sensor
 bool NavEKF3_core::useRngFinder(void) const
 {
-    // TO-DO add code to set this based in setting of optical flow use parameter and presence of sensor
     return true;
 }
 
@@ -663,14 +653,13 @@ void  NavEKF3_core::updateFilterStatus(void)
     // init return value
     nav_filter_status status;
     status.value = 0;
-    bool doingBodyVelNav = (PV_AidingMode != AID_NONE) && (imuSampleTime_ms - prevBodyVelFuseTime_ms < 5000);
-    bool doingFlowNav = (PV_AidingMode != AID_NONE) && flowDataValid;
-    bool doingWindRelNav = !dragTimeout;
-    bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
-    bool someVertRefData = (!velTimeout && (useGpsVertVel || useExtNavVel)) || !hgtTimeout;
-    bool someHorizRefData = !(velTimeout && posTimeout && dragTimeout) || doingFlowNav || doingBodyVelNav;
-    bool filterHealthyHorizontal = healthy_for_horizontal_nav() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode != AID_ABSOLUTE)));
-    bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode != AID_ABSOLUTE)));
+    const bool doingBodyVelNav = (PV_AidingMode != AID_NONE) && (imuSampleTime_ms - prevBodyVelFuseTime_ms < 5000);
+    const bool doingWindRelNav = !dragTimeout;
+    const bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
+    const bool someVertRefData = (!velTimeout && (useGpsVertVel || useExtNavVel)) || !hgtTimeout;
+    const bool someHorizRefData = !(velTimeout && posTimeout && dragTimeout) || doingBodyVelNav;
+    const bool filterHealthyHorizontal = healthy_for_horizontal_nav() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode != AID_ABSOLUTE)));
+    const bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode != AID_ABSOLUTE)));
 
     // If GPS height usage is specified, height is considered to be inaccurate until the GPS passes all checks
     bool hgtNotAccurate = (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && !validOrigin;
@@ -679,21 +668,20 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.attitude = !stateStruct.quat.is_nan() && filterHealthyHorizontal;   // attitude valid (we need a better check)
     status.flags.horiz_vel = someHorizRefData && filterHealthyHorizontal;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
-    status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav || doingBodyVelNav) && filterHealthyHorizontal;   // relative horizontal position estimate valid
+    status.flags.horiz_pos_rel = (doingWindRelNav || doingNormalGpsNav || doingBodyVelNav) && filterHealthyHorizontal;   // relative horizontal position estimate valid
     status.flags.horiz_pos_abs = doingNormalGpsNav && filterHealthyHorizontal; // absolute horizontal position estimate valid
     status.flags.vert_pos = !hgtTimeout && filterHealthy && !hgtNotAccurate; // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = (PV_AidingMode == AID_NONE) && filterHealthyHorizontal;     // constant position mode
     status.flags.pred_horiz_pos_rel = status.flags.horiz_pos_rel; // EKF3 enters the required mode before flight
     status.flags.pred_horiz_pos_abs = status.flags.horiz_pos_abs; // EKF3 enters the required mode before flight
-    status.flags.takeoff_detected = false; // optical flow takeoff detection is not available
     status.flags.takeoff = dal.get_takeoff_expected(); // The EKF has been told to expect takeoff is in a ground effect mitigation mode and has started the EKF-GSF yaw estimator
     status.flags.touchdown = dal.get_touchdown_expected(); // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     status.flags.using_gps = ((imuSampleTime_ms - lastGpsPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
     status.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
     status.flags.gps_quality_good = gpsGoodToAlign;
     status.flags.initalized = status.flags.initalized || filterHealthyHorizontal;
-    status.flags.dead_reckoning = (PV_AidingMode != AID_NONE) && doingWindRelNav && !((doingFlowNav && gndOffsetValid) || doingNormalGpsNav || doingBodyVelNav);
+    status.flags.dead_reckoning = (PV_AidingMode != AID_NONE) && doingWindRelNav && !(doingNormalGpsNav || doingBodyVelNav);
 
     filterStatus.value = status.value;
 }

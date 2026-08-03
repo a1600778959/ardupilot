@@ -163,10 +163,6 @@ public:
         return _RFRH.time_flying_ms;
     }
 
-    bool opticalflow_enabled(void) const {
-        return _RFRN.opticalflow_enabled;
-    }
-
     bool wheelencoder_enabled(void) const {
         return _RFRN.wheelencoder_enabled;
     }
@@ -239,7 +235,6 @@ public:
     }
     void handle_message(const log_RVOH &msg) {
     }
-    void handle_message(const log_ROFH &msg, NavEKF3 &ekf3);
     void handle_message(const log_REPH &msg, NavEKF3 &ekf3);
     void handle_message(const log_REVH &msg, NavEKF3 &ekf3);
     void handle_message(const log_RWOH &msg, NavEKF3 &ekf3);
@@ -265,7 +260,6 @@ private:
     struct log_RFRN _RFRN;
 
     // push-based sensor structures
-    struct log_ROFH _ROFH;
     struct log_REPH _REPH;
     struct log_REVH _REVH;
     struct log_RWOH _RWOH;

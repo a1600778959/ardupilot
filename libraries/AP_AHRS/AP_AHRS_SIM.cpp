@@ -151,7 +151,7 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
 
 void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    // same as EKF3 for no optical flow
+    // same neutral limits as EKF3
     ekfGndSpdLimit = 400.0f;
     ekfNavVelGainScaler = 1.0f;
 }

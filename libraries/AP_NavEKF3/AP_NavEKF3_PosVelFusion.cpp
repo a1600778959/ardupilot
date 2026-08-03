@@ -1167,7 +1167,7 @@ void NavEKF3_core::selectHeightForFusion()
 {
 #if AP_RANGEFINDER_ENABLED
     // Read range finder data and check for new data in the buffer
-    // This data is used by both height and optical flow fusion processing
+    // This data is used by height fusion and rangefinder source switching.
     readRangeFinder();
     rangeDataToFuse = storedRange.recall(rangeDataDelayed,imuDataDelayed.time_ms);
 

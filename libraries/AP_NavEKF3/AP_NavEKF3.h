@@ -110,8 +110,7 @@ public:
     // If using a range finder for height no reset is performed and it returns false
     bool resetHeightDatum(void);
 
-    // return the horizontal speed limit in m/s set by optical flow sensor limits
-    // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
+    // return neutral EKF navigation control limits
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 
     // return the NED wind speed estimates in m/s (positive is air
@@ -278,7 +277,6 @@ public:
 
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
-    // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
     bool getHeightControlLimit(float &height) const;
 
     // return the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
@@ -432,11 +430,6 @@ private:
         JammingExpected     = (1<<0),
     };
 
-// Possible values for _flowUse
-#define FLOW_USE_NONE    0
-#define FLOW_USE_NAV     1
-#define FLOW_USE_TERRAIN 2
-
     // Tuning parameters
     const float gpsNEVelVarAccScale = 0.05f;       // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
     const float gpsDVelVarAccScale = 0.07f;        // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
@@ -456,14 +449,8 @@ private:
     const uint16_t betaAvg_ms = 100;               // average number of msec between synthetic sideslip measurements
     const float covTimeStepMax = 0.1f;             // maximum time (sec) between covariance prediction updates
     const float covDelAngMax = 0.05f;              // maximum delta angle between covariance prediction updates
-    const float DCM33FlowMin = 0.71f;              // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
-    const float fScaleFactorPnoise = 1e-10f;       // Process noise added to focal length scale factor state variance at each time step
-    const uint8_t flowTimeDeltaAvg_ms = 100;       // average interval between optical flow measurements (msec)
-    const uint32_t flowIntervalMax_ms = 100;       // maximum allowable time between flow fusion events
-    const uint8_t gndGradientSigma = 50;           // RMS terrain gradient percentage assumed by the terrain height estimation
     const uint16_t fusionTimeStep_ms = 10;         // The minimum time interval between covariance predictions and measurement fusions in msec
     const uint8_t sensorIntervalMin_ms = 50;       // The minimum allowed time between measurements from any non-IMU sensor (msec)
-    const uint8_t flowIntervalMin_ms = 20;         // The minimum allowed time between measurements from optical flow sensors (msec)
     const uint8_t extNavIntervalMin_ms = 20;       // The minimum allowed time between measurements from external navigation sensors (msec)
     const float maxYawEstVelInnov = 2.0f;          // Maximum acceptable length of the velocity innovation returned by the EKF-GSF yaw estimator (m/s)
     const uint16_t deadReckonDeclare_ms = 1000;    // Time without equivalent position or velocity observation to constrain drift before dead reckoning is declared (msec)

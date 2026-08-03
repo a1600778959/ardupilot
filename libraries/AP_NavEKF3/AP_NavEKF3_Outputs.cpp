@@ -93,30 +93,9 @@ float NavEKF3_core::errorScore() const
 
 // provides the height limit to be observed by the control loops
 // returns false if no height limiting is required
-// this is needed to ensure the vehicle does not fly too high when using optical flow navigation
-bool NavEKF3_core::getHeightControlLimit(float &height) const
+bool NavEKF3_core::getHeightControlLimit(float &) const
 {
-    // only ask for limiting if we are doing optical flow navigation
-    if ((PV_AidingMode == AID_RELATIVE) && flowDataValid) {
-        // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
-#if AP_RANGEFINDER_ENABLED
-        const auto *_rng = dal.rangefinder();
-        if (_rng == nullptr) {
-            // we really, really shouldn't be here.
-            return false;
-        }
-        height = MAX(float(_rng->max_distance_cm_orient(ROTATION_PITCH_270)) * 0.007f - 1.0f, 1.0f);
-#else
-        return false;
-#endif
-        // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
-        if (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
-            height -= terrainState;
-        }
-        return true;
-    } else {
-        return false;
-    }
+    return false;
 }
 
 
@@ -222,7 +201,7 @@ float NavEKF3_core::getPosDownDerivative(void) const
 // Return true if the estimate is valid
 bool NavEKF3_core::getPosNE(Vector2f &posNE) const
 {
-    // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
+    // There are three modes of operation: absolute aiding, relative odometry aiding and constant position.
     if (PV_AidingMode != AID_NONE) {
         // This is the normal mode of operation where we can use the EKF position states
         // correct for the IMU offset (EKF calculations are at the IMU)
@@ -347,8 +326,7 @@ bool NavEKF3_core::getGPSLLH(Location &loc) const
     return false;
 }
 
-// return the horizontal speed limit in m/s set by optical flow sensor limits
-// return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
+// return neutral navigation limits when no sensor-specific limit is active
 void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
     ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
@@ -605,11 +583,11 @@ void NavEKF3_core::send_status_report(GCS_MAVLINK &link) const
     getVariances(velVar, posVar, hgtVar, magVar, reservedVar, offset);
 
 
-    // Only report range finder normalised innovation levels if the EKF needs the data for primary
-    // height estimation or optical flow operation. This prevents false alarms at the GCS if a
-    // range finder is fitted for other applications
+    // Only report range finder normalised innovation levels if the EKF uses it
+    // for primary height estimation. This prevents false alarms when a range
+    // finder is fitted for another application.
     float temp = 0;
-    if (((frontend->_useRngSwHgt > 0) && activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
+    if ((frontend->_useRngSwHgt > 0) && activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
         temp = sqrtF(auxRngTestRatio);
     }
 

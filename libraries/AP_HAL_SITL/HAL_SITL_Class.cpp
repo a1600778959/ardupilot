@@ -55,7 +55,6 @@ static DSP dspDriver;
 
 
 // use the Empty HAL for hardware we don't emulate
-static Empty::OpticalFlow emptyOpticalFlow;
 static Empty::Flash emptyFlash;
 
 static UARTDriver sitlSerial0Driver(0, &sitlState);
@@ -107,7 +106,6 @@ HAL_SITL::HAL_SITL() :
         &sitlRCOutput,      /* rcoutput */
         &sitlScheduler,     /* scheduler */
         &utilInstance,      /* util */
-        &emptyOpticalFlow,  /* onboard optical flow */
         &emptyFlash,        /* flash driver */
 #if HAL_WITH_DSP
         &dspDriver,         /* dsp driver */

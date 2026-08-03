@@ -215,10 +215,6 @@ struct PACKED log_XKF4 {
 // @Description: EKF3 Sensor innovations (primary core) and general dumping ground
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF3 core this data is for
-// @Field: NI: Normalised flow variance
-// @Field: FIX: Optical flow LOS rate vector innovations from the main nav filter (X-axis)
-// @Field: FIY: Optical flow LOS rate vector innovations from the main nav filter (Y-axis)
-// @Field: AFI: Optical flow LOS rate innovation from terrain offset estimator
 // @Field: HAGL: Height above ground level
 // @Field: offset: Estimated vertical position of the terrain relative to the nav filter zero datum
 // @Field: RI: Range finder innovations
@@ -231,10 +227,6 @@ struct PACKED log_XKF5 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t core;
-    uint8_t normInnov;
-    int16_t FIX;
-    int16_t FIY;
-    int16_t AFI;
     int16_t HAGL;
     int16_t offset;
     int16_t RI;
@@ -439,7 +431,7 @@ struct PACKED log_XKV {
     { LOG_XKF4_MSG, sizeof(log_XKF4), \
       "XKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" , true }, \
     { LOG_XKF5_MSG, sizeof(log_XKF5), \
-      "XKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" , true }, \
+      "XKF5","QBcccCCfff","TimeUS,C,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#m???mrnm", "F-BBBBB000" , true }, \
     { LOG_XKFD_MSG, sizeof(log_XKFD), \
       "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" , true }, \
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \

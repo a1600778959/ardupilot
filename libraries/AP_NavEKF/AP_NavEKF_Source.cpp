@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Param: 1_VELXY
     // @DisplayName: Velocity Horizontal Source
     // @Description: Velocity Horizontal Source
-    // @Values: 0:None, 3:GPS, 4:Beacon, 5:OpticalFlow, 6:ExternalNav, 7:WheelEncoder
+    // @Values: 0:None, 3:GPS, 4:Beacon, 6:ExternalNav, 7:WheelEncoder
     // @User: Advanced
     AP_GROUPINFO("1_VELXY", 2, AP_NavEKF_Source, _source_set[0].velxy, (int8_t)AP_NavEKF_Source::SourceXY::GPS),
 
@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Param: 2_VELXY
     // @DisplayName: Velocity Horizontal Source (Secondary)
     // @Description: Velocity Horizontal Source (Secondary)
-    // @Values: 0:None, 3:GPS, 4:Beacon, 5:OpticalFlow, 6:ExternalNav, 7:WheelEncoder
+    // @Values: 0:None, 3:GPS, 4:Beacon, 6:ExternalNav, 7:WheelEncoder
     // @User: Advanced
     AP_GROUPINFO("2_VELXY", 7, AP_NavEKF_Source, _source_set[1].velxy, (int8_t)AP_NavEKF_Source::SourceXY::NONE),
 
@@ -110,7 +110,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Param: 3_VELXY
     // @DisplayName: Velocity Horizontal Source (Tertiary)
     // @Description: Velocity Horizontal Source (Tertiary)
-    // @Values: 0:None, 3:GPS, 4:Beacon, 5:OpticalFlow, 6:ExternalNav, 7:WheelEncoder
+    // @Values: 0:None, 3:GPS, 4:Beacon, 6:ExternalNav, 7:WheelEncoder
     // @User: Advanced
     AP_GROUPINFO("3_VELXY", 12, AP_NavEKF_Source, _source_set[2].velxy, (int8_t)AP_NavEKF_Source::SourceXY::NONE),
 
@@ -139,7 +139,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: EKF Source Options
     // @Description: EKF Source Options
-    // @Bitmask: 0:FuseAllVelocities, 1:AlignExtNavPosWhenUsingOptFlow
+    // @Bitmask: 0:FuseAllVelocities
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 16, AP_NavEKF_Source, _options, (int16_t)SourceOptions::FUSE_ALL_VELOCITIES),
 
@@ -294,11 +294,17 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
     bool rangefinder_required = false;
     bool extnav_pose_required = false;
     bool extnav_velocity_required = false;
-    bool optflow_required = false;
     bool wheelencoder_required = false;
 
     // check source params are valid
     for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
+
+        // Reject unsupported source values in every arming mode rather than
+        // silently accepting them when position is not required.
+        if (_source_set[i].velxy.get() == 5) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELXY", (int)i+1);
+            return false;
+        }
 
         if (requires_position) {
             // check posxy
@@ -420,11 +426,6 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
 
     if (gps_required && (dal.gps().num_sensors() == 0)) {
         hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "GPS");
-        return false;
-    }
-
-    if (optflow_required && !dal.opticalflow_enabled()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "OpticalFlow");
         return false;
     }
 

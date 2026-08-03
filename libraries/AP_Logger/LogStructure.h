@@ -318,16 +318,6 @@ struct PACKED log_RSSI {
     float RXLQ;
 };
 
-struct PACKED log_Optflow {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t surface_quality;
-    float flow_x;
-    float flow_y;
-    float body_x;
-    float body_y;
-};
-
 struct PACKED log_POWR {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -804,15 +794,6 @@ struct PACKED log_VER {
 // @Field: Id: character referenced by FMTU
 // @Field: Mult: numeric multiplier
 
-// @LoggerMessage: OF
-// @Description: Optical flow sensor data
-// @Field: TimeUS: Time since system startup
-// @Field: Qual: Estimated sensor data quality
-// @Field: flowX: Sensor flow rate, X-axis
-// @Field: flowY: Sensor flow rate,Y-axis
-// @Field: bodyX: derived rotational velocity, X-axis
-// @Field: bodyY: derived rotational velocity, Y-axis
-
 // @LoggerMessage: PARM
 // @Description: parameter value
 // @Field: TimeUS: Time since system startup
@@ -1208,8 +1189,6 @@ LOG_STRUCTURE_FROM_FENCE \
       "RALY", "QBBLLhB", "TimeUS,Tot,Seq,Lat,Lng,Alt,Flags", "s--DUm-", "F--GGB-" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
       "MAV", "QBHHHBHH",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf", "s#----s-", "F-000-C-" },   \
-    { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
-      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" , true }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
       "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" , true }, \
     { LOG_EVENT_MSG, sizeof(log_Event), \
@@ -1296,8 +1275,7 @@ enum LogMessages : uint8_t {
     LOG_DF_FILE_STATS,
     LOG_SRTL_MSG,
     LOG_PERFORMANCE_MSG,
-    LOG_OPTFLOW_MSG,
-    LOG_EVENT_MSG,
+    LOG_EVENT_MSG = 170,
     LOG_WHEELENCODER_MSG,
     LOG_MAV_MSG,
     LOG_ERROR_MSG,
@@ -1323,3 +1301,9 @@ enum LogMessages : uint8_t {
 // we reserve ID #255 for future expansion
 static_assert(_LOG_LAST_MSG_ < 255, "Too many message formats");
 static_assert(LOG_MODE_MSG < 128, "Duplicate message format IDs");
+static_assert(LOG_XKF5_MSG == 38, "XKF5 message ID changed");
+static_assert(LOG_RFRN_MSG == 134, "RFRN message ID changed");
+static_assert(LOG_REPH_MSG == 148, "REPH message ID changed");
+static_assert(LOG_EVENT_MSG == 170, "EV message ID changed");
+static_assert(LOG_WHEELENCODER_MSG == 171, "WENC message ID changed");
+static_assert(LOG_MAV_MSG == 172, "MAV message ID changed");

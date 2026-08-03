@@ -189,8 +189,7 @@ public:
     // If using a range finder for height no reset is performed and it returns false
     bool resetHeightDatum(void);
 
-    // return the horizontal speed limit in m/s set by optical flow sensor limits
-    // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
+    // return neutral EKF navigation control limits
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 
     // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
@@ -368,7 +367,6 @@ public:
 
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
-    // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
     bool getHeightControlLimit(float &height) const;
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
@@ -581,14 +579,6 @@ private:
     struct range_elements : EKF_obs_element_t {
         ftype       rng;            // distance measured by the range sensor (m)
         uint8_t     sensor_idx;     // integer either 0 or 1 uniquely identifying up to two range sensors
-    };
-
-    struct of_elements : EKF_obs_element_t {
-        Vector2F    flowRadXY;      // raw (non motion compensated) optical flow angular rates about the XY body axes (rad/sec)
-        Vector2F    flowRadXYcomp;  // motion compensated XY optical flow angular rates about the XY body axes (rad/sec)
-        Vector3F    bodyRadXYZ;     // body frame XYZ axis angular rates averaged across the optical flow measurement interval (rad/sec)
-        Vector3F    body_offset;    // XYZ position of the optical flow sensor in body frame (m)
-        float       heightOverride; // The fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
     };
 
     struct vel_odm_elements : EKF_obs_element_t {
@@ -804,9 +794,6 @@ private:
     // determine when to perform fusion of body frame odometry measurements
     void SelectBodyOdomFusion();
 
-    // Estimate terrain offset using a single state EKF
-    void EstimateTerrainOffset(const of_elements &ofDataDelayed);
-
     // Control filter mode changes
     void controlFilterModes();
 
@@ -1006,7 +993,6 @@ private:
     uint32_t lastGpsPosPassTime_ms;    // time stamp when GPS position measurement last passed innovation consistency check (msec)
     uint32_t lastHgtPassTime_ms;    // time stamp when height measurement last passed innovation consistency check (msec)
     uint32_t lastTimeGpsReceived_ms;// last time we received GPS data
-    uint32_t timeAtLastAuxEKF_ms;   // last time the auxiliary filter was run to fuse range or optical flow measurements
     uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy
     bool allMagSensorsFailed;       // true if all magnetometer sensors have timed out on this flight and we are no longer using magnetometer data
     uint32_t lastSynthYawTime_ms;   // time stamp when yaw observation was last fused (msec)
@@ -1135,50 +1121,27 @@ private:
     Vector3F gpsVelVarInnov;        // gps velocity innovation variances
     uint32_t gpsRetrieveTime_ms;    // system time that GPS data was retrieved from the buffer (to detect timeouts)
 
-    // variables added for optical flow fusion
-    EKF_obs_buffer_t<of_elements> storedOF;    // OF data buffer
-    bool flowDataValid;             // true while optical flow data is still fresh
-    Vector2F auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
-    uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
+    // range finder and terrain state
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
-    Vector2 flowVarInnov;           // optical flow innovations variances (rad/sec)^2
-    Vector2 flowInnov;              // optical flow LOS innovations (rad/sec)
-    uint32_t flowInnovTime_ms;      // system time that optical flow innovations and variances were recorded (to detect timeouts)
     ftype terrainState;             // terrain position state (m)
-    ftype prevPosN;                 // north position at last measurement
-    ftype prevPosE;                 // east position at last measurement
     ftype varInnovRng;              // range finder observation innovation variance (m^2)
     ftype innovRng;                 // range finder observation innovation (m)
-    struct {
-        uint32_t timestamp_ms;      // system timestamp of last correct optical flow sample (used for calibration)
-        Vector2f flowRate;          // latest corrected optical flow flow rate (used for calibration)
-        Vector2f bodyRate;          // latest corrected optical flow body rate (used for calibration)
-        Vector2f losPred;           // EKF estimated component of flowRate that comes from vehicle movement (not rotation)
-    } flowCalSample;
 
     ftype hgtMea;                   // height measurement derived from the configured source (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
-    uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
-    Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
-    Vector2F auxFlowTestRatio;      // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
-    ftype R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
     ftype auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
-    Vector2F flowGyroBias;          // bias error of optical flow sensor gyro output
     bool rangeDataToFuse;           // true when valid range finder height data has arrived at the fusion time horizon.
     bool gpsDataToFuse;             // true when valid GPS data has arrived at the fusion time horizon.
     bool magDataToFuse;             // true when valid magnetometer data has arrived at the fusion time horizon
     enum AidingMode {
-        AID_ABSOLUTE=0,    // GPS or some other form of absolute position reference aiding is being used (optical flow may also be used in parallel) so position estimates are absolute.
+        AID_ABSOLUTE=0,    // GPS or another absolute position reference is being used, so position estimates are absolute.
         AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
-        AID_RELATIVE=2,    // only optical flow aiding is being used so position estimates will be relative
+        AID_RELATIVE=2,    // body-frame or wheel odometry aiding is being used, so position estimates are relative
     };
     AidingMode PV_AidingMode;       // Defines the preferred mode for aiding of velocity and position estimates from the INS
     AidingMode PV_AidingModePrev;   // Value of PV_AidingMode from the previous frame - used to detect transitions
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
-    Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
-    ftype delTimeOF;                // time that delAngBodyOF is summed across
-    bool flowFusionActive;          // true when optical flow fusion is active
 
     Vector3F accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
 
@@ -1298,8 +1261,6 @@ private:
         bool bad_dpos:1;
         bool bad_yaw:1;
         bool bad_decl:1;
-        bool bad_xflow:1;
-        bool bad_yflow:1;
         bool bad_rngbcn:1;
         bool bad_xvel:1;
         bool bad_yvel:1;

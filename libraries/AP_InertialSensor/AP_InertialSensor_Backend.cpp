@@ -300,11 +300,6 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         _imu._gyro_last_sample_us[instance] = AP_HAL::micros64();
         sample_us = _imu._gyro_last_sample_us[instance];
     }
-    // push gyros if optical flow present
-    if (hal.opticalflow) {
-        hal.opticalflow->push_gyro(gyro.x, gyro.y, dt);
-    }
-    
     // compute delta angle
     Vector3f delta_angle = (gyro + _imu._last_raw_gyro[instance]) * 0.5f * dt;
 
@@ -383,11 +378,6 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
 
     _rotate_and_correct_gyro(instance, gyro);
 
-    // push gyros if optical flow present
-    if (hal.opticalflow) {
-        hal.opticalflow->push_gyro(gyro.x, gyro.y, dt);
-    }
-    
     // compute delta angle, including corrections
     Vector3f delta_angle = gyro * dt;
 

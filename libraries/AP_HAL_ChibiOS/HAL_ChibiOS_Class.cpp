@@ -106,7 +106,6 @@ static Empty::RCOutput rcoutDriver;
 
 static ChibiOS::Scheduler schedulerInstance;
 static ChibiOS::Util utilInstance;
-static Empty::OpticalFlow opticalFlowDriver;
 
 #if AP_SIM_ENABLED
 static AP_HAL::SIMState xsimstate;
@@ -157,7 +156,6 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &rcoutDriver,
         &schedulerInstance,
         &utilInstance,
-        &opticalFlowDriver,
         &flashDriver,
 #if AP_SIM_ENABLED
         &xsimstate,

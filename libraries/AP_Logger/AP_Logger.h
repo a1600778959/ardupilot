@@ -110,7 +110,6 @@ enum class LogDataID : uint8_t {
 enum class LogErrorSubsystem : uint8_t {
     MAIN = 1,
     COMPASS = 3,
-    OPTFLOW = 4,   // not used
     FAILSAFE_RADIO = 5,
     FAILSAFE_BATT = 6,
     FAILSAFE_GPS = 7,   // not used

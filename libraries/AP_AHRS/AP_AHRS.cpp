@@ -372,12 +372,6 @@ void AP_AHRS::update(bool skip_ins_update)
     update_EKF3();
 #endif
 
-    // push gyros if optical flow present
-    if (hal.opticalflow) {
-        const Vector3f &exported_gyro_bias = get_gyro_drift();
-        hal.opticalflow->push_gyro_bias(exported_gyro_bias.x, exported_gyro_bias.y);
-    }
-
     if (_view != nullptr) {
         // update optional alternative attitude view
         _view->update();
@@ -1792,12 +1786,6 @@ bool AP_AHRS::get_filter_status(nav_filter_status &status) const
     return false;
 }
 
-// retrieve latest corrected optical flow samples (used for calibration)
-bool AP_AHRS::getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const
-{
-    return false;
-}
-
 // write body frame odometry measurements to the EKF
 void  AP_AHRS::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
@@ -2360,9 +2348,7 @@ void AP_AHRS::load_watchdog_home()
     }
 }
 
-// get_hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
-// this is used to limit height during optical flow navigation
-// it will return false when no limiting is required
+// get_hgt_ctrl_limit - get an EKF-provided maximum height and validity flag
 bool AP_AHRS::get_hgt_ctrl_limit(float& limit) const
 {
     switch (active_EKF_type()) {

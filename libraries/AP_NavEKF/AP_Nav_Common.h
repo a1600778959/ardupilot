@@ -32,7 +32,6 @@ enum class NavFilterStatusBit {
     CONST_POS_MODE     =    128, // in constant position mode
     PRED_HORIZ_POS_REL =    256, // expected good relative horizontal position estimate - used before takeoff
     PRED_HORIZ_POS_ABS =    512, // expected good absolute horizontal position estimate - used before takeoff
-    TAKEOFF_DETECTED   =   1024, // optical flow takeoff has been detected
     TAKEOFF_EXPECTED   =   2048, // compensating for height errors during takeoff
     TOUCHDOWN_EXPECTED =   4096, // compensating for height errors during touchdown
     USING_GPS          =   8192, // using GPS position
@@ -55,7 +54,7 @@ union nav_filter_status {
         bool const_pos_mode     : 1; // 7 - true if we are in const position mode
         bool pred_horiz_pos_rel : 1; // 8 - true if filter expects it can produce a good relative horizontal position estimate - used before takeoff
         bool pred_horiz_pos_abs : 1; // 9 - true if filter expects it can produce a good absolute horizontal position estimate - used before takeoff
-        bool takeoff_detected   : 1; // 10 - true if optical flow takeoff has been detected
+        bool                    : 1;
         bool takeoff            : 1; // 11 - true if filter is compensating for height errors during takeoff
         bool touchdown          : 1; // 12 - true if filter is compensating for height errors during touchdown
         bool using_gps          : 1; // 13 - true if we are using GPS position

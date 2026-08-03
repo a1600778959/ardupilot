@@ -28,7 +28,6 @@ public:
         RESERVED_1 = 1,
         RANGEFINDER = 2,
         GPS = 3,
-        // OPTFLOW = 5 (not applicable, optical flow can be used for terrain alt but not relative or absolute alt)
         EXTNAV = 6
         // WHEEL_ENCODER = 7 (not applicable)
     };
@@ -44,8 +43,7 @@ public:
 
     // enum for OPTIONS parameter
     enum class SourceOptions {
-        FUSE_ALL_VELOCITIES = (1 << 0),                 // fuse all velocities configured in source sets
-        ALIGN_EXTNAV_POS_WHEN_USING_OPTFLOW = (1 << 1)  // align position of inactive sources to ahrs when using optical flow
+        FUSE_ALL_VELOCITIES = (1 << 0), // fuse all velocities configured in source sets
     };
 
     enum class SourceSetSelection : uint8_t {
@@ -121,9 +119,6 @@ private:
         AP_Enum<SourceZ>   velz;   // velocity z source
         AP_Enum<SourceYaw> yaw;    // yaw source
     } _source_set[AP_NAKEKF_SOURCE_SET_MAX];
-
-    // helper to check if an option parameter bit has been set
-    bool option_is_set(SourceOptions option) const { return (_options.get() & int16_t(option)) != 0; }
 
     AP_Int16 _options;      // source options bitmask
 

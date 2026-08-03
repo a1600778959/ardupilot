@@ -36,11 +36,7 @@
 #define MAG_I_GATE_DEFAULT      300
 #define MAG_CAL_DEFAULT         3
 #define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         10
-#define FLOW_M_NSE_DEFAULT      0.25f
-#define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
-#define FLOW_USE_DEFAULT        1
 #define WIND_P_NSE_DEFAULT      0.2
 
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
@@ -62,11 +58,7 @@
 #define MAG_I_GATE_DEFAULT      300
 #define MAG_CAL_DEFAULT         2
 #define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         10
-#define FLOW_M_NSE_DEFAULT      0.25f
-#define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
-#define FLOW_USE_DEFAULT        1
 #define WIND_P_NSE_DEFAULT      0.1
 
 #else
@@ -88,11 +80,7 @@
 #define MAG_I_GATE_DEFAULT      300
 #define MAG_CAL_DEFAULT         3
 #define GLITCH_RADIUS_DEFAULT   25
-#define FLOW_MEAS_DELAY         10
-#define FLOW_M_NSE_DEFAULT      0.25f
-#define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
-#define FLOW_USE_DEFAULT        1
 #define WIND_P_NSE_DEFAULT      0.1
 
 #endif // APM_BUILD_DIRECTORY
@@ -339,7 +327,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: NOAID_M_NSE
     // @DisplayName: Non-GPS operation position uncertainty (m)
-    // @Description: This sets the amount of position variation that the EKF allows for when operating without external measurements (eg GPS or optical flow). Increasing this parameter makes the EKF attitude estimate less sensitive to vehicle manoeuvres but more sensitive to IMU errors.
+    // @Description: This sets the amount of position variation that the EKF allows for when operating without external measurements such as GPS or external navigation. Increasing this parameter makes the EKF attitude estimate less sensitive to vehicle manoeuvres but more sensitive to IMU errors.
     // @Range: 0.5 50.0
     // @User: Advanced
     // @Units: m
@@ -1202,8 +1190,7 @@ bool NavEKF3::resetHeightDatum(void)
     return status;
 }
 
-// return the horizontal speed limit in m/s set by optical flow sensor limits
-// return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
+// return neutral navigation control limits
 void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
     if (core) {
@@ -1519,7 +1506,6 @@ void NavEKF3::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
     }
 }
 
-// return data for debugging optical flow fusion
 /*
  * Write body frame linear and angular displacement measurements from a visual odometry sensor
  *
@@ -1601,7 +1587,7 @@ void NavEKF3::convert_parameters()
             break;
         case 3:
         default:
-            // EK3_GPS_TYPE == 3 (No GPS) we don't know what to do, could be optical flow, beacon or external nav
+            // EK3_GPS_TYPE == 3 (No GPS) may be using a beacon or external navigation source
             sources.mark_configured();
             break;
         }
@@ -1715,7 +1701,6 @@ void NavEKF3::send_status_report(GCS_MAVLINK &link) const
 
 // provides the height limit to be observed by the control loops
 // returns false if no height limiting is required
-// this is needed to ensure the vehicle does not fly too high when using optical flow navigation
 bool NavEKF3::getHeightControlLimit(float &height) const
 {
     if (!core) {

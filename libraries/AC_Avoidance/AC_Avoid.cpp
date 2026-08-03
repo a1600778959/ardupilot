@@ -390,7 +390,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     }
 #endif
 
-    // calculate distance to (e.g.) optical flow altitude limit
+    // calculate distance to the navigation altitude limit
     // AHRS values are always in metres
     float alt_limit;
     float curr_alt;

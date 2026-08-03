@@ -12,7 +12,6 @@ namespace ChibiOS {
     class I2CBus;
     class I2CDevice;
     class I2CDeviceManager;
-    class OpticalFlow;
     class RCInput;
     class RCOutput;
     class Scheduler;

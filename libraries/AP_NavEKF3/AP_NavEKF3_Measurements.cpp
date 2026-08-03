@@ -9,7 +9,7 @@
 
 #if AP_RANGEFINDER_ENABLED
 /********************************************************
-*              OPT FLOW AND RANGE FINDER                *
+*                      RANGE FINDER                      *
 ********************************************************/
 
 // Read the range finder and take new measurements if available
@@ -20,7 +20,7 @@ void NavEKF3_core::readRangeFinder(void)
     uint8_t maxIndex;
     uint8_t minIndex;
     // get theoretical correct range when the vehicle is on the ground
-    // don't allow range to go below 5cm because this can cause problems with optical flow processing
+    // don't allow range to go below 5cm to keep the terrain state bounded
     const auto *_rng = dal.rangefinder();
     if (_rng == nullptr) {
         return;
@@ -569,9 +569,8 @@ void NavEKF3_core::readGpsData()
     if ((frontend->_options & (int32_t)NavEKF3::Options::JammingExpected) &&
         (lastTimeGpsReceived_ms - secondLastGpsTime_ms) > frontend->gpsNoFixTimeout_ms) {
         const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
-        const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;
         const bool canDoWindRelNav = assume_zero_sideslip();
-        const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || canDoWindRelNav || doingBodyVelNav);
+        const bool canDeadReckon = canDoWindRelNav || doingBodyVelNav;
         if (canDeadReckon) {
             // If we can do dead reckoning with a data source other than GPS there is time to wait
             // for GPS alignment checks to pass before using GPS inside the EKF.

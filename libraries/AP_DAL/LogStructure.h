@@ -2,7 +2,6 @@
 
 #include <AP_Logger/LogStructure.h>
 #include <AP_Math/vector3.h>
-#include <AP_Math/vector2.h>
 #include <AP_Math/matrix3.h>
 #include <AP_Math/quaternion.h>
 
@@ -25,8 +24,7 @@
     LOG_RVOH_MSG, \
     LOG_RMGH_MSG, \
     LOG_RMGI_MSG, \
-    LOG_ROFH_MSG, \
-    LOG_REPH_MSG, \
+    LOG_REPH_MSG = 148, \
     LOG_RSLL_MSG, \
     LOG_REVH_MSG, \
     LOG_RWOH_MSG, \
@@ -61,7 +59,6 @@ struct log_RFRN {
     uint8_t armed:1;
     uint8_t unused:1;  // was get_compass_is_null
     uint8_t fly_forward:1;
-    uint8_t opticalflow_enabled:1;
     uint8_t wheelencoder_enabled:1;
     uint8_t takeoff_expected:1;
     uint8_t touchdown_expected:1;
@@ -249,18 +246,6 @@ struct log_RVOH {
     uint8_t _end;
 };
 
-// @LoggerMessage: ROFH
-// @Description: Replay optical flow data
-struct log_ROFH {
-    Vector2f rawFlowRates;
-    Vector2f rawGyroRates;
-    uint32_t msecFlowMeas;
-    Vector3f posOffset;
-    float heightOverride;
-    uint8_t rawFlowQuality;
-    uint8_t _end;
-};
-
 // @LoggerMessage: REPH
 // @Description: Replay external position data
 struct log_REPH {
@@ -357,8 +342,6 @@ struct log_RBOH {
       "RBCI", "IffffBB", "LU,PX,PY,PZ,Dist,H,I", "smmmm-#", "?0000--" }, \
     { LOG_RVOH_MSG, RLOG_SIZE(RVOH),                                   \
       "RVOH", "fffIBB", "OX,OY,OZ,Del,H,Ena", "------", "------" }, \
-    { LOG_ROFH_MSG, RLOG_SIZE(ROFH),                                   \
-      "ROFH", "ffffIffffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,HgtOvr,Qual", "----------", "----------" }, \
     { LOG_REPH_MSG, RLOG_SIZE(REPH),                                   \
       "REPH", "fffffffffIIH", "PX,PY,PZ,Q1,Q2,Q3,Q4,PEr,AEr,TS,RT,D", "------------", "------------" }, \
     { LOG_RSLL_MSG, RLOG_SIZE(RSLL),                         \

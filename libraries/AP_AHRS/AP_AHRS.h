@@ -225,9 +225,6 @@ public:
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
     bool get_vert_pos_rate_D(float &velocity) const;
 
-    // retrieve latest corrected optical flow samples (used for calibration)
-    bool getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const;
-
     // write body odometry measurements to the EKF
     void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset);
 
@@ -303,9 +300,7 @@ public:
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(class GCS_MAVLINK &link) const;
 
-    // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
-    // this is used to limit height during optical flow navigation
-    // it will return invalid when no limiting is required
+    // get_hgt_ctrl_limit - get an EKF-provided maximum height and validity flag
     bool get_hgt_ctrl_limit(float &limit) const;
 
     // Set to true if the terrain underneath is stable enough to be used as a height reference

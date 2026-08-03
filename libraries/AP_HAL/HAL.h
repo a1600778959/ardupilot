@@ -13,7 +13,6 @@ class AP_Param;
 #include "Storage.h"
 #include "UARTDriver.h"
 #include "system.h"
-#include "OpticalFlow.h"
 #include "DSP.h"
 #include "CANIface.h"
 
@@ -41,7 +40,6 @@ public:
         AP_HAL::RCOutput*   _rcout,
         AP_HAL::Scheduler*  _scheduler,
         AP_HAL::Util*       _util,
-        AP_HAL::OpticalFlow*_opticalflow,
         AP_HAL::Flash*      _flash,
 #if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
         class AP_HAL::SIMState*   _simstate,
@@ -66,7 +64,6 @@ public:
         rcout(_rcout),
         scheduler(_scheduler),
         util(_util),
-        opticalflow(_opticalflow),
 #if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
         simstate(_simstate),
 #endif
@@ -129,7 +126,6 @@ public:
     AP_HAL::RCOutput*   rcout;
     AP_HAL::Scheduler*  scheduler;
     AP_HAL::Util        *util;
-    AP_HAL::OpticalFlow *opticalflow;
     AP_HAL::Flash       *flash;
     AP_HAL::DSP         *dsp;
 #if HAL_NUM_CAN_IFACES > 0

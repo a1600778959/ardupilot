@@ -81,9 +81,6 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     // limit to be no longer than the IMU buffer (we can't process data faster than the EKF prediction rate)
     obs_buffer_length = MIN(obs_buffer_length,imu_buffer_length);
 
-    // calculate buffer size for optical flow data
-    const uint8_t flow_buffer_length = MIN((ekf_delay_ms / frontend->flowIntervalMin_ms) + 1, imu_buffer_length);
-
 #if EK3_FEATURE_EXTERNAL_NAV
     // calculate buffer size for external nav data
     const uint8_t extnav_buffer_length = MIN((ekf_delay_ms / frontend->extNavIntervalMin_ms) + 1, imu_buffer_length);
@@ -93,9 +90,6 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
     if(!storedMag.init(obs_buffer_length)) {
-        return false;
-    }
-    if(dal.opticalflow_enabled() && !storedOF.init(flow_buffer_length)) {
         return false;
     }
 #if EK3_FEATURE_BODY_ODOM
@@ -178,10 +172,7 @@ void NavEKF3_core::InitialiseVariables()
     lastHgtPassTime_ms = 0;
     lastSynthYawTime_ms = 0;
     lastTimeGpsReceived_ms = 0;
-    timeAtLastAuxEKF_ms = imuSampleTime_ms;
-    flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;
-    prevFlowFuseTime_ms = 0;
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
@@ -214,14 +205,12 @@ void NavEKF3_core::InitialiseVariables()
     memset(&KH[0][0], 0, sizeof(KH));
     memset(&KHP[0][0], 0, sizeof(KHP));
     memset(&nextP[0][0], 0, sizeof(nextP));
-    flowDataValid = false;
     rangeDataToFuse  = false;
     terrainState = 0.0f;
-    prevPosN = stateStruct.position.x;
-    prevPosE = stateStruct.position.y;
+    varInnovRng = 0.0f;
+    innovRng = 0.0f;
+    auxRngTestRatio = 0.0f;
     inhibitGndState = false;
-    flowGyroBias.x = 0;
-    flowGyroBias.y = 0;
     PV_AidingMode = AID_NONE;
     PV_AidingModePrev = AID_NONE;
     posTimeout = true;
@@ -281,7 +270,6 @@ void NavEKF3_core::InitialiseVariables()
     ZERO_FARRAY(statesArray);
     memset(&vertCompFiltState, 0, sizeof(vertCompFiltState));
     posVelFusionDelayed = false;
-    flowFusionActive = false;
     sideSlipFusionDelayed = false;
     posResetNE.zero();
     velResetNE.zero();
@@ -712,10 +700,6 @@ void NavEKF3_core::UpdateStrapdownEquationsNED()
 
     // apply a trapezoidal integration to velocities to calculate position
     stateStruct.position += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
-
-    // accumulate the bias delta angle and time since last reset by an OF measurement arrival
-    delAngBodyOF += delAngCorrected;
-    delTimeOF += imuDataDelayed.delAngDT;
 
     // limit states to protect against divergence
     ConstrainStates();
