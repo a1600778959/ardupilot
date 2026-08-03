@@ -48,7 +48,6 @@ public:
         SerialProtocol_Beacon = 13,
         SerialProtocol_Sbus1 = 15,
         SerialProtocol_ESCTelemetry = 16,
-        SerialProtocol_OpticalFlow = 18,
         SerialProtocol_NMEAOutput = 20,
         SerialProtocol_WindVane = 21,
         SerialProtocol_SLCAN = 22,
@@ -85,6 +84,8 @@ public:
 
     // init - initialise serial ports
     void init();
+
+    bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) const;
 
     // find_serial - searches available serial ports that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
@@ -136,7 +137,7 @@ public:
             return AP_SerialManager::SerialProtocol(protocol.get());
         }
         AP_Int32 baud;
-        AP_Int16 options;
+        AP_Int32 options;
         AP_Int8 protocol;
 
         // serial index number
@@ -153,6 +154,15 @@ public:
     // mavlink1 protocol instances.
     const UARTState *find_protocol_instance(enum SerialProtocol protocol,
                                             uint8_t instance) const;
+
+    // Disable a migrated option in the widened SERIALn_OPTIONS record. The
+    // old AP_Int16 record remains in storage for downgrade compatibility.
+    void disable_option(uint8_t serial_idx, uint32_t option) {
+        if (serial_idx >= ARRAY_SIZE(state)) {
+            return;
+        }
+        state[serial_idx].options.set_and_save(state[serial_idx].options.get() & ~option);
+    }
 
 #if AP_SERIALMANAGER_REGISTER_ENABLED
     /*
@@ -194,6 +204,8 @@ private:
     void set_options(uint16_t i);
 
     bool init_console_done;
+
+    void convert_parameters();
 };
 
 namespace AP {

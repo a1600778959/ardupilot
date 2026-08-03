@@ -15,6 +15,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <RC_Channel/RC_Channel.h>
 
 #include "MissionItemProtocol_Waypoints.h"
@@ -22,6 +23,102 @@
 #include "MissionItemProtocol_Fence.h"
 
 extern const AP_HAL::HAL& hal;
+
+#ifndef MAV_SYSID_DEFAULT
+#ifdef APM_BUILD_AntennaTracker
+#if APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#define MAV_SYSID_DEFAULT 2
+#else
+#define MAV_SYSID_DEFAULT 1
+#endif
+#else
+#define MAV_SYSID_DEFAULT 1
+#endif
+#endif
+
+const AP_Param::GroupInfo GCS::var_info[] = {
+    // @Param: _SYSID
+    // @DisplayName: MAVLink system ID of this vehicle
+    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network.
+    // @Range: 1 255
+    // @User: Advanced
+    AP_GROUPINFO("_SYSID", 1, GCS, sysid, MAV_SYSID_DEFAULT),
+
+    // @Param: _GCS_SYSID
+    // @DisplayName: Ground station system ID
+    // @Description: Sets the lowest MAVLink source system ID accepted for GCS failsafe handling, RC overrides and manual control. MAV_GCS_SYSID_HI can extend this to a range.
+    // @Range: 1 255
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_GCS_SYSID", 2, GCS, mav_gcs_sysid, 255),
+
+    // @Param: _OPTIONS
+    // @DisplayName: MAVLink options
+    // @Description: Alters global MAVLink behaviour.
+    // @Bitmask: 0:Accept MAVLink only from system IDs configured by MAV_GCS_SYSID and MAV_GCS_SYSID_HI
+    // @User: Advanced
+    AP_GROUPINFO("_OPTIONS", 3, GCS, mav_options, 0),
+
+    // @Param: _TELEM_DELAY
+    // @DisplayName: Telemetry startup delay
+    // @Description: The amount of time in seconds to delay radio telemetry on startup.
+    // @Units: s
+    // @Range: 0 30
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_TELEM_DELAY", 4, GCS, mav_telem_delay, 0),
+
+    // @Param: _GCS_SYSID_HI
+    // @DisplayName: Ground station system ID maximum
+    // @Description: Upper limit of MAVLink source system IDs considered to be from the GCS. Values lower than MAV_GCS_SYSID disable the range and use only MAV_GCS_SYSID.
+    // @Range: 0 255
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_GCS_SYSID_HI", 5, GCS, mav_gcs_sysid_high, 0),
+
+#if MAVLINK_COMM_NUM_BUFFERS > 0
+    // @Group: 1
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[0], "1", 11, GCS, _chan_var_info[0]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 1
+    // @Group: 2
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[1], "2", 12, GCS, _chan_var_info[1]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    // @Group: 3
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[2], "3", 13, GCS, _chan_var_info[2]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+    // @Group: 4
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[3], "4", 14, GCS, _chan_var_info[3]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 4
+    // @Group: 5
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[4], "5", 15, GCS, _chan_var_info[4]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 5
+    // @Group: 6
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[5], "6", 16, GCS, _chan_var_info[5]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 6
+    // @Group: 7
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[6], "7", 17, GCS, _chan_var_info[6]),
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 7
+    // @Group: 8
+    // @Path: GCS_MAVLink_Parameters.cpp
+    AP_SUBGROUPVARPTR(_chan[7], "8", 18, GCS, _chan_var_info[7]),
+#endif
+
+    AP_GROUPEND
+};
 
 void GCS::get_sensor_status_flags(uint32_t &present,
                                   uint32_t &enabled,
@@ -47,6 +144,19 @@ MissionItemProtocol *GCS::missionitemprotocols[3];
 void GCS::init()
 {
     mavlink_system.sysid = sysid_this_mav();
+}
+
+bool GCS::sysid_is_gcs(uint8_t source_sysid) const
+{
+    const int16_t low = mav_gcs_sysid.get();
+    const int16_t high = mav_gcs_sysid_high.get();
+    if (low < 1 || low > UINT8_MAX) {
+        return false;
+    }
+    if (high <= low || high > UINT8_MAX) {
+        return source_sysid == low;
+    }
+    return source_sysid >= low && source_sysid <= high;
 }
 
 /*

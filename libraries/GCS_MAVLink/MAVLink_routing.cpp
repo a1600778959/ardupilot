@@ -121,6 +121,14 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
         }
         return true;
     }
+
+    return forward(in_link, msg);
+}
+
+bool MAVLink_routing::forward(GCS_MAVLINK &in_link, const mavlink_message_t &msg)
+{
+    const bool from_private_channel = in_link.is_private();
+
     // extract the targets for this packet
     int16_t target_system = -1;
     int16_t target_component = -1;

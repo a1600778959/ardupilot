@@ -4,9 +4,69 @@
 
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 
+#define MAV_STREAM_CONVERSION(old_key, channel, element, suffix) \
+    { Parameters::old_key, element, AP_PARAM_INT16, "MAV" #channel "_" #suffix }
+
+#define MAV_STREAM_CONVERSIONS(name, old_key, channel) \
+    static const AP_Param::ConversionInfo name[] = { \
+        MAV_STREAM_CONVERSION(old_key, channel, 0, RAW_SENS), \
+        MAV_STREAM_CONVERSION(old_key, channel, 1, EXT_STAT), \
+        MAV_STREAM_CONVERSION(old_key, channel, 2, RC_CHAN), \
+        MAV_STREAM_CONVERSION(old_key, channel, 3, RAW_CTRL), \
+        MAV_STREAM_CONVERSION(old_key, channel, 4, POSITION), \
+        MAV_STREAM_CONVERSION(old_key, channel, 5, EXTRA1), \
+        MAV_STREAM_CONVERSION(old_key, channel, 6, EXTRA2), \
+        MAV_STREAM_CONVERSION(old_key, channel, 7, EXTRA3), \
+        MAV_STREAM_CONVERSION(old_key, channel, 8, PARAMS), \
+    }
+
+MAV_STREAM_CONVERSIONS(mav1_stream_conversions, k_param_gcs0_old, 1);
+MAV_STREAM_CONVERSIONS(mav2_stream_conversions, k_param_gcs1_old, 2);
+MAV_STREAM_CONVERSIONS(mav3_stream_conversions, k_param_gcs2_old, 3);
+MAV_STREAM_CONVERSIONS(mav4_stream_conversions, k_param_gcs3_old, 4);
+MAV_STREAM_CONVERSIONS(mav5_stream_conversions, k_param_gcs4_old, 5);
+MAV_STREAM_CONVERSIONS(mav6_stream_conversions, k_param_gcs5_old, 6);
+MAV_STREAM_CONVERSIONS(mav7_stream_conversions, k_param_gcs6_old, 7);
+
+#undef MAV_STREAM_CONVERSIONS
+#undef MAV_STREAM_CONVERSION
+
+void GCS_Rover::convert_gcs_mavlink_backend_parameters(uint8_t instance)
+{
+    // MAVn is the nth runtime MAVLink backend, not SERIALn. SerialManager
+    // supplies backends in ascending configured SERIALx order (then any
+    // registered virtual ports), and protocol 1/2/43 share this ordering.
+    switch (instance) {
+    case 0:
+        AP_Param::convert_old_parameters(mav1_stream_conversions, ARRAY_SIZE(mav1_stream_conversions));
+        break;
+    case 1:
+        AP_Param::convert_old_parameters(mav2_stream_conversions, ARRAY_SIZE(mav2_stream_conversions));
+        break;
+    case 2:
+        AP_Param::convert_old_parameters(mav3_stream_conversions, ARRAY_SIZE(mav3_stream_conversions));
+        break;
+    case 3:
+        AP_Param::convert_old_parameters(mav4_stream_conversions, ARRAY_SIZE(mav4_stream_conversions));
+        break;
+    case 4:
+        AP_Param::convert_old_parameters(mav5_stream_conversions, ARRAY_SIZE(mav5_stream_conversions));
+        break;
+    case 5:
+        AP_Param::convert_old_parameters(mav6_stream_conversions, ARRAY_SIZE(mav6_stream_conversions));
+        break;
+    case 6:
+        AP_Param::convert_old_parameters(mav7_stream_conversions, ARRAY_SIZE(mav7_stream_conversions));
+        break;
+    default:
+        // MAV8 and later have no legacy SRx source in this branch.
+        break;
+    }
+}
+
 uint8_t GCS_Rover::sysid_this_mav() const
 {
-    return rover.g.sysid_this_mav;
+    return GCS::sysid_this_mav();
 }
 
 bool GCS_Rover::simple_input_active() const

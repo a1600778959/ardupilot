@@ -319,7 +319,7 @@ void Rover::gcs_failsafe_check(void)
     }
 
     // calc time since last gcs update
-    // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
+    // this only looks at heartbeats from the MAV_GCS_SYSID range
     const uint32_t last_gcs_update_ms = millis() - gcs_last_seen_ms;
     const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g2.fs_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
 
@@ -398,7 +398,7 @@ void Rover::one_second_loop(void)
     AP_Notify::flags.flying = hal.util->get_soft_armed();
 
     // cope with changes to mavlink system ID
-    mavlink_system.sysid = g.sysid_this_mav;
+    mavlink_system.sysid = gcs().sysid_this_mav();
 
     // attempt to update home position if not armed:
     if (!hal.util->get_soft_armed()) {

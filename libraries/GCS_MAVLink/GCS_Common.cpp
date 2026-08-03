@@ -98,12 +98,11 @@ GCS *GCS::_singleton = nullptr;
 GCS_MAVLINK_InProgress GCS_MAVLINK_InProgress::in_progress_tasks[1];
 uint32_t GCS_MAVLINK_InProgress::last_check_ms;
 
-GCS_MAVLINK::GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters,
-                         AP_HAL::UARTDriver &uart)
+GCS_MAVLINK::GCS_MAVLINK(AP_HAL::UARTDriver &uart)
 {
-    _port = &uart;
+    AP_Param::setup_object_defaults(this, var_info);
 
-    streamRates = parameters.streamRates;
+    _port = &uart;
 }
 
 bool GCS_MAVLINK::init(uint8_t instance)
@@ -121,12 +120,38 @@ bool GCS_MAVLINK::init(uint8_t instance)
     if (uartstate == nullptr) {
         return false;
     }
+    if (AP::serialmanager().get_serial_by_id(uartstate->idx) != _port) {
+        // The MAVn parameter object, MAVLink channel and physical SERIALx
+        // must all refer to the same protocol instance.
+        return false;
+    }
+
+    // PARAMETER_CONVERSION - Added: Jul-2026 for this ArduPilot-4.7
+    // backport. MAVLink-only UART options moved to MAVn_OPTIONS. The
+    // widened SERIALn_OPTIONS record is cleared only for the UART which
+    // actually owns this MAVLink backend. The old 16-bit EEPROM record is
+    // retained for downgrade compatibility.
+    if (!options_were_converted) {
+        auto &serial_manager = AP::serialmanager();
+        if (uartstate->option_enabled(AP_HAL::UARTDriver::OPTION_MAVLINK_NO_FORWARD_old)) {
+            enable_option(Option::NO_FORWARD);
+            serial_manager.disable_option(uartstate->idx,
+                                          AP_HAL::UARTDriver::OPTION_MAVLINK_NO_FORWARD_old);
+        }
+        if (uartstate->option_enabled(AP_HAL::UARTDriver::OPTION_NOSTREAMOVERRIDE_old)) {
+            enable_option(Option::NOSTREAMOVERRIDE);
+            serial_manager.disable_option(uartstate->idx,
+                                          AP_HAL::UARTDriver::OPTION_NOSTREAMOVERRIDE_old);
+        }
+        // Set the marker only after both destination and source records have
+        // been updated so an interrupted boot safely retries the conversion.
+        options_were_converted.set_and_save(1);
+    }
 
     // and init the gcs instance
 
-    // whether this port is considered "private" is stored on the uart
-    // rather than in our own parameters:
-    if (uartstate->option_enabled(AP_HAL::UARTDriver::OPTION_MAVLINK_NO_FORWARD)) {
+    // whether this port is considered "private" is stored in MAVn_OPTIONS
+    if (option_enabled(Option::NO_FORWARD)) {
         set_channel_private(chan);
     }
 
@@ -1753,10 +1778,19 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             gcs_alternative_active[chan] = false;
             alternative.last_mavlink_ms = now_ms;
             hal.util->persistent_data.last_mavlink_msgid = 0;
-
+        } else if (framing == MAVLINK_FRAMING_BAD_CRC &&
+                   option_enabled(Option::FORWARD_BAD_CRC) &&
+                   !(msg.sysid == mavlink_system.sysid &&
+                     msg.compid == mavlink_system.compid) &&
+                   msg.msgid != MAVLINK_MSG_ID_RADIO &&
+                   msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
+            // Bad-CRC forwarding is explicitly opt-in. Do not learn a route
+            // from this packet and never process it locally.
+            routing.forward(*this, msg);
         }
 #if AP_SCRIPTING_ENABLED
-        else if (framing == MAVLINK_FRAMING_BAD_CRC) {
+        if (framing == MAVLINK_FRAMING_BAD_CRC &&
+            !option_enabled(Option::FORWARD_BAD_CRC)) {
             // This may be a valid message that we don't know the crc extra for, pass it to scripting which might
             AP_Scripting *scripting = AP_Scripting::get_singleton();
             if (scripting != nullptr) {
@@ -2465,50 +2499,69 @@ void GCS::setup_console()
         // this is probably not going to end well.
         return;
     }
-    if (ARRAY_SIZE(chan_parameters) == 0) {
+    if (ARRAY_SIZE(_chan_var_info) == 0) {
         return;
     }
-    create_gcs_mavlink_backend(chan_parameters[0], *uart);
+    create_gcs_mavlink_backend(0, *uart);
 }
 
-
-GCS_MAVLINK_Parameters::GCS_MAVLINK_Parameters()
+bool GCS::create_gcs_mavlink_backend(uint8_t instance, AP_HAL::UARTDriver &uart)
 {
-    AP_Param::setup_object_defaults(this, var_info);
-}
-
-void GCS::create_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params, AP_HAL::UARTDriver &uart)
-{
-    if (_num_gcs >= ARRAY_SIZE(chan_parameters)) {
-        return;
-    }
-    _chan[_num_gcs] = new_gcs_mavlink_backend(params, uart);
-    if (_chan[_num_gcs] == nullptr) {
-        return;
+    // MAVn is assigned by protocol-instance order. Do not allow a failed
+    // backend to make a later physical UART reuse the preceding MAVn group.
+    if (instance != _num_gcs || instance >= ARRAY_SIZE(_chan_var_info)) {
+        return false;
     }
 
-    if (!_chan[_num_gcs]->init(_num_gcs)) {
-        delete _chan[_num_gcs];
-        _chan[_num_gcs] = nullptr;
-        return;
+    auto &serial_manager = AP::serialmanager();
+    const auto *uartstate = serial_manager.find_protocol_instance(
+        AP_SerialManager::SerialProtocol_MAVLink, instance);
+    if (uartstate == nullptr ||
+        serial_manager.get_serial_by_id(uartstate->idx) != &uart) {
+        return false;
+    }
+
+    _chan[instance] = new_gcs_mavlink_backend(uart);
+    if (_chan[instance] == nullptr) {
+        return false;
+    }
+
+    // The parameter group points at a runtime-created backend. Publish its
+    // metadata pointer before loading or migrating MAVn_* values.
+    _chan_var_info[instance] = GCS_MAVLINK::var_info;
+    AP_Param::load_object_from_eeprom(_chan[instance], _chan_var_info[instance]);
+    convert_gcs_mavlink_backend_parameters(instance);
+
+    if (!_chan[instance]->init(instance)) {
+        delete _chan[instance];
+        _chan[instance] = nullptr;
+        _chan_var_info[instance] = nullptr;
+        return false;
     }
 
     _num_gcs++;
+    return true;
 }
 
 void GCS::setup_uarts()
 {
-    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        if (i >= ARRAY_SIZE(chan_parameters)) {
-            // should not happen
-            break;
-        }
-        AP_HAL::UARTDriver *uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_MAVLink, i);
+    // setup_console() normally creates instance zero. Starting from the
+    // actual count also permits one retry if that early allocation failed,
+    // while preserving an exact MAVn-to-protocol-instance relationship.
+    for (uint8_t instance = _num_gcs;
+         instance < MAVLINK_COMM_NUM_BUFFERS;
+         instance++) {
+        AP_HAL::UARTDriver *uart = AP::serialmanager().find_serial(
+            AP_SerialManager::SerialProtocol_MAVLink, instance);
         if (uart == nullptr) {
             // no more mavlink uarts
             break;
         }
-        create_gcs_mavlink_backend(chan_parameters[i], *uart);
+        if (!create_gcs_mavlink_backend(instance, *uart)) {
+            // MAVLink channels are contiguous. Continuing after a failure
+            // would make the next SERIALx inherit the wrong MAVn parameters.
+            break;
+        }
     }
 
 }
@@ -2948,7 +3001,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_message_interval(const mavlink_comman
 bool GCS_MAVLINK::telemetry_delayed() const
 {
     uint32_t tnow = AP_HAL::millis() >> 10;
-    if (tnow > telem_delay()) {
+    if (tnow > gcs().telem_delay()) {
         return false;
     }
     if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
@@ -3357,7 +3410,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
     char text[text_len] = { 'G','C','S',':'};
     uint8_t offset = strlen(text);
 
-    if (msg.sysid != sysid_my_gcs()) {
+    if (!gcs().sysid_is_gcs(msg.sysid)) {
         offset = hal.util->snprintf(text,
                                     max_prefix_len,
                                     "SRC=%u/%u:",
@@ -3486,7 +3539,7 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 // control of switch position and RC PWM values.
 void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
 {
-    if(msg.sysid != sysid_my_gcs()) {
+    if (!gcs().sysid_is_gcs(msg.sysid)) {
         return; // Only accept control from our gcs
     }
 
@@ -3617,7 +3670,7 @@ void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
 {
     // if the heartbeat is from our GCS then we don't failsafe for
     // now...
-    if (msg.sysid == sysid_my_gcs()) {
+    if (gcs().sysid_is_gcs(msg.sysid)) {
         gcs().sysid_myggcs_seen(AP_HAL::millis());
     }
 }
@@ -3793,10 +3846,10 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 #endif
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
-        // only pass if override is not selected 
-        if (!(_port->get_options() & _port->OPTION_NOSTREAMOVERRIDE)) {
-            handle_request_data_stream(msg);
+        if (option_enabled(Option::NOSTREAMOVERRIDE)) {
+            break;
         }
+        handle_request_data_stream(msg);
         break;
       
 #if AP_RTC_ENABLED
@@ -5736,7 +5789,7 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
 }
 
 /*
-  return true if we will accept this packet. Used to implement SYSID_ENFORCE
+  return true if we will accept this packet. Used to implement MAV_OPTIONS
  */
 bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
                                 const mavlink_message_t &msg) const
@@ -5747,7 +5800,7 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
         return true;
     }
 
-    if (msg.sysid == sysid_my_gcs()) {
+    if (gcs().sysid_is_gcs(msg.sysid)) {
         return true;
     }
 
@@ -5756,7 +5809,7 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
         return true;
     }
 
-    if (!sysid_enforce()) {
+    if (!gcs().option_is_enabled(GCS::Option::GCS_SYSID_ENFORCE)) {
         return true;
     }
 
@@ -5995,7 +6048,7 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
 
 void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
 {
-    if (msg.sysid != sysid_my_gcs()) {
+    if (!gcs().sysid_is_gcs(msg.sysid)) {
         return; // only accept control from our gcs
     }
 

@@ -98,19 +98,6 @@ bool check_payload_size(mavlink_channel_t chan, uint16_t max_payload_len);
     }
 
 
-#define GCS_MAVLINK_NUM_STREAM_RATES 10
-class GCS_MAVLINK_Parameters
-{
-public:
-
-    GCS_MAVLINK_Parameters();
-
-    static const struct AP_Param::GroupInfo        var_info[];
-
-    // saveable rate of each stream
-    AP_Int16        streamRates[GCS_MAVLINK_NUM_STREAM_RATES];
-};
-
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
 class DefaultIntervalsFromFiles
 {
@@ -185,8 +172,18 @@ class GCS_MAVLINK
 {
 public:
     friend class GCS;
+    friend class MAVLink_routing;
 
-    GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters, AP_HAL::UARTDriver &uart);
+    static const struct AP_Param::GroupInfo var_info[];
+
+    enum class Option : uint16_t {
+        MAVLINK2_SIGNING_DISABLED = (1U << 0),
+        NO_FORWARD                = (1U << 1),
+        NOSTREAMOVERRIDE          = (1U << 2),
+        FORWARD_BAD_CRC           = (1U << 3),
+    };
+
+    GCS_MAVLINK(AP_HAL::UARTDriver &uart);
     virtual ~GCS_MAVLINK() {}
 
     // accessors used to retrieve objects used for parsing incoming messages:
@@ -266,6 +263,15 @@ public:
     virtual uint8_t sysid_my_gcs() const = 0;
     virtual bool sysid_enforce() const { return false; }
 
+    bool option_enabled(Option option) const {
+        return (options.get() & static_cast<uint16_t>(option)) != 0;
+    }
+
+    void enable_option(Option option) {
+        options.set_and_save(static_cast<uint16_t>(options.get()) |
+                             static_cast<uint16_t>(option));
+    }
+
     // NOTE: param_name here must point to a 16+1 byte buffer - so do
     // NOT try to pass in a static-char-* unless it does have that
     // length!
@@ -286,14 +292,8 @@ public:
         STREAM_EXTRA2,
         STREAM_EXTRA3,
         STREAM_PARAMS,
-        NUM_STREAMS = 10
+        NUM_STREAMS = 9
     };
-
-    // streams must be moved out into the top level for
-    // GCS_MAVLINK_Parameters to be able to use it.  This is an
-    // extensive change, so we 'll just keep them in sync with a
-    // static assert for now:
-    static_assert(NUM_STREAMS == GCS_MAVLINK_NUM_STREAM_RATES, "num streams must equal num stream rates");
 
     bool is_high_bandwidth() { return chan == MAVLINK_COMM_0; }
     // return true if this channel has hardware flow control
@@ -496,7 +496,9 @@ protected:
     uint8_t packet_overhead(void) const { return packet_overhead_chan(chan); }
 
     // saveable rate of each stream
-    AP_Int16        *streamRates;
+    AP_Int16 streamRates[NUM_STREAMS];
+    AP_Enum16<Option> options;
+    AP_Int8 options_were_converted;
 
     void handle_heartbeat(const mavlink_message_t &msg) const;
 
@@ -1074,11 +1076,15 @@ public:
             AP_HAL::panic("GCS must be singleton");
 #endif
         }
+
+        AP_Param::setup_object_defaults(this, var_info);
     };
 
     static class GCS *get_singleton() {
         return _singleton;
     }
+
+    static const struct AP_Param::GroupInfo var_info[];
 
     virtual uint32_t custom_mode() const = 0;
     virtual MAV_TYPE frame_type() const = 0;
@@ -1105,6 +1111,18 @@ public:
     StatusTextQueue &statustext_queue() {
         return _statustext_queue;
     }
+
+    enum class Option : uint16_t {
+        GCS_SYSID_ENFORCE = (1U << 0),
+    };
+
+    bool option_is_enabled(Option option) const {
+        return (mav_options.get() & static_cast<uint16_t>(option)) != 0;
+    }
+
+    bool sysid_is_gcs(uint8_t sysid) const;
+    uint8_t sysid_gcs() const { return uint8_t(mav_gcs_sysid); }
+    uint32_t telem_delay() const { return mav_telem_delay; }
 
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
@@ -1194,7 +1212,7 @@ public:
     bool get_high_latency_status();
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
-    virtual uint8_t sysid_this_mav() const = 0;
+    virtual uint8_t sysid_this_mav() const { return uint8_t(sysid); }
 
 #if AP_SCRIPTING_ENABLED
     // lua access to command_int
@@ -1203,8 +1221,12 @@ public:
 
 protected:
 
-    virtual GCS_MAVLINK *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                                 AP_HAL::UARTDriver &uart) = 0;
+    virtual GCS_MAVLINK *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) = 0;
+
+    // Called after the dynamically allocated backend parameters have been
+    // loaded from EEPROM and before backend initialisation. Vehicle-specific
+    // code can migrate legacy stream-rate parameters at this point.
+    virtual void convert_gcs_mavlink_backend_parameters(uint8_t instance) {}
 
     HAL_Semaphore control_sensors_sem; // protects the three bitmasks
     uint32_t control_sensors_present;
@@ -1212,16 +1234,22 @@ protected:
     uint32_t control_sensors_health;
     virtual void update_vehicle_sensor_status_flags() {}
 
-    GCS_MAVLINK_Parameters chan_parameters[MAVLINK_COMM_NUM_BUFFERS];
+    static const struct AP_Param::GroupInfo *_chan_var_info[MAVLINK_COMM_NUM_BUFFERS];
     uint8_t _num_gcs;
     GCS_MAVLINK *_chan[MAVLINK_COMM_NUM_BUFFERS];
+
+    // MAV_* parameters
+    AP_Int16 sysid;
+    AP_Int16 mav_gcs_sysid;
+    AP_Int16 mav_gcs_sysid_high;
+    AP_Enum16<Option> mav_options;
+    AP_Int8 mav_telem_delay;
 
 private:
 
     static GCS *_singleton;
 
-    void create_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                    AP_HAL::UARTDriver &uart);
+    bool create_gcs_mavlink_backend(uint8_t instance, AP_HAL::UARTDriver &uart);
 
     char statustext_printf_buffer[256+1];
 

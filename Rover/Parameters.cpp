@@ -14,7 +14,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: Bitmap of what log types to enable in on-board logger. This value is made up of the sum of each of the log types you want to be saved. On boards supporting microSD cards or other large block-storage devices it is usually best just to enable all basic log types by setting this to 65535.
-    // @Bitmask: 0:Fast Attitude,1:Medium Attitude,2:GPS,3:System Performance,4:Throttle,5:Navigation Tuning,7:IMU,8:Mission Commands,9:Battery Monitor,10:Rangefinder,11:Compass,12:Camera,13:Steering,14:RC Input-Output,19:Raw IMU,20:Video Stabilization,21:Optical Flow
+    // @Bitmask: 0:Fast Attitude,1:Medium Attitude,2:GPS,3:System Performance,4:Throttle,5:Navigation Tuning,7:IMU,8:Mission Commands,9:Battery Monitor,10:Rangefinder,11:Compass,12:Camera,13:Steering,14:RC Input-Output,19:Raw IMU,20:Video Stabilization
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 
@@ -31,29 +31,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     (int8_t)Mode::Number::MANUAL),
 
-    // @Param: SYSID_THISMAV
-    // @DisplayName: MAVLink system ID of this vehicle
-    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
-    // @Range: 1 255
-    // @User: Advanced
-    GSCALAR(sysid_this_mav,         "SYSID_THISMAV",    MAV_SYSTEM_ID),
-
-    // @Param: SYSID_MYGCS
-    // @DisplayName: MAVLink ground station ID
-    // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
-    // @Range: 1 255
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",      255),
-
-    // @Param: TELEM_DELAY
-    // @DisplayName: Telemetry startup delay
-    // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
-    // @User: Standard
-    // @Units: s
-    // @Range: 0 30
-    // @Increment: 1
-    GSCALAR(telem_delay,            "TELEM_DELAY",     0),
+    // SYSID_THISMAV, SYSID_MYGCS and TELEM_DELAY moved to MAV_ namespace
 
     // @Param: GCS_PID_MASK
     // @DisplayName: GCS PID tuning mask
@@ -227,45 +205,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
     GOBJECT(rcmap,                 "RCMAP_",         RCMapper),
 
-    // @Group: SR0_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[0], gcs0,        "SR0_",     GCS_MAVLINK_Parameters),
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 2
-    // @Group: SR1_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 3
-    // @Group: SR2_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 4
-    // @Group: SR3_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 5
-    // @Group: SR4_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 6
-    // @Group: SR5_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[5],  gcs5,       "SR5_",     GCS_MAVLINK_Parameters),
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS >= 7
-    // @Group: SR6_
-    // @Path: GCS_Mavlink.cpp
-    GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
-#endif
+    // SR0_ through SR6_ moved to MAV1_ through MAV7_
 
     // AP_SerialManager was here
 
@@ -351,6 +291,11 @@ const AP_Param::Info Rover::var_info[] = {
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
+
+    // @Group: MAV
+    // @Path: ../libraries/GCS_MAVLink/GCS.cpp
+    GOBJECT(_gcs, "MAV", GCS),
+
     GOBJECT(mode_aoafollow, "AOA_", ModeAoafllow), // PID参数
     GOBJECT(mode_patrol, "PTRL_", ModePatrol),
     AP_VAREND
@@ -362,12 +307,7 @@ const AP_Param::Info Rover::var_info[] = {
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // 1 was AP_Stats
 
-    // @Param: SYSID_ENFORCE
-    // @DisplayName: GCS sysid enforcement
-    // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
-    // @Values: 0:NotEnforced,1:Enforced
-    // @User: Advanced
-    AP_GROUPINFO("SYSID_ENFORCE", 2, ParametersG2, sysid_enforce, 0),
+    // 2 was SYSID_ENFORCE; moved to MAV_OPTIONS bit 0
 
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
@@ -675,12 +615,37 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_g2,               369,     AP_PARAM_INT8, "TRQ1_POWER" },
     { Parameters::k_param_g2,               433,     AP_PARAM_FLOAT, "TRQ1_SLEW_TIME" },
     { Parameters::k_param_g2,               497,     AP_PARAM_FLOAT, "TRQ1_DIR_DELAY" },
+
+    // PARAMETER_CONVERSION - Added: Jul-2026 for this ArduPilot-4.7
+    // backport. Old records remain available to downgraded firmware.
+    { Parameters::k_param_sysid_this_mav_old, 0, AP_PARAM_INT16, "MAV_SYSID" },
+    { Parameters::k_param_sysid_my_gcs_old, 0, AP_PARAM_INT16, "MAV_GCS_SYSID" },
+    { Parameters::k_param_telem_delay_old, 0, AP_PARAM_INT8, "MAV_TELEM_DELAY" },
+
 };
 
 
 void Rover::load_parameters(void)
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
+
+    // SYSID_ENFORCE was a boolean. Treat every non-zero legacy value as
+    // enabled instead of copying an invalid value into the MAV_OPTIONS
+    // bitmask. Never overwrite a MAV_OPTIONS value already saved by the
+    // user or by an earlier conversion.
+    const AP_Param::ConversionInfo sysid_enforce_conversion = {
+        Parameters::k_param_g2, 2, AP_PARAM_INT8, "MAV_OPTIONS"
+    };
+    AP_Int8 old_sysid_enforce;
+    if (AP_Param::find_old_parameter(&sysid_enforce_conversion, &old_sysid_enforce)) {
+        enum ap_var_type mav_options_type;
+        AP_Param *mav_options = AP_Param::find("MAV_OPTIONS", &mav_options_type);
+        if (mav_options != nullptr &&
+            mav_options_type == AP_PARAM_INT16 &&
+            !mav_options->load()) {
+            static_cast<AP_Int16 *>(mav_options)->set_and_save(old_sysid_enforce.get() != 0 ? 1 : 0);
+        }
+    }
 
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 

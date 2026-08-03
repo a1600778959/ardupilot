@@ -183,7 +183,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: Telem1 protocol selection
     // @Description: Control what protocol to use on the Telem1 port. Note that the Frsky options require external converter hardware. See the wiki for details.
     // @SortValues: AlphabeticalZeroAtTop
-    // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:Gimbal, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 18:OpticalFlow, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN, 23:RCIN, 24:EFI Serial, 25:LTM, 26:RunCam, 27:HottTelem, 28:Scripting, 29:Crossfire VTX, 30:Generator, 31:Winch, 32:MSP, 33:DJI FPV, 35:ADSB, 36:AHRS, 37:SmartAudio, 38:FETtecOneWire, 40:AIS, 41:CoDevESC, 42:DisplayPort, 43:MAVLink High Latency, 44:IRC Tramp, 45:DDS XRCE, 46:IMUDATA, 48:PPP, 49:i-BUS Telemetry
+    // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:Gimbal, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN, 23:RCIN, 24:EFI Serial, 25:LTM, 26:RunCam, 27:HottTelem, 28:Scripting, 29:Crossfire VTX, 30:Generator, 31:Winch, 32:MSP, 33:DJI FPV, 35:ADSB, 36:AHRS, 37:SmartAudio, 38:FETtecOneWire, 40:AIS, 41:CoDevESC, 42:DisplayPort, 43:MAVLink High Latency, 44:IRC Tramp, 45:DDS XRCE, 46:IMUDATA, 48:PPP, 49:i-BUS Telemetry
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, DEFAULT_SERIAL1_PROTOCOL),
@@ -272,7 +272,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: 1_OPTIONS
     // @DisplayName: Telem1 options
     // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire. The Swap option allows the RX and TX pins to be swapped on STM32F7 based boards.
-    // @Bitmask: 0:InvertRX, 1:InvertTX, 2:HalfDuplex, 3:SwapTXRX, 4: RX_PullDown, 5: RX_PullUp, 6: TX_PullDown, 7: TX_PullUp, 8: RX_NoDMA, 9: TX_NoDMA, 10: Don't forward mavlink to/from, 11: DisableFIFO, 12: Ignore Streamrate
+    // @Bitmask: 0:InvertRX, 1:InvertTX, 2:HalfDuplex, 3:SwapTXRX, 4: RX_PullDown, 5: RX_PullUp, 6: TX_PullDown, 7: TX_PullUp, 8: RX_NoDMA, 9: TX_NoDMA, 11: DisableFIFO
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("1_OPTIONS",  14, AP_SerialManager, state[1].options, DEFAULT_SERIAL1_OPTIONS),
@@ -423,6 +423,8 @@ void AP_SerialManager::init_console()
 // init - // init - initialise serial ports
 void AP_SerialManager::init()
 {
+    convert_parameters();
+
     // always reset passthru port2 on boot
     passthru_port2.set_and_save_ifchanged(-1);
 
@@ -541,6 +543,13 @@ void AP_SerialManager::init()
     }
 }
 
+void AP_SerialManager::convert_parameters()
+{
+    for (auto &uart_state : state) {
+        uart_state.options.convert_parameter_width(AP_PARAM_INT16);
+    }
+}
+
 
 const AP_SerialManager::UARTState *AP_SerialManager::find_protocol_instance(enum SerialProtocol protocol, uint8_t instance) const
 {
@@ -598,7 +607,7 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
 #endif
 
     if (port) {
-        port->set_options(_state->options);
+        port->set_options(static_cast<uint16_t>(_state->options.get()));
     }
     return port;
 }
@@ -733,7 +742,7 @@ void AP_SerialManager::set_options(uint16_t i)
 {
     struct UARTState &opt = state[i];
     // pass through to HAL
-    if (!hal.serial(i)->set_options(opt.options)) {
+    if (!hal.serial(i)->set_options(static_cast<uint16_t>(opt.options.get()))) {
         DEV_PRINTF("Unable to setup options for Serial%u\n", i);
     }
 }
@@ -775,6 +784,56 @@ void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol
         state[sernum].protocol.set(protocol);
         state[sernum].baud.set(baudrate);
     }
+}
+
+bool AP_SerialManager::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) const
+{
+    for (uint8_t i = 0; i < ARRAY_SIZE(state); i++) {
+        if (state[i].protocol.get() == 18) {
+            hal.util->snprintf(failure_msg, failure_msg_len,
+                              "SERIAL%u_PROTOCOL 18 is no longer supported",
+                              unsigned(i));
+            return false;
+        }
+        const uint32_t serial_options = state[i].options.get();
+        int8_t mavlink_instance = -1;
+        if (protocol_match(SerialProtocol_MAVLink, state[i].get_protocol())) {
+            mavlink_instance = 0;
+            // Physical ports are enumerated in ascending SERIALx order by
+            // find_protocol_instance(). Count earlier MAVLink-equivalent
+            // protocols to obtain this port's exact MAVn backend number.
+            for (uint8_t j = 0; j < i; j++) {
+                if (protocol_match(SerialProtocol_MAVLink, state[j].get_protocol())) {
+                    mavlink_instance++;
+                }
+            }
+        }
+        if ((serial_options & AP_HAL::UARTDriver::OPTION_MAVLINK_NO_FORWARD_old) != 0) {
+            if (mavlink_instance >= 0) {
+                hal.util->snprintf(failure_msg, failure_msg_len,
+                                  "SERIAL%u_OPTIONS bit 10 -> MAV%u_OPTIONS bit 1",
+                                  unsigned(i), unsigned(mavlink_instance + 1));
+            } else {
+                hal.util->snprintf(failure_msg, failure_msg_len,
+                                  "SERIAL%u_OPTIONS bit 10 invalid; clear it",
+                                  unsigned(i));
+            }
+            return false;
+        }
+        if ((serial_options & AP_HAL::UARTDriver::OPTION_NOSTREAMOVERRIDE_old) != 0) {
+            if (mavlink_instance >= 0) {
+                hal.util->snprintf(failure_msg, failure_msg_len,
+                                  "SERIAL%u_OPTIONS bit 12 -> MAV%u_OPTIONS bit 2",
+                                  unsigned(i), unsigned(mavlink_instance + 1));
+            } else {
+                hal.util->snprintf(failure_msg, failure_msg_len,
+                                  "SERIAL%u_OPTIONS bit 12 invalid; clear it",
+                                  unsigned(i));
+            }
+            return false;
+        }
+    }
+    return true;
 }
 
 #if AP_SERIALMANAGER_REGISTER_ENABLED

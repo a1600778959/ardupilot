@@ -69,6 +69,10 @@ private:
     // extract target sysid and compid from a message
     void get_targets(const mavlink_message_t &msg, int16_t &sysid, int16_t &compid);
 
+    // Forward without learning a route or handling the packet locally. This
+    // is used only for explicitly enabled bad-CRC forwarding.
+    bool forward(GCS_MAVLINK &in_link, const mavlink_message_t &msg);
+
     // special handling for heartbeat messages
     void handle_heartbeat(GCS_MAVLINK &link, const mavlink_message_t &msg);
 
