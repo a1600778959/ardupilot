@@ -114,6 +114,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200, 114),
 #endif
     SCHED_TASK(cruise_learn_update,    50,    200, 126),
+    SCHED_TASK_CLASS(ModeAutoTune,     &rover.mode_autotune, background_save_update, 50, 200, 127),
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
 #endif

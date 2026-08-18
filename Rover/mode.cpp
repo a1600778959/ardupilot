@@ -402,6 +402,9 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::PATROL:
         ret = &mode_patrol;
         break;
+    case Mode::Number::AUTOTUNE:
+        ret = &mode_autotune;
+        break;
     default:
         break;
     }

@@ -227,6 +227,7 @@ public:
         k_param__gcs = 258,
         k_param_mode_aoafollow = 259,   //跟随参数
         k_param_mode_patrol = 260,
+        k_param_mode_autotune = 261,
         };
 
     AP_Int16    format_version;

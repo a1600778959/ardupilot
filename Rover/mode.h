@@ -24,6 +24,7 @@ public:
         INITIALISING = 16,
         AOAFOLLOW    = 17,
         PATROL       = 18,
+        AUTOTUNE     = 19,
     };
 
     // Constructor

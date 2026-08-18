@@ -119,6 +119,15 @@ static constexpr char patrol_log_labels[] =
 static constexpr char patrol_geometry_log_format[] = "QHLLLLLLLLLL";
 static constexpr char patrol_geometry_log_labels[] =
     "TimeUS,Line,ALat,ALng,BLat,BLng,OLat,OLng,DLat,DLng,NLat,NLng";
+static constexpr char autotune_sample_format[] = "QBBHHffffffffff";
+static constexpr char autotune_sample_labels[] =
+    "TimeUS,St,Src,Flg,Run,Tgt,Act,Out,X,Y,Spd,YRate,XMar,YMar,Unc";
+static constexpr char autotune_model_format[] = "QBBBHHfffffffff";
+static constexpr char autotune_model_labels[] =
+    "TimeUS,St,Ev,Why,Run,N,A1,A2,B1,B2,Fit,Sat,Ov,Gain,Tau";
+static constexpr char autotune_param_format[] = "QBHNBBBfff";
+static constexpr char autotune_param_labels[] =
+    "TimeUS,Idx,Run,Name,Act,Why,Res,Base,Cand,Read";
 
 static_assert((sizeof(patrol_log_format) - 1U) <=
               sizeof(((log_Format *)nullptr)->format),
@@ -132,6 +141,24 @@ static_assert((sizeof(patrol_log_labels) - 1U) <=
 static_assert((sizeof(patrol_geometry_log_labels) - 1U) <=
               sizeof(((log_Format *)nullptr)->labels),
               "PTRG labels exceed DataFlash FMT limit");
+static_assert((sizeof(autotune_sample_format) - 1U) <=
+              sizeof(((log_Format *)nullptr)->format),
+              "RATS format exceeds DataFlash FMT limit");
+static_assert((sizeof(autotune_model_format) - 1U) <=
+              sizeof(((log_Format *)nullptr)->format),
+              "RATM format exceeds DataFlash FMT limit");
+static_assert((sizeof(autotune_param_format) - 1U) <=
+              sizeof(((log_Format *)nullptr)->format),
+              "RATP format exceeds DataFlash FMT limit");
+static_assert((sizeof(autotune_sample_labels) - 1U) <=
+              sizeof(((log_Format *)nullptr)->labels),
+              "RATS labels exceed DataFlash FMT limit");
+static_assert((sizeof(autotune_model_labels) - 1U) <=
+              sizeof(((log_Format *)nullptr)->labels),
+              "RATM labels exceed DataFlash FMT limit");
+static_assert((sizeof(autotune_param_labels) - 1U) <=
+              sizeof(((log_Format *)nullptr)->labels),
+              "RATP labels exceed DataFlash FMT limit");
 
 struct PACKED log_Patrol {
     LOG_PACKET_HEADER;
@@ -164,9 +191,64 @@ struct PACKED log_PatrolGeometry {
     int32_t next_destination_lng;
 };
 
+struct PACKED log_AutoTuneSample {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t stage;
+    uint8_t source;
+    uint16_t flags;
+    uint16_t run_id;
+    float target;
+    float actual;
+    float output;
+    float position_x;
+    float position_y;
+    float speed;
+    float yaw_rate;
+    float margin_x;
+    float margin_y;
+    float position_uncertainty;
+};
+
+struct PACKED log_AutoTuneModel {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t stage;
+    uint8_t event;
+    uint8_t reason;
+    uint16_t run_id;
+    uint16_t samples;
+    float theta[4];
+    float fit;
+    float saturation;
+    float overshoot;
+    float gain;
+    float time_constant;
+};
+
+struct PACKED log_AutoTuneParam {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t index;
+    uint16_t run_id;
+    char name[16];
+    uint8_t action;
+    uint8_t reason;
+    uint8_t result;
+    float baseline;
+    float candidate;
+    float readback;
+};
+
 static_assert(sizeof(log_Patrol) == 35, "PTRL format/struct mismatch");
 static_assert(sizeof(log_PatrolGeometry) == 53,
               "PTRG format/struct mismatch");
+static_assert(sizeof(log_AutoTuneSample) == 57,
+              "RATS format/struct mismatch");
+static_assert(sizeof(log_AutoTuneModel) == 54,
+              "RATM format/struct mismatch");
+static_assert(sizeof(log_AutoTuneParam) == 45,
+              "RATP format/struct mismatch");
 
 // Write a throttle control packet
 void Rover::Log_Write_Throttle()
@@ -234,6 +316,79 @@ void Rover::Log_Write_Patrol(const ModePatrol::LogSnapshot &snapshot,
         logger.WriteCriticalBlock(&geometry_pkt, sizeof(geometry_pkt));
     } else {
         logger.WriteBlock(&geometry_pkt, sizeof(geometry_pkt));
+    }
+}
+
+void Rover::Log_Write_AutoTune_Sample(const ModeAutoTune::LogSample &snapshot)
+{
+    const log_AutoTuneSample pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_RATS_MSG),
+        time_us     : AP_HAL::micros64(),
+        stage       : snapshot.stage,
+        source      : snapshot.source,
+        flags       : snapshot.flags,
+        run_id      : snapshot.run_id,
+        target      : snapshot.target,
+        actual      : snapshot.actual,
+        output      : snapshot.output,
+        position_x  : snapshot.position_x,
+        position_y  : snapshot.position_y,
+        speed       : snapshot.speed,
+        yaw_rate    : snapshot.yaw_rate,
+        margin_x    : snapshot.margin_x,
+        margin_y    : snapshot.margin_y,
+        position_uncertainty : snapshot.position_uncertainty,
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+void Rover::Log_Write_AutoTune_Model(const ModeAutoTune::LogModel &snapshot,
+                                     bool critical)
+{
+    log_AutoTuneModel pkt{};
+    pkt.head1 = HEAD_BYTE1;
+    pkt.head2 = HEAD_BYTE2;
+    pkt.msgid = LOG_RATM_MSG;
+    pkt.time_us = AP_HAL::micros64();
+    pkt.stage = snapshot.stage;
+    pkt.event = snapshot.event;
+    pkt.reason = snapshot.reason;
+    pkt.run_id = snapshot.run_id;
+    pkt.samples = snapshot.samples;
+    memcpy(pkt.theta, snapshot.theta, sizeof(pkt.theta));
+    pkt.fit = snapshot.fit;
+    pkt.saturation = snapshot.saturation;
+    pkt.overshoot = snapshot.overshoot;
+    pkt.gain = snapshot.gain;
+    pkt.time_constant = snapshot.time_constant;
+    if (critical) {
+        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
+    } else {
+        logger.WriteBlock(&pkt, sizeof(pkt));
+    }
+}
+
+void Rover::Log_Write_AutoTune_Param(const ModeAutoTune::LogParam &snapshot,
+                                     bool critical)
+{
+    log_AutoTuneParam pkt{};
+    pkt.head1 = HEAD_BYTE1;
+    pkt.head2 = HEAD_BYTE2;
+    pkt.msgid = LOG_RATP_MSG;
+    pkt.time_us = AP_HAL::micros64();
+    pkt.index = snapshot.index;
+    pkt.run_id = snapshot.run_id;
+    memcpy(pkt.name, snapshot.name, sizeof(pkt.name));
+    pkt.action = snapshot.action;
+    pkt.reason = snapshot.reason;
+    pkt.result = snapshot.result;
+    pkt.baseline = snapshot.baseline;
+    pkt.candidate = snapshot.candidate;
+    pkt.readback = snapshot.readback;
+    if (critical) {
+        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
+    } else {
+        logger.WriteBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -349,6 +504,61 @@ const LogStructure Rover::log_structure[] = {
     { LOG_PTRG_MSG, sizeof(log_PatrolGeometry),
       "PTRG", patrol_geometry_log_format, patrol_geometry_log_labels,
       "s-DUDUDUDUDU", "F-GGGGGGGGGG", true },
+
+// @LoggerMessage: RATS
+// @Description: Rover built-in AutoTune sample data
+// @Field: St: AutoTune stage
+// @Field: Src: Feedback source
+// @Field: Flg: Runtime state and limit flags
+// @Field: Run: AutoTune run identifier
+// @Field: Tgt: Active test target
+// @Field: Act: Active measured response
+// @Field: Out: Maximum mixed actuator request
+// @Field: X: Vehicle field-frame longitudinal position
+// @Field: Y: Vehicle field-frame lateral position
+// @Field: Spd: Vehicle speed
+// @Field: YRate: Vehicle yaw rate
+// @Field: XMar: Remaining longitudinal envelope margin
+// @Field: YMar: Remaining lateral envelope margin
+// @Field: Unc: Conservative horizontal position uncertainty
+    { LOG_RATS_MSG, sizeof(log_AutoTuneSample),
+      "RATS", autotune_sample_format, autotune_sample_labels,
+      "s-------mmnEmmm", "F-------0000000", true },
+
+// @LoggerMessage: RATM
+// @Description: Rover built-in AutoTune stage and identified model data
+// @Field: St: AutoTune stage
+// @Field: Ev: Model or stage event
+// @Field: Why: Failure or decision reason
+// @Field: Run: AutoTune run identifier
+// @Field: N: Valid model samples
+// @Field: A1: First autoregressive coefficient
+// @Field: A2: Second autoregressive coefficient
+// @Field: B1: First input coefficient
+// @Field: B2: Second input coefficient
+// @Field: Fit: Normalised root mean square model error
+// @Field: Sat: Saturated sample fraction
+// @Field: Ov: Closed-loop overshoot fraction
+// @Field: Gain: Identified steady-state gain
+// @Field: Tau: Identified dominant time constant
+    { LOG_RATM_MSG, sizeof(log_AutoTuneModel),
+      "RATM", autotune_model_format, autotune_model_labels,
+      "s--------------", "F--------------" },
+
+// @LoggerMessage: RATP
+// @Description: Rover built-in AutoTune parameter transaction
+// @Field: Idx: Managed parameter index
+// @Field: Run: AutoTune run identifier
+// @Field: Name: Parameter name
+// @Field: Act: Candidate, save, verify or rollback action
+// @Field: Why: Parameter decision reason
+// @Field: Res: Action result
+// @Field: Base: RAM baseline value
+// @Field: Cand: Candidate value
+// @Field: Read: EEPROM readback value
+    { LOG_RATP_MSG, sizeof(log_AutoTuneParam),
+      "RATP", autotune_param_format, autotune_param_labels,
+      "s---------", "F---------" },
 };
 
 uint8_t Rover::get_num_log_structures() const

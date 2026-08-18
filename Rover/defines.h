@@ -19,9 +19,12 @@ enum LoggingParameters {
     // existing logs cannot be decoded as a different Rover message.
     LOG_PTRL_MSG = 7,
     LOG_PTRG_MSG = 8,
+    LOG_RATS_MSG = 9,
+    LOG_RATM_MSG = 10,
+    LOG_RATP_MSG = 11,
 };
 
-static_assert(LOG_PTRG_MSG < 32, "Rover vehicle log IDs exhausted");
+static_assert(LOG_RATP_MSG < 32, "Rover vehicle log IDs exhausted");
 
 #define MASK_LOG_ATTITUDE_FAST  (1<<0)
 #define MASK_LOG_ATTITUDE_MED   (1<<1)

@@ -68,6 +68,7 @@
 #include "RC_Channel.h"                  // RC Channel Library
 
 #include "mode.h"
+#include "mode_autotune.h"
 
 class Rover : public AP_Vehicle {
 public:
@@ -91,6 +92,7 @@ public:
     friend class ModeLoiter;
     friend class ModeManual;
     friend class ModePatrol;
+    friend class ModeAutoTune;
     friend class ModeRTL;
     friend class ModeSmartRTL;
     friend class ModeAoafllow;
@@ -217,6 +219,7 @@ private:
     ModeSmartRTL mode_smartrtl;
     ModeAoafllow mode_aoafollow; // <- 新增此行
     ModePatrol mode_patrol;
+    ModeAutoTune mode_autotune;
 
     // cruise throttle and speed learning
     typedef struct {
@@ -300,6 +303,11 @@ private:
     void Log_Write_Patrol(const ModePatrol::LogSnapshot &snapshot,
                           bool critical,
                           bool write_geometry);
+    void Log_Write_AutoTune_Sample(const ModeAutoTune::LogSample &snapshot);
+    void Log_Write_AutoTune_Model(const ModeAutoTune::LogModel &snapshot,
+                                  bool critical);
+    void Log_Write_AutoTune_Param(const ModeAutoTune::LogParam &snapshot,
+                                  bool critical);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
 #endif

@@ -80,18 +80,17 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Param: FLTMODE_GCSBLOCK
     // @DisplayName: Flight mode block from GCS
     // @Description: Bitmask of flight modes to disable for GCS selection. Mode can still be accessed via RC or failsafe.
+    // The Rover bit order must match Rover::gcs_mode_enabled().
     // @Bitmask{Rover}: 0:Manual
-    // @Bitmask{Rover}: 1:Acro
-    // @Bitmask{Rover}: 2:Steering
-    // @Bitmask{Rover}: 3:Loiter
-    // @Bitmask{Rover}: 4:Follow
-    // @Bitmask{Rover}: 5:Simple
-    // @Bitmask{Rover}: 6:Circle
-    // @Bitmask{Rover}: 7:Auto
-    // @Bitmask{Rover}: 8:RTL
-    // @Bitmask{Rover}: 9:SmartRTL
-    // @Bitmask{Rover}: 10:Guided
-    // @Bitmask{Rover}: 11:Dock
+    // @Bitmask{Rover}: 1:Loiter
+    // @Bitmask{Rover}: 2:Circle
+    // @Bitmask{Rover}: 3:Auto
+    // @Bitmask{Rover}: 4:RTL
+    // @Bitmask{Rover}: 5:SmartRTL
+    // @Bitmask{Rover}: 6:Guided
+    // @Bitmask{Rover}: 7:AOAFollow
+    // @Bitmask{Rover}: 8:Patrol
+    // @Bitmask{Rover}: 9:AutoTune
     // @User: Standard
     AP_GROUPINFO("FLTMODE_GCSBLOCK", 20, AP_Vehicle, flight_mode_GCS_block, 0),
 #endif // APM_BUILD_TYPE(APM_BUILD_Rover)

@@ -151,6 +151,7 @@ bool Rover::gcs_mode_enabled(const Mode::Number mode_num) const
         (uint8_t)Mode::Number::GUIDED,
         (uint8_t)Mode::Number::AOAFOLLOW,
         (uint8_t)Mode::Number::PATROL,
+        (uint8_t)Mode::Number::AUTOTUNE,
     };
 
     return !block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list));
