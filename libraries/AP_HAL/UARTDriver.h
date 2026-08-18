@@ -181,6 +181,9 @@ public:
     // request information on uart I/O for this uart, for @SYS/uarts.txt
     virtual void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) {}
 
+    // return the cumulative number of bytes dropped by the receive buffer
+    uint32_t get_rx_dropped_bytes() const { return get_total_dropped_rx_bytes(); }
+
 #if HAL_LOGGING_ENABLED
     // Log stats for this instance
     void log_stats(const uint8_t inst, StatsTracker &stats, const uint32_t dt_ms);

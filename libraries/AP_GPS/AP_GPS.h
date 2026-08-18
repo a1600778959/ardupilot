@@ -614,8 +614,6 @@ private:
     static AP_GPS *_singleton;
     HAL_Semaphore rsem;
 
-    bool _gps_thread_started = false;
-
     // returns the desired gps update rate in milliseconds
     // this does not provide any guarantee that the GPS is updating at the requested
     // rate it is simply a helper for use in the backends for determining what rate
@@ -640,6 +638,17 @@ private:
     };
     // Note allowance for an additional instance to contain blended data
     GPS_timing timing[GPS_MAX_INSTANCES];
+
+    uint8_t health_failure_reasons(uint8_t instance) const;
+#if HAL_GCS_ENABLED
+    void update_health_monitor();
+    struct GPS_health_monitor {
+        bool seen_healthy;
+        bool reported_healthy;
+        uint32_t last_report_ms;
+    } health_monitor[GPS_MAX_RECEIVERS] {};
+#endif
+
     GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_INSTANCES];
     AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
@@ -679,8 +688,6 @@ private:
     AP_GPS_Backend *_detect_instance(uint8_t instance);
 
     void update_instance(uint8_t instance);
-
-    void gps_update_thread();
 
     /*
       buffer for re-assembling RTCM data for GPS injection.

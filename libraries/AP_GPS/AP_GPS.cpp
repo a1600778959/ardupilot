@@ -55,6 +55,15 @@
 #define GPS_BAUD_TIME_MS 1200
 #define GPS_TIMEOUT_MS 4000u
 
+static constexpr uint8_t GPS_HEALTH_NO_DRIVER = 1U << 0;
+static constexpr uint8_t GPS_HEALTH_DRIVER_UNHEALTHY = 1U << 1;
+static constexpr uint8_t GPS_HEALTH_DELAYED = 1U << 2;
+static constexpr uint8_t GPS_HEALTH_AVERAGE_RATE = 1U << 3;
+static constexpr uint8_t GPS_HEALTH_LAGGED = 1U << 4;
+#if HAL_GCS_ENABLED
+static constexpr uint32_t GPS_HEALTH_REPORT_INTERVAL_MS = 5000U;
+#endif
+
 extern const AP_HAL::HAL &hal;
 
 // baudrates to try to detect GPSes with
@@ -885,10 +894,13 @@ void AP_GPS::update(void)
 {
     WITH_SEMAPHORE(rsem);
 
-    if (!_gps_thread_started) {
-        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_GPS::gps_update_thread, void), "gps_update", 2048, AP_HAL::Scheduler::PRIORITY_IO, 0);
-        _gps_thread_started = true;
+    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        update_instance(i);
     }
+
+#if HAL_GCS_ENABLED
+    update_health_monitor();
+#endif
 
     // calculate number of instances
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
@@ -1502,15 +1514,17 @@ uint16_t AP_GPS::get_rate_ms(uint8_t instance) const
     return MIN(params[instance].rate_ms, GPS_MAX_RATE_MS);
 }
 
-bool AP_GPS::is_healthy(uint8_t instance) const
+uint8_t AP_GPS::health_failure_reasons(uint8_t instance) const
 {
     if (instance >= GPS_MAX_INSTANCES) {
-        return false;
+        return GPS_HEALTH_NO_DRIVER;
     }
 
     if (get_type(_primary.get()) == GPS_TYPE_NONE) {
-        return false;
+        return GPS_HEALTH_NO_DRIVER;
     }
+
+    uint8_t reasons = 0;
 
 #ifndef HAL_BUILD_AP_PERIPH
     /*
@@ -1533,17 +1547,83 @@ bool AP_GPS::is_healthy(uint8_t instance) const
         get_type(instance) == GPS_TYPE_UNICORE_MOVINGBASE_NMEA;
     const float delay_avg_max = moving_baseline_rover ? 333 : 215;
     const GPS_timing &t = timing[instance];
-    bool delay_ok = (t.delayed_count < delay_threshold) &&
-        t.average_delta_ms < delay_avg_max &&
-        state[instance].lagged_sample_count < 5;
-    if (!delay_ok) {
-        return false;
+    if (t.delayed_count >= delay_threshold) {
+        reasons |= GPS_HEALTH_DELAYED;
+    }
+    if (t.average_delta_ms >= delay_avg_max) {
+        reasons |= GPS_HEALTH_AVERAGE_RATE;
+    }
+    if (state[instance].lagged_sample_count >= 5) {
+        reasons |= GPS_HEALTH_LAGGED;
     }
 #endif // HAL_BUILD_AP_PERIPH
 
-    return drivers[instance] != nullptr &&
-           drivers[instance]->is_healthy();
+    if (drivers[instance] == nullptr) {
+        reasons |= GPS_HEALTH_NO_DRIVER;
+    } else if (!drivers[instance]->is_healthy()) {
+        reasons |= GPS_HEALTH_DRIVER_UNHEALTHY;
+    }
+
+    return reasons;
 }
+
+bool AP_GPS::is_healthy(uint8_t instance) const
+{
+    return health_failure_reasons(instance) == 0;
+}
+
+#if HAL_GCS_ENABLED
+void AP_GPS::update_health_monitor()
+{
+    const uint32_t now_ms = AP_HAL::millis();
+
+    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        GPS_health_monitor &monitor = health_monitor[i];
+        const uint8_t reasons = health_failure_reasons(i);
+        const bool healthy = reasons == 0 && state[i].announced_detection;
+
+        if (!monitor.seen_healthy) {
+            if (healthy) {
+                monitor.seen_healthy = true;
+                monitor.reported_healthy = true;
+            }
+            continue;
+        }
+
+        if (healthy == monitor.reported_healthy ||
+            (monitor.last_report_ms != 0 &&
+             now_ms - monitor.last_report_ms < GPS_HEALTH_REPORT_INTERVAL_MS)) {
+            continue;
+        }
+
+        const uint32_t message_age_ms = now_ms - timing[i].last_message_time_ms;
+        uint32_t dropped_rx_bytes = 0;
+#if HAL_UART_STATS_ENABLED
+        if (_port[i] != nullptr) {
+            dropped_rx_bytes = _port[i]->get_rx_dropped_bytes();
+        }
+#endif
+
+        if (healthy) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                          "GPS%u healthy age=%lu drop=%lu",
+                          (unsigned)(i + 1),
+                          (unsigned long)message_age_ms,
+                          (unsigned long)dropped_rx_bytes);
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                          "GPS%u unhealthy r=0x%02x age=%lu drop=%lu",
+                          (unsigned)(i + 1),
+                          (unsigned)reasons,
+                          (unsigned long)message_age_ms,
+                          (unsigned long)dropped_rx_bytes);
+        }
+
+        monitor.reported_healthy = healthy;
+        monitor.last_report_ms = now_ms;
+    }
+}
+#endif
 
 bool AP_GPS::prepare_for_arming(void) {
     bool all_passed = true;
@@ -1902,19 +1982,6 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Legacy: 4.5 param
     // @ReadOnly: True
     // @User: Advanced
-
-void AP_GPS::gps_update_thread()
-{
-    // 独立线程处理GPS更新，以避免大数据量下阻塞主循环
-    // 每1ms更新一次，确保GPS状态及时更新，不影响地面站和DDS客户端的准确性
-    while (true) {
-        for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
-            WITH_SEMAPHORE(rsem);
-            update_instance(i);
-        }
-        hal.scheduler->delay(10);
-    }
-}
 
 /*
  * end old parameter metadata
