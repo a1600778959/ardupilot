@@ -867,11 +867,6 @@ void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
 #if AP_DDS_NAVSATFIX_PUB_ENABLED
 bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance)
 {
-    // Add a lambda that takes in navsatfix msg and populates the cov
-    // Make it constexpr if possible
-    // https://www.fluentcpp.com/2021/12/13/the-evolutions-of-lambdas-in-c14-c17-and-c20/
-    // constexpr auto times2 = [] (sensor_msgs_msg_NavSatFix* msg) { return n * 2; };
-
     set_runtime_phase(RuntimePhase::GPS_SNAPSHOT);
     auto &gps = AP::gps();
     auto &gps_semaphore = gps.get_semaphore();
@@ -880,66 +875,74 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     }
     ScopedSemaphoreRelease gps_lock(gps_semaphore);
 
-    msg.latitude = 0.0;
-    msg.longitude = 0.0;
-    msg.altitude = 0.0;
-    memset(msg.position_covariance, 0, sizeof(msg.position_covariance));
-
-    if (!gps.is_healthy(instance)) {
-        msg.status.status = -1; // STATUS_NO_FIX
-        msg.status.service = 0; // No services supported
-        msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
-        // return false;
-    }
-
     update_topic(msg.header.stamp);
     static_assert(GPS_MAX_RECEIVERS <= 9, "GPS_MAX_RECEIVERS is greater than 9");
     hal.util->snprintf(msg.header.frame_id, 2, "%u", instance);
-    msg.status.service = 0; // SERVICE_GPS
-    msg.status.status = -1; // STATUS_NO_FIX
 
+    msg.status.service = 1; // SERVICE_GPS
+    msg.status.status = -1; // STATUS_NO_FIX
+    msg.latitude = NAN;
+    msg.longitude = NAN;
+    msg.altitude = NAN;
+    msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
+    memset(msg.position_covariance, 0, sizeof(msg.position_covariance));
+
+    if (!gps.is_healthy(instance)) {
+        return true;
+    }
 
     //! @todo What about glonass, compass, galileo?
     //! This will be properly designed and implemented to spec in #23277
-    msg.status.service = 1; // SERVICE_GPS
-
     const auto status = gps.status(instance);
+    int8_t navsat_status = -1; // STATUS_NO_FIX
     switch (status) {
     case AP_GPS::NO_GPS:
     case AP_GPS::NO_FIX:
-        msg.status.status = -1; // STATUS_NO_FIX
-        msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
         return true;
     case AP_GPS::GPS_OK_FIX_2D:
     case AP_GPS::GPS_OK_FIX_3D:
-        msg.status.status = 0; // STATUS_FIX
+        navsat_status = 0; // STATUS_FIX
         break;
     case AP_GPS::GPS_OK_FIX_3D_DGPS:
-        msg.status.status = 1; // STATUS_SBAS_FIX
+        navsat_status = 1; // STATUS_SBAS_FIX
         break;
     case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
     case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
-        msg.status.status = 2; // STATUS_SBAS_FIX
+        navsat_status = 2; // STATUS_GBAS_FIX
         break;
     default:
-        //! @todo Can we not just use an enum class and not worry about this condition?
-        break;
-    }
-    const auto loc = gps.location(instance);
-    msg.latitude = loc.lat * 1E-7;
-    msg.longitude = loc.lng * 1E-7;
-
-    int32_t alt_cm;
-    if (!loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
-        // With absolute frame, this condition is unlikely
-        msg.status.status = -1; // STATUS_NO_FIX
-        msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
         return true;
     }
+
+    const auto loc = gps.location(instance);
+    int32_t alt_cm;
+    if (!loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
+        return true;
+    }
+
+    msg.status.status = navsat_status;
+    msg.latitude = loc.lat * 1E-7;
+    msg.longitude = loc.lng * 1E-7;
     msg.altitude = alt_cm * 0.01;
 
+    // Use the time of the physical GPS sample. AP_GPS::time_epoch_usec()
+    // advances with the local clock and would make repeated publications of
+    // one sample appear to be new measurements.
+    uint64_t sample_time_usec = gps.last_message_epoch_usec(instance);
+    if (sample_time_usec == 0) {
+        uint64_t now_usec;
+        if (!AP::rtc().get_utc_usec(now_usec)) {
+            now_usec = AP_HAL::micros64();
+        }
+        const uint64_t sample_age_usec =
+            uint64_t(AP_HAL::millis() - gps.last_message_time_ms(instance)) * 1000ULL;
+        sample_time_usec = now_usec > sample_age_usec ? now_usec - sample_age_usec : 0;
+    }
+    msg.header.stamp.sec = sample_time_usec / 1000000ULL;
+    msg.header.stamp.nanosec = (sample_time_usec % 1000000ULL) * 1000UL;
+
     // ROS allows double precision, ArduPilot exposes float precision today
-    Matrix3f cov;
+    Matrix3f cov {};
     msg.position_covariance_type = (uint8_t)gps.position_covariance(instance, cov);
     msg.position_covariance[0] = cov[0][0];
     msg.position_covariance[1] = cov[0][1];
