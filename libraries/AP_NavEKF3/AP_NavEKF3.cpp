@@ -1383,6 +1383,15 @@ bool NavEKF3::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f
     return core[primary].getVariances(velVar, posVar, hgtVar, magVar, reservedVar, offset);
 }
 
+bool NavEKF3::getHorizontalPositionUncertainty(float &uncertainty) const
+{
+    if (core == nullptr) {
+        return false;
+    }
+
+    return core[primary].getHorizontalPositionUncertainty(uncertainty);
+}
+
 bool NavEKF3::getOrientationCovariance(Matrix3f &covariance) const
 {
     if (core == nullptr) {

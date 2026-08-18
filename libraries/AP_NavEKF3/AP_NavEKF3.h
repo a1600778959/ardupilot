@@ -172,6 +172,9 @@ public:
     // return the innovation consistency test ratios
     bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar, Vector2f &offset) const;
 
+    // return the primary core's largest horizontal position-state 1-sigma uncertainty in metres
+    bool getHorizontalPositionUncertainty(float &uncertainty) const;
+
     // return the EKF attitude covariance as roll/pitch/yaw covariance in rad^2
     bool getOrientationCovariance(Matrix3f &covariance) const;
 

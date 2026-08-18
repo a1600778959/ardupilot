@@ -48,6 +48,20 @@ public:
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
 
+    // configured throttle ceiling in percent
+    float get_throttle_max() const { return constrain_float(_throttle_max, 0.0f, 100.0f); }
+
+    // temporary absolute limit applied to each final left/right motor output.
+    // This is a runtime safety limit and is not an EEPROM parameter.
+    void set_actuator_output_limit_pct(float limit_pct) {
+        _actuator_output_limit_pct = constrain_float(limit_pct, 0.0f, 100.0f);
+    }
+    void clear_actuator_output_limit() {
+        _actuator_output_limit_pct = 100.0f;
+        _actuator_output_limited = false;
+    }
+    bool actuator_output_limited() const { return _actuator_output_limited; }
+
     // output to motors and steering servos
     // ground_speed should be the vehicle's speed over the surface in m/s
     // dt should be expected time between calls to this function
@@ -149,6 +163,8 @@ private:
     float   _steering_rate_state; // steering rate state used by curved skid-steering response
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _throttle_prev; // limited throttle request from previous iteration
+    float   _actuator_output_limit_pct{100.0f}; // temporary final left/right output limit
+    bool    _actuator_output_limited{false}; // true if the temporary limit clipped either wheel this cycle
     uint32_t _motor_mask;   // mask of motors configured with pwm_type
 
     struct ReverseThrottle {

@@ -116,6 +116,7 @@ uint16_t AP_Param::num_read_only;
 bool AP_Param::eeprom_full;
 
 ObjectBuffer_TS<AP_Param::param_save> AP_Param::save_queue{30};
+std::atomic<bool> AP_Param::save_handler_active{false};
 bool AP_Param::registered_save_handler;
 
 bool AP_Param::done_all_default_params;
@@ -1289,9 +1290,11 @@ void AP_Param::save(bool force_save)
 void AP_Param::save_io_handler(void)
 {
     struct param_save p;
+    save_handler_active.store(true, std::memory_order_release);
     while (save_queue.pop(p)) {
         p.param->save_sync(p.force_save, true);
     }
+    save_handler_active.store(false, std::memory_order_release);
     if (hal.scheduler->is_system_initialized()) {
         // pay the cost of parameter counting in the IO thread
         count_parameters();
@@ -1304,11 +1307,20 @@ void AP_Param::save_io_handler(void)
 void AP_Param::flush(void)
 {
     uint16_t counter = 200; // 2 seconds max
-    while (counter-- && save_queue.available()) {
+    while (counter-- && !save_queue_empty()) {
         hal.scheduler->expect_delay_ms(10);
         hal.scheduler->delay(10);
         hal.scheduler->expect_delay_ms(0);
     }
+}
+
+bool AP_Param::save_queue_empty(void)
+{
+    // Check the queue first.  The IO handler marks itself active before
+    // dequeuing, so an item cannot disappear from the queue and look
+    // complete while save_sync() is still writing it.
+    return save_queue.available() == 0 &&
+           !save_handler_active.load(std::memory_order_acquire);
 }
 
 // Load the variable from EEPROM, if supported

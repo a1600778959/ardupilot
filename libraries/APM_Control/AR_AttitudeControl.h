@@ -72,7 +72,15 @@ public:
     // low level control accessors for reporting and logging
     AC_P& get_steering_angle_p() { return _steer_angle_p; }
     AC_PID& get_steering_rate_pid() { return _steer_rate_pid; }
+    AC_PID& get_throttle_speed_pid() { return _throttle_speed_pid; }
     const AP_PIDInfo& get_throttle_speed_pid_info() const { return _throttle_speed_pid_info; }
+
+    // configured steering limits used by autonomous modes
+    float get_steer_rate_max() const { return MAX(_steer_rate_max, 0.0f); }
+    float get_steer_accel_max() const { return MAX(_steer_accel_max, 0.0f); }
+    float get_steer_decel_max() const {
+        return is_positive(_steer_decel_max) ? float(_steer_decel_max) : MAX(_steer_accel_max, 0.0f);
+    }
 
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate);

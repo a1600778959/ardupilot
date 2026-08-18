@@ -252,6 +252,9 @@ public:
     // return the innovation consistency test ratios for the velocity, position and magnetometer measurements
     bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar, Vector2f &offset) const;
 
+    // return the largest horizontal position-state 1-sigma uncertainty in metres
+    bool getHorizontalPositionUncertainty(float &uncertainty) const;
+
     // return the EKF attitude covariance as roll/pitch/yaw covariance in rad^2
     bool getOrientationCovariance(Matrix3f &covariance) const;
 

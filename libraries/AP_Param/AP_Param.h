@@ -408,6 +408,10 @@ public:
     /// used on reboot
     static void flush(void);
 
+    // return true when the background parameter-save queue is empty and the
+    // IO handler is not writing a parameter which it has already dequeued
+    static bool save_queue_empty(void);
+
     /// Save the current value of the variable to storage, async interface
     ///
     /// @param  force_save     If true then force save even if default
@@ -861,6 +865,7 @@ private:
         bool force_save;
     };
     static ObjectBuffer_TS<struct param_save> save_queue;
+    static std::atomic<bool> save_handler_active;
     static bool registered_save_handler;
 
     // background function for saving parameters

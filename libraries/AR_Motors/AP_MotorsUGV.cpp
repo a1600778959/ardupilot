@@ -250,6 +250,7 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
     // clear limit flags
     // output_ methods are responsible for setting them to true if required on each iteration
     limit.steer_left = limit.steer_right = limit.throttle_lower = limit.throttle_upper = false;
+    _actuator_output_limited = false;
 
     // sanity check parameters
     sanity_check_parameters();
@@ -590,6 +591,15 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 
     // apply rate control
     throttle = get_rate_controlled_throttle(function, throttle, dt);
+
+    // Apply any temporary mode-level actuator ceiling after thrust-curve and
+    // wheel-rate control so neither path can exceed the requested physical
+    // left/right output envelope.
+    const float throttle_before_limit = throttle;
+    throttle = constrain_float(throttle,
+                               -_actuator_output_limit_pct,
+                               _actuator_output_limit_pct);
+    _actuator_output_limited |= !is_equal(throttle, throttle_before_limit);
 
     // set relay if necessary
 #if AP_RELAY_ENABLED

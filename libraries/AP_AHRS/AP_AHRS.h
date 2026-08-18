@@ -240,7 +240,7 @@ public:
     // Write forward speed data from an external navigation system
     void writeExtNavForwardSpeedData(float speed);
 
-    // True if a valid external navigation velocity sample was recently written
+    // True if a valid external navigation velocity or forward-speed sample was recently written
     bool has_recent_extnav_velocity(uint32_t max_age_ms) const;
 
     // Get recent external navigation forward speed
@@ -319,6 +319,9 @@ public:
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &reservedVar) const;
+
+    // return the active estimator's horizontal position 1-sigma uncertainty in metres
+    bool get_horizontal_position_uncertainty(float &uncertainty) const;
 
     // return the EKF attitude covariance as roll/pitch/yaw covariance in rad^2
     bool get_orientation_covariance(Matrix3f &covariance) const;

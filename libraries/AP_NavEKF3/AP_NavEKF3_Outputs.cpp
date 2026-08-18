@@ -430,6 +430,21 @@ bool NavEKF3_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vec
     return true;
 }
 
+bool NavEKF3_core::getHorizontalPositionUncertainty(float &uncertainty) const
+{
+    if (!healthy_for_horizontal_nav()) {
+        return false;
+    }
+
+    const float variance = MAX(float(P[7][7]), float(P[8][8]));
+    if (!isfinite(variance) || is_negative(variance)) {
+        return false;
+    }
+
+    uncertainty = safe_sqrt(variance);
+    return isfinite(uncertainty);
+}
+
 bool NavEKF3_core::getOrientationCovariance(Matrix3f &covariance) const
 {
     covariance = Matrix3f();

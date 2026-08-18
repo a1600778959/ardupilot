@@ -1851,10 +1851,12 @@ void AP_AHRS::writeExtNavForwardSpeedData(float speed)
 
 bool AP_AHRS::has_recent_extnav_velocity(uint32_t max_age_ms) const
 {
-    if (last_extnav_velocity_ms == 0) {
-        return false;
-    }
-    return (AP_HAL::millis() - last_extnav_velocity_ms) <= max_age_ms;
+    const uint32_t now = AP_HAL::millis();
+    const bool recent_velocity = last_extnav_velocity_ms != 0 &&
+        (now - last_extnav_velocity_ms) <= max_age_ms;
+    const bool recent_forward_speed = last_extnav_forward_speed_ms != 0 &&
+        (now - last_extnav_forward_speed_ms) <= max_age_ms;
+    return recent_velocity || recent_forward_speed;
 }
 
 bool AP_AHRS::get_recent_extnav_forward_speed(float &speed, uint32_t max_age_ms) const
@@ -2489,6 +2491,29 @@ bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3
     case EKFType::EXTERNAL:
         return external.get_variances(velVar, posVar, hgtVar, magVar, reservedVar);
 #endif
+    }
+
+    return false;
+}
+
+bool AP_AHRS::get_horizontal_position_uncertainty(float &uncertainty) const
+{
+    switch (ekf_type()) {
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.getHorizontalPositionUncertainty(uncertainty);
+#endif
+
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+#endif
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+#endif
+        return false;
     }
 
     return false;
