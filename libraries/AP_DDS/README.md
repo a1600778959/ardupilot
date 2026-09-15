@@ -180,27 +180,10 @@ $ ros2 node list
 /ardupilot_dds
 ```
 
-```bash
-$ ros2 topic list -v
-Published topics:
- * /ap/battery [sensor_msgs/msg/BatteryState] 1 publisher
- * /ap/clock [rosgraph_msgs/msg/Clock] 1 publisher
- * /ap/geopose/filtered [geographic_msgs/msg/GeoPoseStamped] 1 publisher
- * /ap/gps_global_origin/filtered [geographic_msgs/msg/GeoPointStamped] 1 publisher
- * /ap/imu/experimental/data [sensor_msgs/msg/Imu] 1 publisher
- * /ap/navsat [sensor_msgs/msg/NavSatFix] 1 publisher
- * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
- * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
- * /ap/time [builtin_interfaces/msg/Time] 1 publisher
- * /ap/twist/filtered [geometry_msgs/msg/TwistStamped] 1 publisher
- * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
- * /rosout [rcl_interfaces/msg/Log] 1 publisher
+使用工具列出当前运行实例实际启用的话题和类型，避免维护随编译选项变化而失效的手写列表：
 
-Subscribed topics:
- * /ap/cmd_gps_pose [ardupilot_msgs/msg/GlobalPosition] 1 subscriber
- * /ap/cmd_vel [geometry_msgs/msg/TwistStamped] 1 subscriber
- * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
- * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
+```bash
+ros2 topic list -t
 ```
 
 ```bash
@@ -231,6 +214,28 @@ ros2 topic echo /ap/tf_static --qos-depth 1 --qos-history keep_last --qos-reliab
 ```
 
 如果要消费这些变换，强烈建议在 ROS 2 中[创建并运行 transform broadcaster](https://docs.ros.org/en/humble/Concepts/About-Tf2.html#tutorials)。
+
+## 读取 VCU 状态（电池电压与 MCU 温度）
+
+`/ap/vcu_status`（类型 `sensor_msgs/msg/BatteryState`）默认发布，发布间隔约 1 秒（`AP_DDS_DELAY_BATTERY_STATE_TOPIC_MS`）。本工程对其字段语义做了一处复用：
+
+- `voltage`：电池电压（V），来自 `AP_BattMonitor`，多电池时 `header.frame_id` 为电池实例号。
+- `temperature`：**VCU(MCU) 温度（°C），非上游语义的电池温度**。数据来自 `hal.analogin->mcu_temperature()`（H743 内部温度传感器 + 出厂校准，20Hz 更新）。未启用 `HAL_WITH_MCU_MONITORING` 的目标（如 SITL）该字段为 `NaN`。
+- 电池不健康（`present: false`）时该周期不发布消息，与上游行为一致。
+
+使用 ROS 2 工具查询实际接口和数据，不使用手写的消息输出作为验证证据：
+
+```bash
+ros2 topic info /ap/vcu_status --verbose
+ros2 interface show sensor_msgs/msg/BatteryState
+ros2 topic echo /ap/vcu_status
+```
+
+SITL 中 `temperature` 显示 `nan` 属预期行为，实板（H743）才会输出真实 VCU 温度。
+
+原来订阅 `/ap/battery` 的节点需要改为订阅 `/ap/vcu_status`；本工程不再使用旧话题发布这组数据。ROS 消息类型和字段布局保持兼容，但 `temperature` 的项目语义仍是 MCU 温度，不能按电池温度解释。
+
+话题表由 Waf 使用 `AP_DDS_Topic_Table.h.in` 生成至构建目录的 `libraries/AP_DDS/generated/AP_DDS_Topic_Table.h`，VCU 话题名称的权威输入位于本目录 `wscript`。执行现有的 `./waf rover` 会自动生成；修改名称时更新该输入，不直接编辑生成头文件。消息序列化定义继续由现有 `microxrceddsgen` 流程从 IDL 生成。
 
 ## 使用 ROS 2 service
 
@@ -365,7 +370,7 @@ cp /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/bu
    - 如果 `AP_DDS_Client.h` 中的 include 被 `AP_DDS_NEEDS_*` 宏保护，记得把新功能加入对应宏，例如复用 `TwistStamped` 时加入 `AP_DDS_NEEDS_TWIST`。
 
 4. 在 topic 或 service 表中登记接口。
-   - topic 加到 `libraries/AP_DDS/AP_DDS_Topic_Table.h`：
+   - topic 加到权威模板 `libraries/AP_DDS/AP_DDS_Topic_Table.h.in`，再由 Waf 生成话题表：
      - 在 `TopicIndex` 中增加枚举值。
      - 在 `AP_DDS_Client::topics[]` 中增加表项。
      - 发布给 ROS 2 的 topic 用 `Topic_rw::DataWriter`；从 ROS 2 接收的 topic 用 `Topic_rw::DataReader`。
@@ -415,7 +420,7 @@ cp /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/bu
 
 1. 复用已有 `geometry_msgs/msg/TwistStamped.idl`，因此不需要新增 IDL。
 2. 在 `AP_DDS_config.h` 中增加 `AP_DDS_EXTNAV_VEL_SUB_ENABLED`，并把它加入 `AP_DDS_NEEDS_TWIST`。
-3. 在 `AP_DDS_Topic_Table.h` 中增加 `EXTNAV_VELOCITY_SUB` 表项：
+3. 在权威模板 `AP_DDS_Topic_Table.h.in` 中定义 `EXTNAV_VELOCITY_SUB`，再由 Waf 生成话题表：
    - ROS 2 名称：`/ap/extnav/velocity`
    - DDS 名称：`rt/ap/extnav/velocity`
    - 类型：`geometry_msgs::msg::dds_::TwistStamped_`
@@ -471,7 +476,7 @@ ROS 2 设计文章 [Topic and Service name mapping to DDS](https://design.ros2.o
 
 更多细节可以参考现有映射：
 
-- [`AP_DDS_Topic_Table`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_DDS/AP_DDS_Topic_Table.h)
+- [`AP_DDS_Topic_Table.h.in`](AP_DDS_Topic_Table.h.in)：本项目话题表权威模板，构建时自动生成头文件。
 - [`AP_DDS_Service_Table`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_DDS/AP_DDS_Service_Table.h)
 
 ### 开发要求

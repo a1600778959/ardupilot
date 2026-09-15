@@ -1024,8 +1024,15 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_
 
     msg.voltage = battery.voltage(instance);
 
-    float temperature;
-    msg.temperature = (battery.get_temperature(temperature, instance)) ? temperature : NAN;
+    // /ap/vcu_status 沿用 BatteryState，将 temperature 复用为 VCU(MCU) 温度。
+    // H743 板卡经 hwdef 芯片脚本自动启用 HAL_WITH_MCU_MONITORING，由 ADC3 内部
+    // 温度传感器结合出厂校准值换算（20Hz 更新）；未启用该监测的目标（如 SITL）
+    // 按 ROS 惯例填 NaN，表示未测量。
+#if HAL_WITH_MCU_MONITORING
+    msg.temperature = hal.analogin->mcu_temperature();
+#else
+    msg.temperature = NAN;
+#endif
 
     float current;
     msg.current = (battery.current_amps(current, instance)) ? -1 * current : NAN;

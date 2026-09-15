@@ -13,9 +13,8 @@
 
 #include "uxr/client/client.h"
 
-// Code generated table based on the enabled topics.
-// Mavgen is using python, loops are not readable.
-// Can use jinja to template (like Flask)
+// 由 Waf 根据 AP_DDS_Topic_Table.h.in 生成，禁止直接修改生成的头文件。
+// 话题名称由 AP_DDS/wscript 提供，消息类型仍使用 IDL 工具生成的定义。
 
 enum class TopicIndex: uint8_t {
 #if AP_DDS_TIME_PUB_ENABLED
@@ -138,7 +137,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::BATTERY_STATE_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::BATTERY_STATE_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "rt/ap/battery",
+        .topic_name = "@VCU_STATUS_TOPIC@",
         .type_name = "sensor_msgs::msg::dds_::BatteryState_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,

@@ -80,8 +80,9 @@
 #define AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS 33
 #endif
 
+// 本工程默认发布 /ap/vcu_status：voltage 为电池电压，temperature 复用为 VCU(MCU) 温度
 #ifndef AP_DDS_BATTERY_STATE_PUB_ENABLED
-#define AP_DDS_BATTERY_STATE_PUB_ENABLED 0
+#define AP_DDS_BATTERY_STATE_PUB_ENABLED 1
 #endif
 
 #ifndef AP_DDS_DELAY_BATTERY_STATE_TOPIC_MS

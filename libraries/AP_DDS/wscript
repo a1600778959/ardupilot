@@ -54,6 +54,16 @@ def build(bld):
     for inc in extra_bld_inc:
         bld.env.INCLUDES += [bld.bldnode.find_or_declare(inc).abspath()]
 
+    # 从权威模板生成话题表，避免直接维护派生头文件；VCU 状态沿用 BatteryState 类型。
+    bld(
+        features='subst',
+        source=bld.srcnode.make_node(str(pathlib.PurePath(gen_path, 'AP_DDS_Topic_Table.h.in'))),
+        target=bld.bldnode.find_or_declare(str(pathlib.PurePath(gen_path, 'generated', 'AP_DDS_Topic_Table.h'))),
+        VCU_STATUS_TOPIC='rt/ap/vcu_status',
+        encoding='utf-8',
+        group='dynamic_sources',
+    )
+
     for i in range(len(config_h_nodes)):
         print(f"building {config_h_nodes[i].abspath()}")
         bld(
